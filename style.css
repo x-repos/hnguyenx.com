@@ -317,6 +317,6 @@ footer {
   margin-top: 0.5rem;
 }
 
-.visitor-flag img {
-  vertical-align: -1px;
+.visitor-flag {
+  font-size: 1rem;
 }

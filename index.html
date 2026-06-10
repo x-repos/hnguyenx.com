@@ -156,14 +156,11 @@
         entries.slice(0, 8).forEach(function (e) {
           var span = document.createElement("span");
           span.className = "visitor-flag";
-          var img = document.createElement("img");
-          img.src = "https://flagcdn.com/16x12/" + e[0].toLowerCase() + ".png";
-          img.alt = e[0];
-          img.width = 16;
-          img.height = 12;
-          img.loading = "lazy";
-          span.appendChild(img);
-          span.appendChild(document.createTextNode(" " + e[1]));
+          var flag = e[0].replace(/./g, function (ch) {
+            return String.fromCodePoint(127397 + ch.charCodeAt(0));
+          });
+          span.title = e[0];
+          span.textContent = flag + " " + e[1];
           el.appendChild(span);
         });
       })
