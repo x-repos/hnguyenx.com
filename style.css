@@ -171,6 +171,42 @@ ul.entries li {
   text-decoration: none;
 }
 
+.pro-button {
+  display: block;
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1c1917 0%, #2e2415 60%, #3b2f1d 100%);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.pro-button:hover {
+  text-decoration: none;
+  border-color: #e8c87a;
+  transform: translateY(-1px);
+}
+
+.pro-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.pro-button-title {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #e8c87a;
+}
+
+.pro-button-sub {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.95rem;
+  color: #cbbfa5;
+}
+
 footer {
   margin-top: 3rem;
   border-top: 1px solid var(--hairline);
