@@ -172,12 +172,14 @@ ul.entries li {
 }
 
 .pro-button {
-  display: block;
-  margin-top: 1.5rem;
-  padding: 1rem 1.25rem;
+  display: inline-block;
+  padding: 0.1rem 0.75rem;
   border: 1px solid var(--accent);
-  border-radius: 8px;
+  border-radius: 999px;
   background: linear-gradient(135deg, #1c1917 0%, #2e2415 60%, #3b2f1d 100%);
+  color: #e8c87a;
+  font-weight: 600;
+  letter-spacing: 0.03em;
   transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
@@ -190,21 +192,6 @@ ul.entries li {
 .pro-button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
-}
-
-.pro-button-title {
-  display: block;
-  font-size: 1.15rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: #e8c87a;
-}
-
-.pro-button-sub {
-  display: block;
-  margin-top: 0.15rem;
-  font-size: 0.95rem;
-  color: #cbbfa5;
 }
 
 footer {
