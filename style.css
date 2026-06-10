@@ -308,3 +308,15 @@ footer {
   font-size: 0.9rem;
   color: var(--footer);
 }
+
+.visitor-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.9rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.visitor-flag img {
+  vertical-align: -1px;
+}

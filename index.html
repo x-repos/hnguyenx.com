@@ -134,7 +134,43 @@
 
   <footer>
     © 2026 Hoang Anh (Benjamin) Nguyen · hnguyenx.com
+    <div class="visitor-flags" id="visitor-flags"></div>
   </footer>
+
+  <script>
+  (function () {
+    var el = document.getElementById("visitor-flags");
+    var api = "https://hnguyenx-visits.hnguyenx.workers.dev";
+    var counted = sessionStorage.getItem("counted");
+    fetch(api + (counted ? "/counts" : "/hit"), counted ? {} : { method: "POST" })
+      .then(function (r) { sessionStorage.setItem("counted", "1"); return r.json(); })
+      .then(function (counts) {
+        var entries = Object.keys(counts)
+          .filter(function (c) { return c !== "XX"; })
+          .map(function (c) { return [c, counts[c]]; })
+          .sort(function (a, b) { return b[1] - a[1]; });
+        if (!entries.length) { return; }
+        var total = entries.reduce(function (s, e) { return s + e[1]; }, 0);
+        var label = document.createElement("span");
+        label.textContent = "Visitors: " + total;
+        el.appendChild(label);
+        entries.slice(0, 8).forEach(function (e) {
+          var span = document.createElement("span");
+          span.className = "visitor-flag";
+          var img = document.createElement("img");
+          img.src = "https://flagcdn.com/16x12/" + e[0].toLowerCase() + ".png";
+          img.alt = e[0];
+          img.width = 16;
+          img.height = 12;
+          img.loading = "lazy";
+          span.appendChild(img);
+          span.appendChild(document.createTextNode(" " + e[1]));
+          el.appendChild(span);
+        });
+      })
+      .catch(function () {});
+  })();
+  </script>
 
 </body>
 </html>

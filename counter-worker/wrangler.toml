@@ -1,0 +1,7 @@
+name = "hnguyenx-visits"
+main = "worker.js"
+compatibility_date = "2026-06-01"
+
+[[kv_namespaces]]
+binding = "VISITS"
+id = "9244d2a5187942dc86e4e6b0bdb60d82"
