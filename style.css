@@ -178,8 +178,7 @@ ul.entries li {
   border-radius: 999px;
   background: linear-gradient(135deg, #1c1917 0%, #2e2415 60%, #3b2f1d 100%);
   color: #e8c87a;
-  font-weight: 600;
-  letter-spacing: 0.03em;
+  font-size: 1rem;
   transition: border-color 0.2s ease, transform 0.2s ease;
 }
 
