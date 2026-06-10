@@ -38,7 +38,16 @@ download his CV — within one scroll.
    description, [GitHub] link.
 6. **Contact** — email, GitHub, Google Scholar, LinkedIn as text links, plus
    a bordered "Download CV (PDF)" button.
-7. **Footer** — copyright line, hairline rule above.
+7. **Pro Mode** (added 2026-06-10 by user request) — a short section after
+   Contact linking to `pro/`, which hosts the animated "scroll through the
+   scales" experience ported from the user's previous site
+   (x-repos.github.io): GSAP + three.js scroll animation, EN/VI bilingual,
+   ask-me-anything form (formsubmit.co). Ported as built static files into
+   `pro/` with root-absolute paths rewritten to relative; the old site's
+   header link exits back to `../` (the simple page). Blog links continue to
+   point at the old domain. The no-JavaScript rule and the Lighthouse targets
+   apply to the main page only — `pro/` keeps its original JS and is exempt.
+8. **Footer** — copyright line, hairline rule above.
 
 ## Visual design
 
@@ -114,8 +123,9 @@ Adding a publication or project = copying an existing `<li>` block in
 
 ## Out of scope (deliberately)
 
-- Blog / news section (can be added later; single-page design doesn't block it)
+- Blog / news section (stays on the old site; Pro Mode links to it there)
 - Custom email at the domain (separate task; Namecheap free email forwarding
   or Cloudflare Email Routing are options later)
-- Analytics, comments, dark mode, JavaScript of any kind
+- Analytics, comments, dark mode; JavaScript on the main page (`pro/` is the
+  one exception — see Pro Mode above)
 - Static site generator migration (revisit only if a blog is added)

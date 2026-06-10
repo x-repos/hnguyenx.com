@@ -579,3 +579,39 @@ Expected: all four URLs end at `200` with final URL `https://hnguyenx.com/` (www
 - [ ] **Step 5: Done — record renewal reminder**
 
 Tell Hoang the site is live. Remind him: domain renews ~June 2027 at ~$15; auto-renew setting is in the Namecheap Domain List.
+
+---
+
+### Task 8: Pro Mode (added 2026-06-10, user request — executes between Tasks 5 and 6)
+
+Port the animated homepage from x-repos.github.io (built output, not Jekyll source) into `pro/`, and link it from a new "Pro Mode" section after Contact.
+
+**Files:**
+- Create: `pro/index.html` (built HTML of old homepage, paths rewritten)
+- Create: `pro/assets/css/home.css`, `pro/assets/js/home.js`, `pro/assets/js/nav.js` (verbatim copies from the old repo)
+- Create: `pro/images/` — favicon.ico, favicon-16x16.png, favicon-32x32.png, apple-touch-icon-180x180.png, profile.jpeg, profile-glasses.jpeg (verbatim copies)
+- Modify: `index.html` (add Pro Mode section after Contact)
+
+**Sources:** old repo clone at /tmp/oldsite-repo (assets), built homepage HTML at /tmp/oldsite.html (fetched from the live site).
+
+**Path rewrites in pro/index.html (root-absolute → relative/external):**
+- `href="/"` → `href="../"` (header logo exits Pro Mode to the simple page)
+- `/assets/css/home.css`, `/assets/js/home.js`, `/assets/js/nav.js` → same path without leading slash
+- `/images/<file>` → `images/<file>`
+- `/blog/` (2×) → `https://x-repos.github.io/blog/`
+- `/files/HoangAnh_CV.pdf` (2×) → `../assets/cv.pdf`
+- any canonical/og URLs pointing at x-repos.github.io → https://hnguyenx.com/pro/
+
+**Pro Mode section in index.html, inserted after `</section>` of #contact, inside `<main>`:**
+
+```html
+  <section id="pro">
+    <h2>Pro Mode</h2>
+    <p>
+      Prefer the cinematic version? <a href="pro/">Enter Pro Mode →</a>
+      — an animated scroll from a single qubit to the whole galaxy.
+    </p>
+  </section>
+```
+
+**Verification:** `npx --yes html-validate index.html` passes (pro/index.html is legacy markup — not gated on the validator); all `pro/` resources return 200 from the local server; headless-Chrome screenshot of `http://localhost:8123/pro/` renders the animated page (non-blank); main page still passes its checks. CDN deps (GSAP, three.js, Google Fonts) and external services (formsubmit.co, ipapi.co, flagcounter) stay as-is.
