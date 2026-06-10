@@ -99,10 +99,28 @@ nav {
   width: 7rem;
   height: 7rem;
   padding: 3px;
-  border: 2px solid var(--accent);
+  border: 2px solid transparent;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
+  background:
+    linear-gradient(var(--bg), var(--bg)) padding-box,
+    linear-gradient(var(--accent), var(--accent)) border-box;
+}
+
+.about img:hover {
+  background:
+    linear-gradient(var(--bg), var(--bg)) padding-box,
+    conic-gradient(
+      from var(--pro-angle),
+      #6b5226 0deg,
+      #e8c87a 40deg,
+      #fff6dd 70deg,
+      #e8c87a 100deg,
+      #6b5226 140deg,
+      #6b5226 360deg
+    ) border-box;
+  animation: pro-led 1.2s linear infinite;
 }
 
 .about .intro {
@@ -219,7 +237,8 @@ ul.entries li {
 
 @media (prefers-reduced-motion: reduce) {
   .pro-button:hover,
-  .pro-button:focus-visible {
+  .pro-button:focus-visible,
+  .about img:hover {
     animation: none;
   }
 }
