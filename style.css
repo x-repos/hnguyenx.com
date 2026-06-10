@@ -126,8 +126,8 @@ nav {
 }
 
 h2 {
-  font-size: 0.8rem;
-  letter-spacing: 0.12em;
+  font-size: 1.25rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--accent);
   font-weight: 600;
