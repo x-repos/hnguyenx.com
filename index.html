@@ -172,6 +172,8 @@
   (function () {
     var el = document.getElementById("visitor-flags");
     var api = "https://hnguyenx-visits.hnguyenx.workers.dev";
+    var regionNames;
+    try { regionNames = new Intl.DisplayNames(["en"], { type: "region" }); } catch (e) {}
     var counted = sessionStorage.getItem("counted");
     fetch(api + (counted ? "/counts" : "/hit"), counted ? {} : { method: "POST" })
       .then(function (r) { sessionStorage.setItem("counted", "1"); return r.json(); })
@@ -191,7 +193,9 @@
           var flag = e[0].replace(/./g, function (ch) {
             return String.fromCodePoint(127397 + ch.charCodeAt(0));
           });
-          span.title = e[0];
+          var name = e[0];
+          if (regionNames) { try { name = regionNames.of(e[0]) || e[0]; } catch (e2) {} }
+          span.title = name;
           span.textContent = flag + " " + e[1];
           el.appendChild(span);
         });
