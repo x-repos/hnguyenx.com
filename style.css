@@ -91,7 +91,7 @@ nav {
 .about {
   display: flex;
   gap: 1.5rem;
-  align-items: flex-start;
+  align-items: center;
   flex-wrap: wrap;
 }
 
