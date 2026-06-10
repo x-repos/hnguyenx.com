@@ -172,21 +172,50 @@ ul.entries li {
   text-decoration: none;
 }
 
+@property --pro-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
 .pro-button {
   display: inline-block;
   padding: 0.1rem 0.75rem;
-  border: 1px solid var(--accent);
+  border: 2px solid transparent;
   border-radius: 999px;
-  background: linear-gradient(135deg, #1c1917 0%, #2e2415 60%, #3b2f1d 100%);
+  background:
+    linear-gradient(135deg, #1c1917 0%, #2e2415 60%, #3b2f1d 100%) padding-box,
+    conic-gradient(
+      from var(--pro-angle),
+      #6b5226 0deg,
+      #e8c87a 40deg,
+      #fff6dd 70deg,
+      #e8c87a 100deg,
+      #6b5226 140deg,
+      #6b5226 360deg
+    ) border-box;
   color: #e8c87a;
   font-size: 1rem;
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  transition: transform 0.2s ease;
+  animation: pro-led 3s linear infinite;
+}
+
+@keyframes pro-led {
+  to {
+    --pro-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pro-button {
+    animation: none;
+  }
 }
 
 .pro-button:hover {
   text-decoration: none;
-  border-color: #e8c87a;
   transform: translateY(-1px);
+  animation-duration: 1.2s;
 }
 
 .pro-button:focus-visible {
