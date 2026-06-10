@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en" class="no-js home-immersive">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <title>Hoang Anh (Benjamin) Nguyen: Quantum, HPC, AI, Planets</title>
+  <meta name="description" content="Computational physics of planetary materials — quantum computing (annealing, gate-based, hybrid), DFT, molecular dynamics, HPC, deep learning, and Earth & pl...">
+  <meta name="author" content="Hoang Anh (Benjamin) Nguyen">
+
+  <!-- Open Graph (Facebook / LinkedIn / iMessage / Slack previews) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Hoang Anh (Benjamin) Nguyen">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:title" content="Hoang Anh (Benjamin) Nguyen: Quantum, HPC, AI, Planets">
+  <meta property="og:description" content="Computational physics of planetary materials — quantum computing (annealing, gate-based, hybrid), DFT, molecular dynamics, HPC, deep learning, and Earth & pl...">
+  <meta property="og:url" content="https://hnguyenx.com/pro/">
+  <meta property="og:image" content="https://hnguyenx.com/pro/images/earth-og.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="675">
+  <meta property="og:image:alt" content="Earth from space — the planetary scale of the site&apos;s scroll journey">
+
+  <!-- Twitter / X card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Hoang Anh (Benjamin) Nguyen: Quantum, HPC, AI, Planets">
+  <meta name="twitter:description" content="Computational physics of planetary materials — quantum computing (annealing, gate-based, hybrid), DFT, molecular dynamics, HPC, deep learning, and Earth & pl...">
+  <meta name="twitter:image" content="https://hnguyenx.com/pro/images/earth-og.jpg">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+
+  <!-- Icons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon-180x180.png">
+  <link rel="shortcut icon" href="images/favicon.ico">
+  <meta name="theme-color" content="#03060d">
+
+  <link rel="stylesheet" href="assets/css/home.css">
+
+  <script>
+    document.documentElement.className =
+      document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+  </script>
+</head>
+
+<body class="home-body">
+
+  <!-- Top nav -->
+  <nav class="home-topnav" aria-label="Primary">
+    <a class="home-topnav__brand" href="../" aria-label="Home — Hoang Anh Nguyen">
+      <span class="brand-pi">π</span>
+      <span class="brand-name">Hoang Anh (Benjamin) Nguyen</span>
+    </a>
+    <ul class="home-topnav__primary">
+      <li><a href="https://scholar.google.com/citations?user=-f-uRoYAAAAJ&hl=en" target="_blank" rel="noopener"><span lang="en">Scholar</span><span lang="vi">Học thuật</span></a></li>
+      <li><a href="../assets/cv.pdf" target="_blank" rel="noopener"><span lang="en">CV</span><span lang="vi">Hồ sơ</span></a></li>
+      <li><a href="https://x-repos.github.io/blog/">Blog</a></li>
+    </ul>
+    <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false">
+      <span class="nav-toggle__bar"></span>
+      <span class="nav-toggle__bar"></span>
+      <span class="nav-toggle__bar"></span>
+    </button>
+    <div class="home-topnav__dropdown">
+      <a class="nav-social-link" href="https://www.facebook.com/sipkaro" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook">
+        <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+          <path d="M22.675 0H1.325C.593 0 0 .593 0 1.325v21.351C0 23.407.593 24 1.325 24H12.82V14.706h-3.13v-3.622h3.13V8.413c0-3.1 1.894-4.788 4.66-4.788 1.325 0 2.464.099 2.794.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622H17.56V24h5.115c.732 0 1.325-.593 1.325-1.324V1.325C24 .593 23.407 0 22.675 0z"/>
+        </svg>
+      </a>
+      <a class="nav-social-link" href="https://www.linkedin.com/in/sipkaro/" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn">
+        <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+          <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.36V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.61 0 4.28 2.38 4.28 5.47v6.27zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z"/>
+        </svg>
+      </a>
+      <span class="lang-switch__divider" aria-hidden="true"></span>
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" class="lang-switch__btn" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" class="lang-switch__btn" data-lang="vi" aria-pressed="false">VI</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Single canvas that all WebGL scenes render into -->
+  <canvas id="home-canvas" aria-hidden="true"></canvas>
+
+  <!-- Scroll progress indicator -->
+  <div class="home-progress" aria-hidden="true"><div class="home-progress__bar"></div></div>
+
+  <!-- Scale ruler -->
+  <aside class="home-scale" aria-hidden="true">
+    <span class="home-scale__caption">Scale</span>
+    <span class="home-scale__label" id="home-scale-label">10⁻¹⁰ m</span>
+    <div class="home-scale__rail"><div class="home-scale__dot" id="home-scale-dot"></div></div>
+  </aside>
+
+  <main id="home-main" role="main">
+    <!-- =====================================================
+     Scene 1 — Hero / Qubits
+     ===================================================== -->
+<section class="home-scene home-scene--hero" id="scene-qubits" data-scene="qubits">
+  <div class="home-scene__inner">
+    <p class="home-scene__eyebrow">
+      <span lang="en">PhD researcher · Colorado School of Mines</span>
+      <span lang="vi">Nghiên cứu sinh Tiến sĩ · Colorado School of Mines</span>
+    </p>
+    <button class="hero-portrait-flip" type="button"
+            aria-label="Flip portrait"
+            aria-pressed="false">
+      <span class="hero-portrait-flip__inner">
+        <img class="hero-portrait hero-portrait--front"
+             src="images/profile.jpeg"
+             alt="Hoang Anh (Benjamin) Nguyen"
+             width="160" height="160"
+             loading="eager" decoding="async">
+        <img class="hero-portrait hero-portrait--back"
+             src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+             data-src="images/profile-glasses.jpeg"
+             alt="Hoang Anh (Benjamin) Nguyen: alternate portrait"
+             width="160" height="160"
+             loading="lazy" decoding="async">
+      </span>
+    </button>
+    <h1 class="home-scene__title">
+      <span class="hero-ben10" role="button" tabindex="0" aria-label="Why Ben? Click to find out">Ben</span>
+    </h1>
+    <p class="home-scene__sub">
+      <span lang="en">From a single qubit to a whole planet<br>— a scroll through the scales I work at.</span>
+      <span lang="vi">Từ một qubit đến cả một hành tinh<br>— hành trình qua các thang đo tôi nghiên cứu.</span>
+    </p>
+    <p class="home-scene__cta">
+      <span lang="en">Scroll ↓ to zoom out</span>
+      <span lang="vi">Cuộn xuống ↓ để phóng ra</span>
+    </p>
+  </div>
+</section>
+
+<!-- =====================================================
+     Scene 2 — Quantum computing (same qubit visual as hero)
+     ===================================================== -->
+<section class="home-scene home-scene--quantum" id="scene-quantum" data-scene="quantum">
+  <div class="home-scene__inner">
+    <p class="home-scene__eyebrow">
+      <span lang="en">Quantum computing · annealing · gate-based · hybrid</span>
+      <span lang="vi">Máy tính lượng tử · annealing · gate-based · lai</span>
+    </p>
+    <h2 class="home-scene__title">
+      <span lang="en">Inverting seismic waves<br>with qubits.</span>
+      <span lang="vi">Đảo ngược sóng địa chấn<br>bằng qubit.</span>
+    </h2>
+    <p class="home-scene__body">
+      <span lang="en">
+        <strong>Full-waveform inversion</strong> is a high-dimensional, non-convex
+        optimization — exactly the kind of problem people want to throw at a
+        <strong>quantum computer</strong>. I work across three flavors:
+        <strong>annealing</strong> on the D-Wave Advantage (reformulating subproblems as QUBO),
+        <strong>gate-based</strong> quantum hardware (variational algorithms on
+        IBM-style devices), and <strong>hybrid quantum–classical</strong> methods
+        that hand specific kernels to the quantum solver while the rest stays on
+        classical <strong>HPC</strong>.
+      </span>
+      <span lang="vi">
+        <strong>Đảo ngược dạng sóng đầy đủ (FWI)</strong> là một bài toán tối ưu
+        nhiều chiều, không lồi — đúng kiểu bài toán người ta muốn giao cho một
+        <strong>máy tính lượng tử</strong>. Tôi nghiên cứu cả ba hướng:
+        <strong>annealing</strong> trên D-Wave Advantage (định dạng các bài toán
+        con dưới dạng QUBO), phần cứng lượng tử <strong>dựa trên cổng</strong>
+        (thuật toán biến phân trên thiết bị kiểu IBM), và các phương pháp
+        <strong>lai lượng tử–cổ điển</strong> giao những phần lõi cụ thể cho
+        máy tính lượng tử, phần còn lại chạy trên <strong>HPC</strong> cổ điển.
+      </span>
+    </p>
+  </div>
+</section>
+
+<!-- =====================================================
+     Scene 3 — DFT / electron orbitals
+     ===================================================== -->
+<section class="home-scene home-scene--dft" id="scene-dft" data-scene="dft">
+  <div class="home-scene__inner">
+    <p class="home-scene__eyebrow">
+      <span lang="en">~10<sup>−10</sup> m · Density functional theory</span>
+      <span lang="vi">~10<sup>−10</sup> m · Lý thuyết phiếm hàm mật độ</span>
+    </p>
+    <h2 class="home-scene__title">
+      <span lang="en">Electron clouds.</span>
+      <span lang="vi">Đám mây điện tử.</span>
+    </h2>
+    <p class="home-scene__body">
+      <span lang="en">
+        Before atoms have positions they have <strong>orbitals</strong> — solutions to a many-body
+        problem we don't solve exactly, but approximate beautifully with <strong>DFT</strong>,
+        running on national <strong>HPC</strong> clusters. The same machinery gives me energies,
+        forces, elastic moduli, equations of state — all the ingredients I feed into bigger
+        simulations.
+      </span>
+      <span lang="vi">
+        Trước khi nguyên tử có vị trí, chúng có <strong>orbital</strong> — nghiệm của một bài toán
+        nhiều hạt mà ta không giải chính xác được, nhưng xấp xỉ rất đẹp bằng <strong>DFT</strong>,
+        chạy trên các cụm <strong>HPC</strong> quốc gia. Cùng cỗ máy đó cho tôi năng lượng, lực,
+        mô-đun đàn hồi, phương trình trạng thái — những thành phần tôi đưa vào các mô phỏng lớn hơn.
+      </span>
+    </p>
+  </div>
+</section>
+
+<!-- =====================================================
+     Scene 4 — Molecular dynamics
+     ===================================================== -->
+<section class="home-scene home-scene--atoms" id="scene-md" data-scene="md">
+  <div class="home-scene__inner">
+    <p class="home-scene__eyebrow">
+      <span lang="en">~10<sup>−9</sup> m · Molecular dynamics</span>
+      <span lang="vi">~10<sup>−9</sup> m · Động lực học phân tử</span>
+    </p>
+    <h2 class="home-scene__title">
+      <span lang="en">Atoms find their neighbours.</span>
+      <span lang="vi">Các nguyên tử tìm thấy nhau.</span>
+    </h2>
+    <p class="home-scene__body">
+      <span lang="en">
+        Drop ten thousand atoms in a box, give them forces, integrate Newton at one femtosecond
+        a step. Squeeze. <strong>SiO<sub>2</sub></strong> rearranges; silicon grows from four
+        bonds to six; pores collapse irreversibly. I run these on <strong>HPC</strong> and pull
+        structure out with ring statistics, Voronoi cells, DBSCAN clustering — and increasingly
+        with <strong>deep learning</strong> models that learn the order parameters the
+        hand-crafted descriptors miss.
+      </span>
+      <span lang="vi">
+        Thả mười nghìn nguyên tử vào một hộp, cho chúng các lực, tích phân Newton từng bước một
+        femtô-giây. Nén lại. <strong>SiO<sub>2</sub></strong> tái sắp xếp; silicon tăng từ bốn
+        liên kết lên sáu; các lỗ rỗng sụp đổ không thể đảo ngược. Tôi chạy chúng trên
+        <strong>HPC</strong> rồi trích xuất cấu trúc bằng thống kê vòng, ô Voronoi, phân cụm
+        DBSCAN — và ngày càng dùng các mô hình <strong>học sâu</strong> học được những tham số
+        trật tự mà các mô tả thủ công bỏ sót.
+      </span>
+    </p>
+  </div>
+</section>
+
+<!-- =====================================================
+     Scene 5 — Mantle / pressure
+     ===================================================== -->
+<section class="home-scene home-scene--mantle" id="scene-mantle" data-scene="mantle">
+  <div class="home-scene__inner">
+    <p class="home-scene__eyebrow">
+      <span lang="en">~10<sup>6</sup> m · Inside a rocky planet</span>
+      <span lang="vi">~10<sup>6</sup> m · Bên trong một hành tinh đá</span>
+    </p>
+    <h2 class="home-scene__title">
+      <span lang="en">Hundreds of gigapascals. Thousands of kelvin.</span>
+      <span lang="vi">Hàng trăm gigapascal. Hàng nghìn kelvin.</span>
+    </h2>
+    <p class="home-scene__body">
+      <span lang="en">
+        The minerals from the previous scene now make up most of Earth's <strong>mantle</strong>.
+        At these conditions, materials science <em>is</em> planetary science: the phase you find
+        changes how seismic waves travel through it, and how mass redistributes itself over
+        billions of years.
+      </span>
+      <span lang="vi">
+        Các khoáng vật từ cảnh trước giờ chiếm phần lớn <strong>manti</strong> Trái Đất. Ở những
+        điều kiện này, khoa học vật liệu <em>chính là</em> khoa học hành tinh: pha mà bạn tìm
+        thấy thay đổi cách sóng địa chấn truyền qua, và cách khối lượng tự tái phân bố qua
+        hàng tỷ năm.
+      </span>
+    </p>
+  </div>
+</section>
+
+<!-- =====================================================
+     Scene 6 — Earth / planetary
+     ===================================================== -->
+<section class="home-scene home-scene--planet" id="scene-planet" data-scene="planet">
+  <div class="home-scene__inner">
+    <p class="home-scene__eyebrow">
+      <span lang="en">~10<sup>7</sup> m · Earth & planetary science</span>
+      <span lang="vi">~10<sup>7</sup> m · Khoa học Trái Đất & Hành tinh</span>
+    </p>
+    <h2 class="home-scene__title">
+      <span lang="en">And out comes the planet.</span>
+      <span lang="vi">Và hành tinh hiện ra.</span>
+    </h2>
+    <p class="home-scene__body">
+      <span lang="en">
+        I image Earth's interior with <strong>ambient-noise tomography</strong> and invert it
+        with <strong>full-waveform inversion</strong> — the same inversion problem we threw at the
+        quantum annealer at the top of this page, just from the planetary side instead of the
+        qubit side.
+      </span>
+      <span lang="vi">
+        Tôi chụp ảnh nội thất Trái Đất bằng <strong>chụp cắt lớp nhiễu nền</strong> và đảo ngược
+        nó bằng <strong>FWI</strong> — chính là bài toán đảo ngược chúng ta đã giao cho máy
+        annealer lượng tử ở đầu trang này, chỉ nhìn từ phía hành tinh thay vì phía qubit.
+      </span>
+    </p>
+  </div>
+</section>
+
+<!-- =====================================================
+     Scene 7 — Solar system
+     ===================================================== -->
+<section class="home-scene home-scene--solar" id="scene-solar" data-scene="solar">
+  <div class="home-scene__inner">
+    <p class="home-scene__eyebrow">
+      <span lang="en">~10<sup>11</sup> m · One star, a few rocky worlds</span>
+      <span lang="vi">~10<sup>11</sup> m · Một ngôi sao, vài thế giới đá</span>
+    </p>
+    <h2 class="home-scene__title">
+      <span lang="en">A pale blue dot, in context.</span>
+      <span lang="vi">Một chấm xanh nhạt, trong bối cảnh.</span>
+    </h2>
+    <p class="home-scene__body">
+      <span lang="en">
+        Earth is one of several planets around an unremarkable star. The same equations of state I
+        study at the atomic scale govern <strong>super-Earths</strong> and <strong>icy moons</strong>
+        light-years from here — which is why high-pressure mineral physics is also planetary
+        science.
+      </span>
+      <span lang="vi">
+        Trái Đất là một trong nhiều hành tinh quanh một ngôi sao bình thường. Cùng những phương
+        trình trạng thái tôi nghiên cứu ở thang nguyên tử cũng chi phối các
+        <strong>siêu-Trái-Đất</strong> và <strong>mặt trăng băng</strong> cách đây nhiều năm
+        ánh sáng — đó là lý do vật lý khoáng vật áp suất cao cũng là khoa học hành tinh.
+      </span>
+    </p>
+  </div>
+</section>
+
+<!-- =====================================================
+     Scene 8 — Galaxy
+     ===================================================== -->
+<section class="home-scene home-scene--galaxy" id="scene-galaxy" data-scene="galaxy">
+  <div class="home-scene__inner">
+    <p class="home-scene__eyebrow">
+      <span lang="en">~10<sup>21</sup> m · One galaxy, ~10<sup>11</sup> stars</span>
+      <span lang="vi">~10<sup>21</sup> m · Một thiên hà, ~10<sup>11</sup> ngôi sao</span>
+    </p>
+    <h2 class="home-scene__title">
+      <span lang="en">Zoom out a bit more.</span>
+      <span lang="vi">Lùi ra thêm một chút.</span>
+    </h2>
+    <p class="home-scene__body">
+      <span lang="en">
+        A hundred billion suns in a spiral, most of them with planets. Most of those planets are
+        rocky. Most of that rock is silicate. The little simulation cell from a few scenes ago is
+        a sample of the universe's most abundant solid.
+      </span>
+      <span lang="vi">
+        Một trăm tỷ mặt trời trong một xoắn ốc, đa phần có hành tinh. Đa phần các hành tinh đó là
+        đá. Đa phần đá đó là silicat. Cái ô mô phỏng nhỏ từ vài cảnh trước là một mẫu của chất
+        rắn phổ biến nhất trong vũ trụ.
+      </span>
+    </p>
+  </div>
+</section>
+
+<!-- =====================================================
+     Scene 9 — Outro / about + contact
+     ===================================================== -->
+<section class="home-scene home-scene--outro" id="scene-outro" data-scene="outro">
+  <div class="home-scene__inner">
+    <p class="home-scene__eyebrow">
+      <span lang="en">About · Colorado School of Mines</span>
+      <span lang="vi">Giới thiệu · Colorado School of Mines</span>
+    </p>
+    <h2 class="home-scene__title">
+      <span lang="en">Many scales.</span>
+      <span lang="vi">Nhiều thang đo.</span>
+    </h2>
+    <p class="home-scene__body">
+      <span lang="en">
+        I'm a PhD researcher working at the intersection of
+        <strong>quantum computing</strong> (annealing, gate-based, hybrid),
+        <strong>density functional theory</strong>,
+        <strong>molecular dynamics</strong>,
+        <strong>HPC</strong>,
+        <strong>deep learning</strong>, and
+        <strong>Earth &amp; planetary science</strong>.
+        If any of this overlaps with your work, I'd love to hear from you.
+      </span>
+      <span lang="vi">
+        Tôi là một nghiên cứu sinh tiến sĩ làm việc ở giao điểm giữa
+        <strong>máy tính lượng tử</strong> (annealing, gate-based, hybrid),
+        <strong>lý thuyết phiếm hàm mật độ</strong>,
+        <strong>động lực học phân tử</strong>,
+        <strong>HPC</strong>,
+        <strong>học sâu</strong>, và
+        <strong>khoa học Trái Đất &amp; Hành tinh</strong>.
+        Nếu có phần nào trùng với công việc của bạn, tôi rất muốn được liên hệ.
+      </span>
+    </p>
+
+    <div class="home-outro__grid">
+      <a class="home-outro__card" href="https://scholar.google.com/citations?user=-f-uRoYAAAAJ&hl=en" target="_blank" rel="noopener">
+        <h3>Google Scholar →</h3>
+        <p>
+          <span lang="en">Publications and citations.</span>
+          <span lang="vi">Công bố và trích dẫn.</span>
+        </p>
+      </a>
+      <a class="home-outro__card" href="../assets/cv.pdf" target="_blank" rel="noopener">
+        <h3>
+          <span lang="en">CV (PDF) →</span>
+          <span lang="vi">Hồ sơ (PDF) →</span>
+        </h3>
+        <p>
+          <span lang="en">Education, research, and selected work.</span>
+          <span lang="vi">Học vấn, nghiên cứu, và tác phẩm tiêu biểu.</span>
+        </p>
+      </a>
+      <a class="home-outro__card" href="https://x-repos.github.io/blog/">
+        <h3>Blog →</h3>
+        <p>
+          <span lang="en">Occasional notes and travel.</span>
+          <span lang="vi">Ghi chú thi thoảng và du lịch.</span>
+        </p>
+      </a>
+    </div>
+
+    <p class="home-outro__contact">
+      <span lang="en">Get in touch:</span>
+      <span lang="vi">Liên hệ:</span>
+      <a href="mailto:hoanganh_nguyen@mines.edu">hoanganh_nguyen@mines.edu</a>
+    </p>
+
+    <!-- Anonymous Q box — submissions go to email via FormSubmit -->
+    <section class="home-ask" aria-label="Ask a question">
+      <h3 class="home-ask__title">
+        <span lang="en">Ask me anything — anonymous works.</span>
+        <span lang="vi">Hỏi tôi bất cứ điều gì — có thể ẩn danh.</span>
+      </h3>
+      <p class="home-ask__sub">
+        <span lang="en">Goes straight to my inbox. Skip the name &amp; email if you want.</span>
+        <span lang="vi">Chuyển thẳng vào hộp thư của tôi. Bỏ trống tên &amp; email nếu bạn muốn.</span>
+      </p>
+      <form id="home-ask-form" class="home-ask__form" method="POST"
+            action="https://formsubmit.co/hoanganh_nguyen@mines.edu">
+        <!-- FormSubmit config: subject, no captcha, table-style email -->
+        <input type="hidden" name="_subject" value="Anonymous question from x-repos.github.io">
+        <input type="hidden" name="_captcha" value="false">
+        <input type="hidden" name="_template" value="box">
+        <!-- honeypot for bots -->
+        <input type="text" name="_honey" class="home-ask__honey" tabindex="-1" autocomplete="off">
+
+        <textarea name="message" rows="4" required
+          data-ph-en="Type your question or thought…"
+          data-ph-vi="Nhập câu hỏi hoặc suy nghĩ của bạn…"></textarea>
+
+        <div class="home-ask__row">
+          <input type="text" name="name"
+            data-ph-en="Name (optional)"
+            data-ph-vi="Tên (tùy chọn)">
+          <input type="email" name="email"
+            data-ph-en="Email (optional)"
+            data-ph-vi="Email (tùy chọn)">
+        </div>
+
+        <button type="submit" class="home-ask__send">
+          <span lang="en">Send</span>
+          <span lang="vi">Gửi</span>
+        </button>
+        <p class="home-ask__status" id="home-ask-status" role="status" hidden></p>
+      </form>
+    </section>
+
+    <!-- Visitor stats -->
+    <div class="home-visitors" aria-label="Visitor stats">
+      <p class="home-visitors__hello-line" id="home-visitor-country">
+        <span class="home-visitors__flag" aria-hidden="true">🌍</span>
+        <span class="home-visitors__hello">
+          <span lang="en">Hello from somewhere on Earth.</span>
+          <span lang="vi">Xin chào từ đâu đó trên Trái Đất.</span>
+        </span>
+      </p>
+      <a class="home-visitors__flagcounter"
+         href="https://info.flagcounter.com/qda9"
+         target="_blank" rel="noopener"
+         title="Detailed visitor stats">
+        <img src="https://s05.flagcounter.com/count2/qda9/bg_000000/txt_FFFFFF/border_CCCCCC/columns_1/maxflags_5/viewers_0/labels_0/pageviews_1/flags_0/percent_0/"
+             alt="Visitor flag counter"
+             loading="lazy">
+      </a>
+    </div>
+  </div>
+</section>
+
+  </main>
+
+  <!-- Three.js + GSAP -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <script src="assets/js/home.js" defer></script>
+  <script src="assets/js/nav.js" defer></script>
+</body>
+</html>
