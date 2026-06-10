@@ -1,0 +1,161 @@
+@font-face {
+  font-family: "Crimson Pro";
+  src: url("assets/fonts/crimson-pro.woff2") format("woff2");
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Crimson Pro";
+  src: url("assets/fonts/crimson-pro-italic.woff2") format("woff2");
+  font-weight: 200 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  --bg: #fffefb;
+  --text: #1a1a1a;
+  --muted: #555;
+  --accent: #8a6d3b;
+  --hairline: #e0d8c8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 4rem;
+  max-width: 45rem;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Crimson Pro", Georgia, serif;
+  font-size: 1.125rem;
+  line-height: 1.65;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.site-name {
+  font-weight: 600;
+}
+
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 1rem;
+}
+
+.about {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.about img {
+  width: 7rem;
+  height: 7rem;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.about .intro {
+  flex: 1;
+  min-width: 16rem;
+}
+
+.about h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.tagline {
+  color: var(--muted);
+  margin: 0 0 0.6rem;
+}
+
+.about p {
+  margin: 0;
+}
+
+h2 {
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 0.3rem;
+  margin: 2.25rem 0 0.9rem;
+}
+
+section p {
+  margin: 0 0 0.8rem;
+}
+
+ul.entries {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+ul.entries li {
+  margin-bottom: 0.8rem;
+}
+
+.project-name {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.contact-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  align-items: center;
+}
+
+.cv-button {
+  display: inline-block;
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: 0.25rem 0.9rem;
+}
+
+.cv-button:hover {
+  background: #f7f2e7;
+  text-decoration: none;
+}
+
+footer {
+  margin-top: 3rem;
+  border-top: 1px solid var(--hairline);
+  padding-top: 0.75rem;
+  font-size: 0.9rem;
+  color: #999;
+}
