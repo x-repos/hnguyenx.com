@@ -194,6 +194,16 @@ ul.entries li {
   outline-offset: 3px;
 }
 
+.pro-star {
+  display: inline-block;
+  transition: transform 0.35s ease;
+}
+
+.pro-button:hover .pro-star,
+.pro-button:focus-visible .pro-star {
+  transform: rotate(180deg);
+}
+
 footer {
   margin-top: 3rem;
   border-top: 1px solid var(--hairline);
