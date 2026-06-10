@@ -1043,7 +1043,7 @@
         message: form.message.value,
         name:    form.name.value  || "(anonymous)",
         email:   form.email.value || "(not provided)",
-        _subject: "Anonymous question from x-repos.github.io",
+        _subject: "Anonymous question from hnguyenx.com",
         _captcha: "false"
       };
 
