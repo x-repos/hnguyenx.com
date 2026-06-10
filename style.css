@@ -98,6 +98,8 @@ nav {
 .about img {
   width: 7rem;
   height: 7rem;
+  padding: 3px;
+  border: 2px solid var(--accent);
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
