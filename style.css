@@ -185,6 +185,18 @@ ul.entries li {
   border-radius: 999px;
   background:
     linear-gradient(135deg, #1c1917 0%, #2e2415 60%, #3b2f1d 100%) padding-box,
+    linear-gradient(var(--accent), var(--accent)) border-box;
+  color: #e8c87a;
+  font-size: 1rem;
+  transition: transform 0.2s ease;
+}
+
+.pro-button:hover,
+.pro-button:focus-visible {
+  text-decoration: none;
+  transform: translateY(-1px);
+  background:
+    linear-gradient(135deg, #1c1917 0%, #2e2415 60%, #3b2f1d 100%) padding-box,
     conic-gradient(
       from var(--pro-angle),
       #6b5226 0deg,
@@ -194,10 +206,7 @@ ul.entries li {
       #6b5226 140deg,
       #6b5226 360deg
     ) border-box;
-  color: #e8c87a;
-  font-size: 1rem;
-  transition: transform 0.2s ease;
-  animation: pro-led 3s linear infinite;
+  animation: pro-led 1.2s linear infinite;
 }
 
 @keyframes pro-led {
@@ -207,15 +216,10 @@ ul.entries li {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pro-button {
+  .pro-button:hover,
+  .pro-button:focus-visible {
     animation: none;
   }
-}
-
-.pro-button:hover {
-  text-decoration: none;
-  transform: translateY(-1px);
-  animation-duration: 1.2s;
 }
 
 .pro-button:focus-visible {
