@@ -185,7 +185,7 @@
         if (!entries.length) { return; }
         var total = entries.reduce(function (s, e) { return s + e[1]; }, 0);
         var label = document.createElement("span");
-        label.textContent = "Visitors: " + total;
+        label.textContent = "Visitors (Cloudflare): " + total;
         el.appendChild(label);
         entries.slice(0, 10).forEach(function (e) {
           var span = document.createElement("span");
