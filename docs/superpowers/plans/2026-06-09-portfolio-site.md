@@ -584,7 +584,7 @@ Tell Hoang the site is live. Remind him: domain renews ~June 2027 at ~$15; auto-
 
 ### Task 8: Pro Mode (added 2026-06-10, user request — executes between Tasks 5 and 6)
 
-Port the animated homepage from x-repos.github.io (built output, not Jekyll source) into `pro/`, and link it from a new "Pro Mode" section after Contact.
+Port the animated homepage from the old site (built output, not Jekyll source) into `pro/`, and link it from a new "Pro Mode" section after Contact.
 
 **Files:**
 - Create: `pro/index.html` (built HTML of old homepage, paths rewritten)
@@ -598,9 +598,9 @@ Port the animated homepage from x-repos.github.io (built output, not Jekyll sour
 - `href="/"` → `href="../"` (header logo exits Pro Mode to the simple page)
 - `/assets/css/home.css`, `/assets/js/home.js`, `/assets/js/nav.js` → same path without leading slash
 - `/images/<file>` → `images/<file>`
-- `/blog/` (2×) → `https://x-repos.github.io/blog/`
+- `/blog/` (2×) → `../blog/`
 - `/files/HoangAnh_CV.pdf` (2×) → `../assets/cv.pdf`
-- any canonical/og URLs pointing at x-repos.github.io → https://hnguyenx.com/pro/
+- any canonical/og URLs pointing at the old site → https://hnguyenx.com/pro/
 
 **Pro Mode section in index.html, inserted after `</section>` of #contact, inside `<main>`:**
 

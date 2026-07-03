@@ -55,7 +55,7 @@ The site builds in about a minute at `https://<user>.github.io/<repo>/`.
 2. At your DNS provider:
    - **Apex** (`@`): four A records → `185.199.108.153`, `185.199.109.153`,
      `185.199.110.153`, `185.199.111.153` (GitHub Pages IPs).
-   - **`www`**: a CNAME record → `<user>.github.io` (e.g. `x-repos.github.io`).
+   - **`www`**: a CNAME record → `<user>.github.io`.
      This is GitHub's hostname, not a repo you have to create.
 3. **Settings → Pages → Custom domain** → enter the domain, wait for the DNS
    check to pass, then tick **Enforce HTTPS** (GitHub auto-provisions the TLS

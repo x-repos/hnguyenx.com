@@ -40,12 +40,12 @@ download his CV — within one scroll.
    a bordered "Download CV (PDF)" button.
 7. **Pro Mode** (added 2026-06-10 by user request) — a short section after
    Contact linking to `pro/`, which hosts the animated "scroll through the
-   scales" experience ported from the user's previous site
-   (x-repos.github.io): GSAP + three.js scroll animation, EN/VI bilingual,
+   scales" experience ported from the user's previous site (now deleted):
+   GSAP + three.js scroll animation, EN/VI bilingual,
    ask-me-anything form (formsubmit.co). Ported as built static files into
    `pro/` with root-absolute paths rewritten to relative; the old site's
-   header link exits back to `../` (the simple page). Blog links continue to
-   point at the old domain. The no-JavaScript rule and the Lighthouse targets
+   header link exits back to `../` (the simple page). Blog links point at
+   this site's own `blog/`. The no-JavaScript rule and the Lighthouse targets
    apply to the main page only — `pro/` keeps its original JS and is exempt.
 8. **Footer** — copyright line, hairline rule above.
 
