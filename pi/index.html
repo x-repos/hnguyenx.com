@@ -24,7 +24,7 @@
       --bg: #fffefb; --text: #1a1a1a; --muted: #555; --accent: #8a6d3b;
       --accent-deep: #75592d; --hairline: #e0d8c8; --footer: #6b6b6b;
       --tile: #f7f2e7; --cream: #fffefb; --nearblack: #16130f; --gold: #8a6d3b; --gold-dk: #e8c87a;
-      --blue: #1e5aa8; --white: #ffffff;
+      --blue: #1e5aa8; --green: #1f7a44; --red: #c62828; --white: #ffffff;
     }
     * { box-sizing: border-box; }
     body {
@@ -53,6 +53,8 @@
     .preview.opt-light { background: var(--cream);     color: var(--gold); }
     .preview.opt-dark  { background: var(--nearblack); color: var(--gold-dk); }
     .preview.opt-blue  { background: var(--white);     color: var(--blue); }
+    .preview.opt-green { background: var(--white);     color: var(--green); }
+    .preview.opt-red   { background: var(--white);     color: var(--red); }
     .preview.opt-transparent { color: var(--gold); background-color: #fbfaf6;
       background-image:
         linear-gradient(45deg, #e6e0d2 25%, transparent 25%, transparent 75%, #e6e0d2 75%),
@@ -90,7 +92,7 @@
   <h1>Pi Collection</h1>
   <p class="lede">The π marks of this site, in its own gold. Pick a format under any mark to
   preview it, then hit Download — one scalable SVG or a 1024&nbsp;px PNG (transparent, light,
-  dark, or blue).</p>
+  dark, or a blue / green / red colourway).</p>
 
   <div class="grid">
       <article class="card" data-slug="pi-mark">
@@ -106,6 +108,8 @@
             <button type="button" class="opt" data-fmt="light" aria-pressed="false">PNG · Light</button>
             <button type="button" class="opt" data-fmt="dark" aria-pressed="false">PNG · Dark</button>
             <button type="button" class="opt" data-fmt="blue" aria-pressed="false">PNG · Blue</button>
+            <button type="button" class="opt" data-fmt="green" aria-pressed="false">PNG · Green</button>
+            <button type="button" class="opt" data-fmt="red" aria-pressed="false">PNG · Red</button>
           </div>
           <a class="btn-download" href="downloads/pi-mark.svg" download aria-label="Download SVG" title="Download SVG">
             <svg class="dl-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 20h16"/></svg>
@@ -126,6 +130,8 @@
             <button type="button" class="opt" data-fmt="light" aria-pressed="false">PNG · Light</button>
             <button type="button" class="opt" data-fmt="dark" aria-pressed="false">PNG · Dark</button>
             <button type="button" class="opt" data-fmt="blue" aria-pressed="false">PNG · Blue</button>
+            <button type="button" class="opt" data-fmt="green" aria-pressed="false">PNG · Green</button>
+            <button type="button" class="opt" data-fmt="red" aria-pressed="false">PNG · Red</button>
           </div>
           <a class="btn-download" href="downloads/pi-ring-thin.svg" download aria-label="Download SVG" title="Download SVG">
             <svg class="dl-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 20h16"/></svg>
@@ -146,6 +152,8 @@
             <button type="button" class="opt" data-fmt="light" aria-pressed="false">PNG · Light</button>
             <button type="button" class="opt" data-fmt="dark" aria-pressed="false">PNG · Dark</button>
             <button type="button" class="opt" data-fmt="blue" aria-pressed="false">PNG · Blue</button>
+            <button type="button" class="opt" data-fmt="green" aria-pressed="false">PNG · Green</button>
+            <button type="button" class="opt" data-fmt="red" aria-pressed="false">PNG · Red</button>
           </div>
           <a class="btn-download" href="downloads/pi-ring-bold.svg" download aria-label="Download SVG" title="Download SVG">
             <svg class="dl-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 20h16"/></svg>
@@ -165,6 +173,8 @@
             <button type="button" class="opt" data-fmt="light" aria-pressed="false">PNG · Light</button>
             <button type="button" class="opt" data-fmt="dark" aria-pressed="false">PNG · Dark</button>
             <button type="button" class="opt" data-fmt="blue" aria-pressed="false">PNG · Blue</button>
+            <button type="button" class="opt" data-fmt="green" aria-pressed="false">PNG · Green</button>
+            <button type="button" class="opt" data-fmt="red" aria-pressed="false">PNG · Red</button>
           </div>
           <a class="btn-download" href="downloads/pi-disc.svg" download aria-label="Download SVG" title="Download SVG">
             <svg class="dl-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 20h16"/></svg>
@@ -186,7 +196,9 @@
       transparent: ["-transparent.png",  "PNG · Transparent"],
       light:       ["-light.png",         "PNG · Light"],
       dark:        ["-dark.png",          "PNG · Dark"],
-      blue:        ["-blue.png",          "PNG · Blue"]
+      blue:        ["-blue.png",          "PNG · Blue"],
+      green:       ["-green.png",         "PNG · Green"],
+      red:         ["-red.png",           "PNG · Red"]
     };
     var cards = document.querySelectorAll(".card");
     for (var i = 0; i < cards.length; i++) {
