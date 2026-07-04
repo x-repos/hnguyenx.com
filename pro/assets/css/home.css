@@ -858,25 +858,6 @@ html[lang="vi"] [lang="en"] { display: none !important; }
 }
 .home-visitors__hello { letter-spacing: 0.01em; }
 
-.home-visitors__flagcounter {
-  display: inline-block;
-  padding: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.02);
-  line-height: 0;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-}
-.home-visitors__flagcounter:hover {
-  border-color: rgba(143, 214, 255, 0.4);
-  box-shadow: 0 0 18px rgba(143, 214, 255, 0.15);
-  transform: translateY(-1px);
-}
-.home-visitors__flagcounter img {
-  display: block;
-  border-radius: 4px;
-}
-
 /* ---------- Reduced motion / fallback ---------- */
 @media (prefers-reduced-motion: reduce) {
   #home-canvas { display: none; }
