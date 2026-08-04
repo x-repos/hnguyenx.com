@@ -590,14 +590,28 @@
   };
 
   // ----- Resize -----
+  // Measure the canvas itself, never the window. The canvas is 100vh, and on
+  // iOS that is the *large* viewport — it stays put when the address bar
+  // collapses on the first downward scroll, but window.innerHeight drops ~100px
+  // at that moment. Sizing the drawing buffer from innerHeight left it 13%
+  // shorter than the element it fills, so the scene stretched and the camera
+  // aspect re-framed in the same frame: the qubit lattice visibly jumped a
+  // little way into the first scroll, on phones only. Driving both off the
+  // element's own box makes browser chrome a non-event.
+  let lastW = 0;
+  let lastH = 0;
   function resize() {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    const w = canvas.clientWidth  || window.innerWidth;
+    const h = canvas.clientHeight || window.innerHeight;
+    if (w === lastW && h === lastH) return;
+    lastW = w;
+    lastH = h;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
   }
   window.addEventListener("resize", resize);
+  window.addEventListener("orientationchange", resize);
   resize();
 
   // ====================================================
