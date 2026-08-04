@@ -27,11 +27,18 @@ html.home-immersive body.home-body {
   font-family: var(--home-ui);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Horizontal overflow is clipped on the root ONLY, and deliberately not on
+   <body>. `overflow-x: hidden` computes `overflow-y: auto`, so putting it on
+   the body turns the body into its own scroll container. Stray overflow (the
+   scene backdrops bleed ~10px past the last section) gave that container a
+   ~10px scroll range, and a touch drag latches onto the innermost scroller it
+   hits: the finger spent the whole gesture on those 10px and the page itself
+   never moved. The root's value propagates to the viewport, so keeping it here
+   clips the same content without creating a second scroller. */
+html.home-immersive {
   overflow-x: hidden;
-  /* Explicitly allow vertical pan — iOS Safari sometimes guesses wrong
-     when there's a fixed WebGL canvas above the content. */
-  touch-action: pan-y;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* Hide the standard masthead/footer chrome on the home page */

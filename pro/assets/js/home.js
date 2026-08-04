@@ -682,25 +682,35 @@
     { until: 0.777, label: "10¹¹ m",  color: "#ffd27a", caption: "solar" },
     { until: 1.010, label: "10²¹ m",  color: "#dde3ff", caption: "galaxy" },
   ];
-  ScrollTrigger.create({
+  function applyScaleReadout(progress) {
+    state.progress = progress;
+    const pct = progress * 100;
+    if (progressBar) progressBar.style.width = pct.toFixed(2) + "%";
+    if (scaleDot)   scaleDot.style.top       = pct.toFixed(2) + "%";
+    if (scaleLabel) {
+      const band = SCALE_BANDS.find(b => progress < b.until) || SCALE_BANDS[SCALE_BANDS.length - 1];
+      if (scaleLabel.textContent !== band.label) scaleLabel.textContent = band.label;
+      if (scaleDot) {
+        scaleDot.style.background = band.color;
+        scaleDot.style.boxShadow  = `0 0 12px ${band.color}`;
+      }
+    }
+  }
+
+  const readoutTrigger = ScrollTrigger.create({
     trigger: "#home-main",
     start: "top top",
     end: "bottom bottom",
-    onUpdate: (self) => {
-      state.progress = self.progress;
-      const pct = self.progress * 100;
-      if (progressBar) progressBar.style.width = pct.toFixed(2) + "%";
-      if (scaleDot)   scaleDot.style.top       = pct.toFixed(2) + "%";
-      if (scaleLabel) {
-        const band = SCALE_BANDS.find(b => self.progress < b.until) || SCALE_BANDS[SCALE_BANDS.length - 1];
-        if (scaleLabel.textContent !== band.label) scaleLabel.textContent = band.label;
-        if (scaleDot) {
-          scaleDot.style.background = band.color;
-          scaleDot.style.boxShadow  = `0 0 12px ${band.color}`;
-        }
-      }
-    },
+    onUpdate: (self) => applyScaleReadout(self.progress),
   });
+
+  // onUpdate only fires once the scroll position *changes*, so on a fresh load
+  // the ruler kept whatever markup shipped in the HTML — it read 10⁻¹⁰ m at the
+  // top of the page until you scrolled away and back. Seed it from the
+  // trigger's own progress, which is also correct when a browser restores a
+  // mid-page scroll position on reload.
+  applyScaleReadout(readoutTrigger.progress);
+  window.addEventListener("load", () => applyScaleReadout(readoutTrigger.progress));
 
   // ====================================================
   // RENDER LOOP — continuous ambient motion + state apply
