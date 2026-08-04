@@ -486,7 +486,15 @@ html[lang="vi"] [lang="en"] { display: none !important; }
 .home-scale {
   position: fixed;
   right: 26px;
+  /* Anchored to the *small* viewport, not a percentage. A percentage resolves
+     against whatever height the browser is currently using, and a phone
+     changes that by ~100px every time its address bar retracts or expands
+     mid-scroll — which slid this ruler up and down by half that, ~50px, while
+     the top:0 nav and progress bar stayed put. svh is defined to stay fixed
+     across those transitions, so the ruler holds still. % is the fallback for
+     browsers without the unit (Safari <15.4, Firefox <101). */
   top: 50%;
+  top: 50svh;
   transform: translateY(-50%);
   z-index: 40;
   display: flex;
@@ -563,6 +571,14 @@ html[lang="vi"] [lang="en"] { display: none !important; }
     right: 10px;
     gap: 6px;
     font-size: 10px;
+    /* Pinned by a constant offset instead of centred, so there is no viewport
+       height in the position at all. Phones are the only place where that
+       height moves under you — the address bar retracts as you scroll — and
+       anything centred against it slides by half the change. 240px lands it
+       within a few px of where centring already put it while the address bar
+       is showing. */
+    top: 240px;
+    transform: none;
   }
   .home-scale__rail   { width: 2px; height: 180px; }
   .home-scale__dot    { width: 9px;  height: 9px; right: -4px; }
