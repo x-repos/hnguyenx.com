@@ -221,6 +221,62 @@ ul.entries li {
   text-decoration: none;
 }
 
+.pi-marks {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.1rem;
+}
+
+.pi-marks:hover {
+  text-decoration: none;
+}
+
+/* the marks are masked, not drawn, so they always take the site accent —
+   the source SVGs recolour themselves under a dark system preference */
+.pi-marks .mark {
+  width: 2.75rem;
+  height: 2.75rem;
+  background-color: var(--accent);
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  transition: transform 0.25s ease;
+}
+
+.mark-glyph {
+  -webkit-mask-image: url("pi/downloads/pi-mark.svg");
+  mask-image: url("pi/downloads/pi-mark.svg");
+}
+
+.mark-ring-thin {
+  -webkit-mask-image: url("pi/downloads/pi-ring-thin.svg");
+  mask-image: url("pi/downloads/pi-ring-thin.svg");
+}
+
+.mark-ring-bold {
+  -webkit-mask-image: url("pi/downloads/pi-ring-bold.svg");
+  mask-image: url("pi/downloads/pi-ring-bold.svg");
+}
+
+.mark-disc {
+  -webkit-mask-image: url("pi/downloads/pi-disc.svg");
+  mask-image: url("pi/downloads/pi-disc.svg");
+}
+
+.pi-marks:hover .mark,
+.pi-marks:focus-visible .mark {
+  transform: translateY(-3px);
+}
+
+.pi-marks:hover .pi-marks-label,
+.pi-marks:focus-visible .pi-marks-label {
+  text-decoration: underline;
+}
+
 @property --pro-angle {
   syntax: "<angle>";
   initial-value: 0deg;
@@ -269,6 +325,11 @@ ul.entries li {
   .pro-button:focus-visible,
   .about img:hover {
     animation: none;
+  }
+
+  .pi-marks:hover .mark,
+  .pi-marks:focus-visible .mark {
+    transform: none;
   }
 }
 
