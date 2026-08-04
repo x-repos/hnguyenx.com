@@ -232,6 +232,11 @@ ul.entries li {
   text-decoration: none;
 }
 
+/* h2 is uppercased, which would fold π into Π */
+h2 .glyph {
+  text-transform: none;
+}
+
 /* the marks are masked, not drawn, so they always take the site accent —
    the source SVGs recolour themselves under a dark system preference */
 .pi-marks .mark {
