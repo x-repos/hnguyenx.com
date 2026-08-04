@@ -28,6 +28,11 @@
   box-sizing: border-box;
 }
 
+html {
+  /* keep #anchor targets clear of the sticky header */
+  scroll-padding-top: 5rem;
+}
+
 img {
   max-width: 100%;
   height: auto;
@@ -35,7 +40,7 @@ img {
 
 body {
   margin: 0 auto;
-  padding: 2.5rem 1.25rem 4rem;
+  padding: 1.75rem 1.25rem 4rem;
   max-width: 52rem;
   background: var(--bg);
   color: var(--text);
@@ -66,13 +71,17 @@ a:focus-visible {
 }
 
 header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   flex-wrap: wrap;
   gap: 0.25rem 1rem;
+  background: var(--bg);
   border-bottom: 1px solid var(--hairline);
-  padding-bottom: 0.75rem;
+  padding: 0.75rem 0;
   margin-bottom: 2rem;
 }
 
@@ -86,6 +95,26 @@ nav {
   align-items: baseline;
   gap: 1rem;
   font-size: 1rem;
+}
+
+/* keep the sticky bar shallow on phones, where it would otherwise wrap to three lines */
+@media (max-width: 30rem) {
+  html {
+    scroll-padding-top: 7.5rem;
+  }
+
+  header {
+    padding: 0.5rem 0;
+  }
+
+  .site-name {
+    font-size: 1rem;
+  }
+
+  nav {
+    gap: 0.15rem 0.7rem;
+    font-size: 0.9rem;
+  }
 }
 
 .about {
