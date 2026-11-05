@@ -410,3 +410,10 @@ footer {
 .visitor-flag {
   font-size: 1rem;
 }
+
+#publications h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 1.25rem 0 0.6rem;
+}
