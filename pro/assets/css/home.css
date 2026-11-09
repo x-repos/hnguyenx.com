@@ -3,7 +3,7 @@
    ========================================================= */
 
 :root {
-  --home-bg: #03060d;
+  --home-bg: #000000;
   --home-bg-mid: #0a0a14;
   --home-bg-deep: #1a0608;
   --home-fg: #ffffff;
@@ -60,7 +60,7 @@ html.home-immersive a { color: var(--home-accent); }
   align-items: center;
   padding: 14px 28px;
   gap: 8px;
-  background: linear-gradient(180deg, rgba(3,6,13,0.92), rgba(3,6,13,0.55));
+  background: linear-gradient(180deg, rgba(0,0,0,0.88), rgba(0,0,0,0.35));
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   font-family: var(--home-ui);
@@ -298,11 +298,17 @@ html[lang="vi"] [lang="en"] { display: none !important; }
   height: 100vh;
   z-index: 0;
   display: block;
-  background: radial-gradient(ellipse at 50% 40%, #0a1224 0%, #03060d 60%, #000 100%);
+  background: #000;
   /* Critical for mobile: let touches pass through so the page can scroll. */
   pointer-events: none;
   touch-action: pan-y;
 }
+/* Fade the 3D scene in once its first frame is drawn, instead of popping. */
+html.js #home-canvas {
+  opacity: 0;
+  transition: opacity 1.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+html.js #home-canvas.is-ready { opacity: 1; }
 
 /* ---------- Scroll progress bar ---------- */
 .home-progress {
@@ -316,9 +322,10 @@ html[lang="vi"] [lang="en"] { display: none !important; }
 }
 .home-progress__bar {
   height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, var(--home-accent), var(--home-accent-warm), var(--home-accent-hot), var(--home-accent-quantum));
-  transition: width 0.1s linear;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, #3d7bff, #4fe3ff, #ffe14d, #ff5a36);
 }
 
 /* ---------- Scenes ---------- */
@@ -382,20 +389,20 @@ html[lang="vi"] [lang="en"] { display: none !important; }
 .home-scene__eyebrow {
   font-family: var(--home-ui);
   font-size: 12px;
-  letter-spacing: 0.24em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--home-accent);
+  color: rgba(255, 255, 255, 0.55);
   margin: 0 0 18px;
   text-shadow: var(--home-textshadow);
 }
 
 .home-scene__title {
-  font-family: var(--home-display);
+  font-family: var(--home-ui);
   font-weight: 600;
-  font-size: clamp(2rem, 5vw, 3.6rem);
-  line-height: 1.1;
-  margin: 0 0 18px;
-  letter-spacing: -0.01em;
+  font-size: clamp(2rem, 4.4vw, 3.5rem);
+  line-height: 1.06;
+  margin: 0 0 22px;
+  letter-spacing: -0.03em;
   color: var(--home-fg);
   text-shadow: var(--home-textshadow);
 }
@@ -413,7 +420,7 @@ html[lang="vi"] [lang="en"] { display: none !important; }
 .home-scene__body {
   font-size: 1.05rem;
   line-height: 1.75;
-  color: var(--home-muted);
+  color: rgba(255, 255, 255, 0.66);
   margin: 0 auto;
   max-width: 60ch;
   text-shadow: 0 1px 2px rgba(0,0,0,0.85);
@@ -421,17 +428,39 @@ html[lang="vi"] [lang="en"] { display: none !important; }
 .home-scene__body strong { color: #ffffff; font-weight: 600; }
 
 .home-scene__cta {
-  margin-top: 28px;
-  font-size: 13px;
-  letter-spacing: 0.2em;
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  font-size: 11px;
+  letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--home-muted);
-  opacity: 0.7;
-  animation: home-bounce 2.4s ease-in-out infinite;
 }
-@keyframes home-bounce {
-  0%, 100% { transform: translateY(0); opacity: 0.5; }
-  50%      { transform: translateY(6px); opacity: 0.9; }
+.home-scene__cta > span[lang] { opacity: 0.75; }
+/* Thin rail with a light that travels down it: a quiet "keep scrolling". */
+.home-scroll-cue {
+  position: relative;
+  display: block;
+  width: 1px;
+  height: 48px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.14);
+}
+.home-scroll-cue::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(143, 214, 255, 0), var(--home-accent));
+  animation: home-scroll-cue 2.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@keyframes home-scroll-cue {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(200%); }
 }
 
 /* ---------- Hero specifics ---------- */
@@ -473,14 +502,40 @@ html[lang="vi"] [lang="en"] { display: none !important; }
 
 /* ---------- Per-scene tints (background gradients layered over canvas) ---------- */
 /* Narrative: qubits -> dft -> atoms (md) -> mantle -> planet -> outro */
-.home-scene--hero    { background: transparent; }
-.home-scene--dft     { background: linear-gradient(180deg, rgba(20,8,40,0) 0%, rgba(20,8,40,0.4) 100%); }
-.home-scene--atoms   { background: linear-gradient(180deg, rgba(20,8,40,0.4) 0%, rgba(40,16,8,0.45) 100%); }
-.home-scene--mantle  { background: linear-gradient(180deg, rgba(40,16,8,0.45) 0%, rgba(80,18,8,0.55) 100%); }
-.home-scene--planet  { background: linear-gradient(180deg, rgba(80,18,8,0.55) 0%, rgba(8,18,40,0.55) 100%); }
-.home-scene--solar   { background: linear-gradient(180deg, rgba(8,18,40,0.55) 0%, rgba(40,12,40,0.5) 100%); }
-.home-scene--galaxy  { background: linear-gradient(180deg, rgba(40,12,40,0.5) 0%, rgba(8,6,28,0.6) 100%); }
-.home-scene--outro   { background: linear-gradient(180deg, rgba(8,6,28,0.6) 0%, rgba(3,6,13,1) 100%); }
+/* Pure black stage: the particle cloud carries all the colour. */
+.home-scene { background: transparent; }
+
+/* Wide screens: research scenes read as a left-hand column while the
+   particle cloud sits on the right (home.js shifts the camera to match).
+   The hero and the outro stay centred. */
+@media (min-width: 960px) {
+  .home-scene:not(.home-scene--hero):not(.home-scene--outro) {
+    justify-content: flex-start;
+    padding-left: max(56px, 6vw);
+  }
+  .home-scene:not(.home-scene--hero):not(.home-scene--outro) .home-scene__inner {
+    max-width: 500px;
+    text-align: left;
+    padding: 0;
+  }
+  .home-scene:not(.home-scene--hero):not(.home-scene--outro) .home-scene__inner::before {
+    display: none;
+  }
+  .home-scene:not(.home-scene--hero):not(.home-scene--outro) .home-scene__body {
+    margin: 0;
+  }
+  .home-scene:not(.home-scene--hero):not(.home-scene--outro) .home-scene__title br {
+    display: none;
+  }
+}
+/* Hero: a light scrim instead of a heavy blur, so the qubit lattice
+   framing the portrait stays crisp. */
+.home-scene--hero .home-scene__inner::before {
+  inset: 4% 14%;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
 
 /* ---------- Scale indicator (powers of 10 ruler) ---------- */
 .home-scale {
@@ -521,12 +576,11 @@ html[lang="vi"] [lang="en"] { display: none !important; }
   right: -5px;
   width: 13px; height: 13px;
   border-radius: 50%;
-  background: var(--home-accent);
-  box-shadow: 0 0 18px var(--home-accent);
+  background: #fff;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.6);
   transform: translateY(-50%);
   /* No transition on top — let it update at scroll-tick frame rate so
      it stays exactly in sync with the trail. */
-  transition: background 0.3s ease, box-shadow 0.3s ease;
   top: 0%;
   z-index: 10;
 }
@@ -708,21 +762,20 @@ html[lang="vi"] [lang="en"] { display: none !important; }
   display: inline-block;
   position: relative;
   transition: transform 0.25s ease;
-  animation: ben-bright-doom 1.8s ease-in-out infinite;
+  animation: ben-bright-doom 4.5s ease-in-out infinite;
 }
+/* A slow, soft green breath: still hints that "Ben" is clickable,
+   without a strobe competing with the scene. */
 @keyframes ben-bright-doom {
-  /* DOOM — dim, almost swallowed by the void */
   0%, 100% {
-    color: rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.92);
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
   }
-  /* BRIGHT — full Omnitrix green flare */
   50% {
-    color: #d8ffd8;
+    color: #e4ffe4;
     text-shadow:
-      0 0 10px #7fff7f,
-      0 0 26px rgba(127, 255, 127, 0.85),
-      0 0 52px rgba(127, 255, 127, 0.55),
+      0 0 14px rgba(127, 255, 127, 0.45),
+      0 0 36px rgba(127, 255, 127, 0.22),
       0 1px 2px rgba(0, 0, 0, 0.85);
   }
 }
@@ -881,11 +934,16 @@ html[lang="vi"] [lang="en"] { display: none !important; }
 }
 .home-visitors__hello { letter-spacing: 0.01em; }
 
+/* ---------- Lenis smooth scroll ---------- */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
 /* ---------- Reduced motion / fallback ---------- */
 @media (prefers-reduced-motion: reduce) {
   #home-canvas { display: none; }
   .home-scene { min-height: auto; padding: 60px 32px; }
-  .home-scene__cta { animation: none; }
+  .home-scroll-cue::after { animation: none; transform: none; }
 }
 
 /* Show static images inline if WebGL isn't running (JS sets this class on body) */
