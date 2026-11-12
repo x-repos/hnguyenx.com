@@ -16,9 +16,16 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 .hub { max-width: 920px; margin: 0 auto; padding: calc(28px + env(safe-area-inset-top)) 20px 48px; }
-.hub__back { margin: 0 0 28px; font-size: 0.95rem; }
-.hub__back a { color: #b9c2d6; text-decoration: none; border-bottom: 1px solid rgba(255, 255, 255, 0.25); padding-bottom: 2px; }
-.hub__back a:hover { color: #fff; }
+/* the π logo, as in Pro Mode: the site's mark filled with the Pro gradient */
+.hub__brand { display: block; width: -moz-fit-content; width: fit-content; margin: 0 0 30px; line-height: 0; }
+.brand-pi {
+  display: inline-block; width: 36px; height: 36px;
+  background: linear-gradient(135deg, #8fd6ff 0%, #c9a8ff 60%, #ffc28a 100%);
+  -webkit-mask: url("../pi/downloads/pi-mark.svg") center / 112% no-repeat;
+          mask: url("../pi/downloads/pi-mark.svg") center / 112% no-repeat;
+  transition: transform 0.25s ease, filter 0.25s ease;
+}
+.hub__brand:hover .brand-pi, .hub__brand:focus-visible .brand-pi { transform: scale(1.08) rotate(-3deg); filter: brightness(1.2); }
 .hub h1 {
   margin: 0; font-size: clamp(2.8rem, 10vw, 4.4rem); line-height: 1; letter-spacing: -0.03em;
   background: linear-gradient(135deg, #8fd6ff 0%, #c9a8ff 60%, #ffc28a 100%);
