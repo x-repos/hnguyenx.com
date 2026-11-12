@@ -849,7 +849,10 @@ html.is-scrubbing, html.is-scrubbing * { cursor: grabbing !important; user-selec
   object-fit: cover;
   overflow: hidden;
   /* bright rim (the glow around it is on .hero-portrait-flip, because the
-     circular clip on the image would cut a shadow off) */
+     circular clip on the image would cut a shadow off). border-box keeps the
+     rim inside the 160px circle, exactly under the glow: without it the image
+     grew by the border width and sat 3px off-centre. */
+  box-sizing: border-box;
   border: 3px solid rgba(255, 255, 255, 0.95);
   filter: saturate(1.05);
   -webkit-backface-visibility: hidden;
