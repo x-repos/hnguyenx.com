@@ -238,7 +238,17 @@ html[lang="vi"] [lang="en"] { display: none !important; }
 
 /* ---------- Mobile (≤720px) ---------- */
 @media (max-width: 720px) {
-  .home-topnav { padding: 10px 16px; }
+  /* row-gap 0: the collapsed link rows below the logo are zero-height flex
+     lines, and a row gap for each of them used to add 16px of empty space
+     under the logo, so the bar was not centred on it. */
+  .home-topnav {
+    padding: 10px 16px;
+    gap: 0 8px;
+    transition: transform 0.28s ease;
+    will-change: transform;
+  }
+  /* Scrolling down hides the bar; scrolling up brings it back (set by nav.js). */
+  .home-topnav.is-hidden { transform: translateY(-105%); }
 
   /* Hamburger sits at the far-right on mobile (primary collapses below
      so margin-left:auto on primary no longer pushes the toggle over) */

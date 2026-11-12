@@ -1475,7 +1475,9 @@
   // come from different parts of a font (¹ vs ⁵) and render at uneven sizes.
   const sci = (e) => "10<sup>" + String(e).replace("-", "\u2212") + "</sup> m";
   const SCALE_FOR_SCENE = {
-    qubits: sci(-15), quantum: sci(-15), dft: sci(-10), md: sci(-9),
+    // a qubit is a unit of information, not a length (a superconducting qubit
+    // is far bigger than an atom), so the first two scenes show a count
+    qubits: "1 qubit", quantum: "1 qubit", dft: sci(-10), md: sci(-9),
     mantle: sci(6), planet: sci(7), solar: sci(11), galaxy: sci(21), outro: sci(21),
   };
   let shownLabel = "";

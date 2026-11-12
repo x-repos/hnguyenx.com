@@ -487,3 +487,32 @@
     document.addEventListener("keydown", onKey);
   }
 })();
+
+/* =========================================================
+   Top bar on phones: slide away while scrolling down, come
+   back as soon as the page is scrolled up (the CSS only acts
+   on this class below 720px).
+   ========================================================= */
+(function () {
+  var nav = document.querySelector("nav.home-topnav");
+  if (!nav) return;
+  var lastY = window.scrollY, anchor = lastY, ticking = false;
+  function update() {
+    ticking = false;
+    var y = window.scrollY;
+    if (nav.classList.contains("is-open") || y < 80) {
+      nav.classList.remove("is-hidden");
+      anchor = y;
+    } else if (y > lastY) {            // going down
+      if (y - anchor > 24) nav.classList.add("is-hidden");
+    } else if (y < lastY) {            // going up
+      if (anchor - y > 8 || lastY - y > 4) nav.classList.remove("is-hidden");
+    }
+    // the anchor follows the scroll whenever the direction reverses
+    if ((y > lastY && anchor > y) || (y < lastY && anchor < y)) anchor = lastY;
+    lastY = y;
+  }
+  window.addEventListener("scroll", function () {
+    if (!ticking) { ticking = true; requestAnimationFrame(update); }
+  }, { passive: true });
+})();
