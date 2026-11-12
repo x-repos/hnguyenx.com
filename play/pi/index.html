@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Pi Flight</title>
+  <meta name="description" content="Pi Flight: fly π through its own digits. How many decimal places can you reach?">
+  <meta name="theme-color" content="#fffdf8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#14110c" media="(prefers-color-scheme: dark)">
+  <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg?v=3">
+  <link rel="icon" type="image/png" sizes="32x32" href="../../assets/favicon-32.png?v=3">
+  <link rel="apple-touch-icon" sizes="180x180" href="../../assets/apple-touch-icon.png?v=3">
+  <link rel="stylesheet" href="pi.css?v=1">
+</head>
+<body>
+  <canvas id="game" aria-label="Pi Flight game"></canvas>
+
+  <button class="round" id="btn-mute" type="button" aria-label="Sound on or off">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 9v6h4l6 5V4L7 9H3z"/>
+      <path class="snd-on" d="M16.5 8.5a5 5 0 0 1 0 7M19 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="snd-off" d="M16.5 9l5.5 6m0-6l-5.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+    </svg>
+  </button>
+
+  <div class="panel" id="start">
+    <h1>Pi Flight</h1>
+    <p class="panel__sub">Fly π through its own digits.</p>
+    <p class="panel__how">Every gate is the next digit of π. A high digit puts the gap high, a low digit puts it low, so the course is the shape of π itself and never changes. Learn it.</p>
+    <p class="panel__tap">Tap, click or press Space to fly</p>
+    <p class="panel__best" id="start-best"></p>
+    <p class="panel__links"><a href="../">Starship</a><a href="../../">Home</a></p>
+  </div>
+
+  <div class="panel" id="over" hidden>
+    <p class="panel__digits" id="over-digits"></p>
+    <h2 id="over-count"></h2>
+    <p class="panel__rank" id="over-rank"></p>
+    <p class="panel__best" id="over-best"></p>
+    <p class="panel__unlock" id="over-unlock" hidden></p>
+    <div class="panel__buttons">
+      <button type="button" id="btn-again">Fly again</button>
+      <button type="button" id="btn-share" class="quiet" hidden>Share</button>
+    </div>
+    <p class="panel__links"><a href="../">Starship</a><a href="../../">Home</a></p>
+  </div>
+
+  <script src="pi.js?v=1"></script>
+</body>
+</html>

@@ -773,8 +773,8 @@ html.is-scrubbing, html.is-scrubbing * { cursor: grabbing !important; user-selec
   text-align: left;
 }
 @media (min-width: 720px) {
-  /* two cards (Starship, Blog): compact and centred */
-  .home-outro__grid { grid-template-columns: repeat(2, minmax(0, 280px)); justify-content: center; }
+  /* three cards (Starship, Pi Flight, Blog): compact and centred */
+  .home-outro__grid { grid-template-columns: repeat(3, minmax(0, 240px)); justify-content: center; }
 }
 .home-outro__card {
   display: block;

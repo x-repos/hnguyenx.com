@@ -11,6 +11,7 @@ Hand-written static HTML/CSS, no build step, hosted on GitHub Pages.
 - `pro/` — animated "Pro Mode" homepage (three.js/GSAP, ported from the old site)
 - `blog/` — blog index and posts
 - `play/` — Starship, a canvas arcade shooter (no assets, no build step)
+- `play/pi/` — Pi Flight, a one-button flyer through the digits of π
 - `files/` — public PDFs (CV, etc.)
 - `assets/` — photo, CV, favicon, fonts
 - `counter-worker/` — Cloudflare Worker that tallies visits by country (KV-backed)
