@@ -698,7 +698,44 @@ html.js #home-canvas.is-ready { opacity: 1; }
   border: 0;
   cursor: pointer;
   perspective: 1000px;
-  animation: hero-portrait-rise 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  position: relative;
+  animation:
+    hero-portrait-rise 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both,
+    hero-portrait-float 5.5s ease-in-out 1.2s infinite;
+}
+/* Two glowing arcs orbit the portrait like electrons, tilted in 3D and
+   turning opposite ways. */
+.hero-portrait-flip::before,
+.hero-portrait-flip::after {
+  content: "";
+  position: absolute;
+  inset: -16px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: conic-gradient(from 0deg, transparent 0 62%, rgba(143, 214, 255, 0.0) 62%, rgba(143, 214, 255, 0.95) 97%, #fff 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+  filter: drop-shadow(0 0 6px rgba(143, 214, 255, 0.9));
+  animation: hero-orbit-a 3.2s linear infinite;
+}
+.hero-portrait-flip::after {
+  inset: -28px;
+  background: conic-gradient(from 0deg, transparent 0 70%, rgba(255, 170, 120, 0.0) 70%, rgba(255, 170, 120, 0.95) 97%, #fff 100%);
+  filter: drop-shadow(0 0 6px rgba(255, 150, 100, 0.9));
+  animation: hero-orbit-b 4.6s linear infinite;
+}
+@keyframes hero-orbit-a {
+  from { transform: rotateX(62deg) rotateY(18deg) rotateZ(0deg); }
+  to   { transform: rotateX(62deg) rotateY(18deg) rotateZ(360deg); }
+}
+@keyframes hero-orbit-b {
+  from { transform: rotateX(-58deg) rotateY(-32deg) rotateZ(360deg); }
+  to   { transform: rotateX(-58deg) rotateY(-32deg) rotateZ(0deg); }
+}
+@keyframes hero-portrait-float {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  30%      { transform: translate3d(3px, -9px, 0) rotate(1.2deg); }
+  65%      { transform: translate3d(-4px, 5px, 0) rotate(-1.4deg); }
 }
 .hero-portrait-flip:focus-visible {
   outline: 2px dashed rgba(143, 214, 255, 0.7);
@@ -711,10 +748,12 @@ html.js #home-canvas.is-ready { opacity: 1; }
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
-  transition: transform 0.85s cubic-bezier(0.4, 0, 0.2, 1);
+  /* --tx / --ty: the portrait leans toward the cursor (set from home.js) */
+  transform: rotateX(var(--tx, 0deg)) rotateY(calc(var(--ty, 0deg) + var(--flip, 0deg)));
+  transition: transform 0.85s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 .hero-portrait-flip[aria-pressed="true"] .hero-portrait-flip__inner {
-  transform: rotateY(180deg);
+  --flip: 180deg;
 }
 .hero-portrait {
   position: absolute;
@@ -753,6 +792,8 @@ html.js #home-canvas.is-ready { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
   .hero-portrait-flip,
+  .hero-portrait-flip::before,
+  .hero-portrait-flip::after,
   .hero-portrait-flip__inner { animation: none; transition: none; }
 }
 

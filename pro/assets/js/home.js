@@ -100,15 +100,22 @@
   // slow rotation), alpha.
   // ====================================================
   const N = isMobile ? 12000 : 30000;
+  // Extra "time" the planet's interior has been stirred by (cursor motion and
+  // clicks speed the convection up), and the decaying click surge behind it.
+  let flowClock = 0, flowSurge = 0;
 
-  function makeShape(tilt, fill) {
+  // `aux` floats per particle can be stored for shapes that keep moving
+  // after they form (see the `animate` hooks below).
+  function makeShape(tilt, fill, aux = 0) {
     const pos = new Float32Array(N * 3);
     const field = new Float32Array(N * 4);
+    const ax = new Float32Array(N * Math.max(aux, 1));
     let i = 0;
-    function add(p, heat, tint, spin, alpha) {
+    function add(p, heat, tint, spin, alpha, extra) {
       if (i >= N) return false;
       pos[i * 3] = p[0]; pos[i * 3 + 1] = p[1]; pos[i * 3 + 2] = p[2];
       field[i * 4] = heat; field[i * 4 + 1] = tint; field[i * 4 + 2] = spin; field[i * 4 + 3] = alpha;
+      if (extra) for (let q = 0; q < aux; q++) ax[i * aux + q] = extra[q];
       i++;
       return true;
     }
@@ -118,7 +125,8 @@
     const last = Math.max(0, i - 1);
     while (i < N) {
       add([pos[last * 3] + gauss() * 0.02, pos[last * 3 + 1] + gauss() * 0.02, pos[last * 3 + 2] + gauss() * 0.02],
-          field[last * 4], field[last * 4 + 1], field[last * 4 + 2], field[last * 4 + 3]);
+          field[last * 4], field[last * 4 + 1], field[last * 4 + 2], field[last * 4 + 3],
+          aux ? Array.from(ax.subarray(last * aux, last * aux + aux)) : null);
     }
     // Order particles left-to-right (with a diagonal bias) so that, during a
     // morph, neighbours travel together and the cloud reads as one flow.
@@ -129,78 +137,171 @@
       key[k] = pos[k * 3] + 0.35 * pos[k * 3 + 1] + (rand() - 0.5) * 0.6;
     }
     idx.sort((a, b) => key[a] - key[b]);
-    const p2 = new Float32Array(N * 3), f2 = new Float32Array(N * 4);
+    const p2 = new Float32Array(N * 3), f2 = new Float32Array(N * 4), a2 = new Float32Array(N * Math.max(aux, 1));
     for (let k = 0; k < N; k++) {
       const j = idx[k];
       p2[k * 3] = pos[j * 3]; p2[k * 3 + 1] = pos[j * 3 + 1]; p2[k * 3 + 2] = pos[j * 3 + 2];
       f2[k * 4] = field[j * 4]; f2[k * 4 + 1] = field[j * 4 + 1]; f2[k * 4 + 2] = field[j * 4 + 2]; f2[k * 4 + 3] = field[j * 4 + 3];
+      for (let q = 0; q < aux; q++) a2[k * aux + q] = ax[j * aux + q];
     }
-    return { pos: p2, field: f2, tilt };
+    return { pos: p2, field: f2, aux: a2, tilt, animate: null };
   }
 
   // 1) Qubit lattice: 9×6 grid of qubits joined by couplers.
+  //    Alive at rest: every qubit spins and Rabi-oscillates between |0⟩ (blue)
+  //    and |1⟩ (red), a ripple runs through the chip, and gate pulses sweep
+  //    across the couplers while current streams along them.
+  //    aux: [kind (0 qubit, 1 coupler), site/edge index, ox, oy, oz, t0]
   function shapeLattice() {
-    return makeShape(-0.35, (add, left) => {
-      const COLS = 9, ROWS = 6, SP = 0.56;
-      const sites = [];
-      for (let r = 0; r < ROWS; r++)
-        for (let c = 0; c < COLS; c++)
-          sites.push({ x: (c - (COLS - 1) / 2) * SP, y: (r - (ROWS - 1) / 2) * SP, h: 0.15 + rand() * 0.8 });
+    const COLS = 9, ROWS = 6, SP = 0.56;
+    const sites = [];
+    for (let r = 0; r < ROWS; r++)
+      for (let c = 0; c < COLS; c++)
+        sites.push({
+          x: (c - (COLS - 1) / 2) * SP, y: (r - (ROWS - 1) / 2) * SP, h: 0.15 + rand() * 0.8,
+          w: 1.2 + rand() * 2.4, rabi: 0.7 + rand() * 1.6, ph: rand() * TAU,
+          ax: onSphere(1), z: 0, heat: 0,
+        });
+    const edges = [];
+    for (let r = 0; r < ROWS; r++)
+      for (let c = 0; c < COLS; c++) {
+        const a = r * COLS + c;
+        if (c < COLS - 1) edges.push([a, a + 1]);
+        if (r < ROWS - 1) edges.push([a, a + COLS]);
+      }
+    const shape = makeShape(-0.35, (add, left) => {
       const nodePts = Math.floor(left() * 0.62);
       for (let k = 0; k < nodePts; k++) {
-        const s = sites[k % sites.length];
+        const si = k % sites.length, s = sites[si];
         const p = onSphere(0.085 + rand() * 0.025);
-        add([s.x + p[0], s.y + p[1], p[2]], s.h, 0.95, 0, 1);
+        add([s.x + p[0], s.y + p[1], p[2]], s.h, 0.95, 0, 1, [0, si, p[0], p[1], p[2], 0]);
       }
-      const edges = [];
-      for (let r = 0; r < ROWS; r++)
-        for (let c = 0; c < COLS; c++) {
-          const a = sites[r * COLS + c];
-          if (c < COLS - 1) edges.push([a, sites[r * COLS + c + 1]]);
-          if (r < ROWS - 1) edges.push([a, sites[(r + 1) * COLS + c]]);
-        }
       while (left() > 0) {
-        const e = edges[Math.floor(rand() * edges.length)];
+        const ei = Math.floor(rand() * edges.length), e = edges[ei];
         const t = 0.2 + rand() * 0.6;
-        add([lerp(e[0].x, e[1].x, t) + gauss() * 0.006, lerp(e[0].y, e[1].y, t) + gauss() * 0.006, gauss() * 0.006], 0, 0, 0, 0.55);
+        const a = sites[e[0]], b = sites[e[1]];
+        const j = [gauss() * 0.006, gauss() * 0.006, gauss() * 0.006];
+        add([lerp(a.x, b.x, t) + j[0], lerp(a.y, b.y, t) + j[1], j[2]], 0, 0, 0, 0.55, [1, ei, j[0], j[1], j[2], t]);
       }
-    });
+    }, 6);
+    shape.animate = (t, P, F) => {
+      // Gate pulse: a bright front crossing the chip every few seconds.
+      const front = ((t * 0.55) % 3.2) * 2.4 - 3.4;
+      const burst = (t - pokeAt) * 3.2; // click: a ring of gates spreading from the centre
+      for (const s of sites) {
+        s.z = 0.16 * Math.sin(1.9 * s.x - 1.3 * s.y - t * 2.1) + 0.06 * Math.sin(3.1 * s.y + t * 3.3 + s.ph);
+        s.heat = 0.5 + 0.47 * Math.sin(t * s.rabi + s.ph);
+        s.ang = t * s.w;
+        s.g = Math.exp(-Math.pow((s.x * 0.8 + s.y * 0.6) - front, 2) / 0.08);
+        if (burst < 6) {
+          const b = Math.exp(-Math.pow(Math.hypot(s.x, s.y) - burst, 2) / 0.1);
+          s.g = Math.max(s.g, b);
+          s.z += 0.45 * b;
+          s.heat = lerp(s.heat, 1, b);
+        }
+      }
+      const A = shape.aux;
+      for (let k = 0; k < N; k++) {
+        const o = k * 6, kind = A[o], idx = A[o + 1];
+        if (kind === 0) {
+          const s = sites[idx];
+          // spin the qubit's little sphere about its own axis (Rodrigues)
+          const ux = s.ax[0], uy = s.ax[1], uz = s.ax[2];
+          const vx = A[o + 2], vy = A[o + 3], vz = A[o + 4];
+          const c = Math.cos(s.ang), sn = Math.sin(s.ang), dot = ux * vx + uy * vy + uz * vz;
+          const cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx;
+          const sc = 1 + 0.35 * s.g + 0.12 * Math.sin(t * 4 + s.ph);
+          P[k * 3]     = s.x + sc * (vx * c + cx * sn + ux * dot * (1 - c));
+          P[k * 3 + 1] = s.y + sc * (vy * c + cy * sn + uy * dot * (1 - c));
+          P[k * 3 + 2] = s.z + sc * (vz * c + cz * sn + uz * dot * (1 - c));
+          F[k * 4] = s.heat;
+          F[k * 4 + 3] = 0.85 + 0.15 * s.g;
+        } else {
+          const e = edges[idx], a = sites[e[0]], b = sites[e[1]];
+          // current streams along the coupler, direction alternating
+          let u = (A[o + 5] + t * (idx % 2 ? 0.35 : -0.35)) % 1;
+          if (u < 0) u += 1;
+          const tt = 0.12 + 0.76 * u;
+          P[k * 3]     = lerp(a.x, b.x, tt) + A[o + 2];
+          P[k * 3 + 1] = lerp(a.y, b.y, tt) + A[o + 3];
+          P[k * 3 + 2] = lerp(a.z, b.z, tt) + A[o + 4];
+          const g = Math.max(a.g, b.g);
+          F[k * 4] = 0.75 + 0.25 * g;
+          F[k * 4 + 1] = g;
+          F[k * 4 + 3] = 0.45 + 0.55 * g;
+        }
+      }
+      return 3;
+    };
+    let pokeAt = -99;
+    shape.poke = (t) => { pokeAt = t; };
+    return shape;
   }
 
-  // 2) Bloch sphere: shell, great circles, axes, state vector + precession.
+  // 2) Bloch sphere: shell, great circles, axes, and a live state vector.
+  //    |ψ⟩ precesses about z (Larmor) while θ nutates (a detuned Rabi drive),
+  //    leaving a fading trail of where its tip has been. Click = a π pulse
+  //    that flips the state through the sphere.
+  //    aux: [kind, a, b, c]  kind 0 frame, 1 vector, 2 tip, 3 trail
   function shapeBloch() {
-    return makeShape(0.32, (add, left) => {
-      const R = 1.45;
+    const R = 1.45;
+    const shape = makeShape(0.32, (add, left) => {
       const total = left();
-      for (let k = 0; k < total * 0.3; k++) add(onSphere(R), 0, 0, 1, 0.28);
+      for (let k = 0; k < total * 0.3; k++) add(onSphere(R), 0, 0, 1, 0.28, [0, 0, 0, 0]);
       for (let k = 0; k < total * 0.2; k++) {
         const a = rand() * TAU, which = k % 3;
         const c = Math.cos(a) * R, s = Math.sin(a) * R;
-        add(which === 0 ? [c, 0, s] : which === 1 ? [c, s, 0] : [0, s, c], 0, 0, 1, 0.7);
+        add(which === 0 ? [c, 0, s] : which === 1 ? [c, s, 0] : [0, s, c], 0, 0, 1, 0.7, [0, 0, 0, 0]);
       }
       for (let k = 0; k < total * 0.08; k++) {
         const t = (rand() * 2 - 1) * R * 1.12, which = k % 3;
-        add(which === 0 ? [t, 0, 0] : which === 1 ? [0, t, 0] : [0, 0, t], 0, 0, 1, 0.45);
+        add(which === 0 ? [t, 0, 0] : which === 1 ? [0, t, 0] : [0, 0, t], 0, 0, 1, 0.45, [0, 0, 0, 0]);
       }
-      // |ψ⟩ at θ = 50°, φ = 40°
-      const th = 50 * Math.PI / 180, ph = 40 * Math.PI / 180;
-      const dir = [Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)];
-      for (let k = 0; k < total * 0.17; k++) {
+      for (let k = 0; k < total * 0.15; k++) {
         const t = Math.pow(rand(), 0.7);
         const j = 0.012 + 0.03 * Math.max(0, (t - 0.85) / 0.15);
-        add([dir[0] * R * t + gauss() * j, dir[1] * R * t + gauss() * j, dir[2] * R * t + gauss() * j], 0.55 + 0.45 * t, 1, 1, 1);
+        add([0, R * t, 0], 0.55 + 0.45 * t, 1, 1, 1, [1, t, gauss() * j, gauss() * j]);
       }
       for (let k = 0; k < total * 0.06; k++) {
-        const p = onSphere(0.07);
-        add([dir[0] * R + p[0], dir[1] * R + p[1], dir[2] * R + p[2]], 1, 1, 1, 1);
+        const q = onSphere(0.075);
+        add([q[0], R + q[1], q[2]], 1, 1, 1, 1, [2, q[0], q[1], q[2]]);
       }
-      const rr = R * Math.sin(th), yy = R * Math.cos(th);
-      while (left() > 0) {
-        const a = rand() * TAU;
-        if (Math.sin(a * 12) < 0) continue; // dashed path
-        add([Math.cos(a) * rr, yy, Math.sin(a) * rr], 0.38, 1, 1, 0.9);
+      while (left() > 0) add([0, R, 0], 0.4, 1, 1, 0.9, [3, rand(), gauss() * 0.012, gauss() * 0.012]);
+    }, 4);
+    let flip = 0, flipTarget = 0;
+    const state = (t, out) => {
+      const th = (50 + 28 * Math.sin(t * 0.83) + 9 * Math.sin(t * 2.9)) * Math.PI / 180 + flip * Math.PI * 0.72;
+      const ph = t * 1.7 + 0.5 * Math.sin(t * 0.41);
+      out[0] = Math.sin(th) * Math.cos(ph); out[1] = Math.cos(th); out[2] = Math.sin(th) * Math.sin(ph);
+    };
+    const d = [0, 0, 0], e = [0, 0, 0];
+    let last = 0;
+    shape.animate = (t, P, F) => {
+      const dt = Math.min(0.05, Math.max(0, t - last)); last = t;
+      flip += (flipTarget - flip) * Math.min(1, dt * 5);
+      state(t, d);
+      const A = shape.aux, B = shape.pos, pulse = 1 + 0.025 * Math.sin(t * 2.2);
+      for (let k = 0; k < N; k++) {
+        const o = k * 4, kind = A[o];
+        if (kind === 0) {
+          P[k * 3] = B[k * 3] * pulse; P[k * 3 + 1] = B[k * 3 + 1] * pulse; P[k * 3 + 2] = B[k * 3 + 2] * pulse;
+        } else if (kind === 1) {
+          const u = A[o + 1] * R;
+          P[k * 3] = d[0] * u + A[o + 2]; P[k * 3 + 1] = d[1] * u + A[o + 3]; P[k * 3 + 2] = d[2] * u + A[o + 2];
+        } else if (kind === 2) {
+          const g = 1 + 0.5 * Math.sin(t * 6 + k);
+          P[k * 3] = d[0] * R + A[o + 1] * g; P[k * 3 + 1] = d[1] * R + A[o + 2] * g; P[k * 3 + 2] = d[2] * R + A[o + 3] * g;
+        } else {
+          const age = A[o + 1];
+          state(t - age * 2.6, e);
+          P[k * 3] = e[0] * R + A[o + 2]; P[k * 3 + 1] = e[1] * R + A[o + 3]; P[k * 3 + 2] = e[2] * R + A[o + 2];
+          F[k * 4] = 0.95 - 0.7 * age;
+          F[k * 4 + 3] = 0.95 * (1 - age) * (1 - age);
+        }
       }
-    });
+    };
+    shape.poke = () => { flipTarget = flipTarget ? 0 : 1; };
+    return shape;
   }
 
   // 3) Electron orbital: hydrogen 3d_z², sampled directly from |ψ|²
@@ -209,7 +310,7 @@
   //    and cosθ is drawn by rejection — no 3D trial-and-error.
   function shapeOrbital() {
     const SHARP = 1.35, S = 1.6 / 18;
-    return makeShape(0.2, (add, left) => {
+    const shape = makeShape(0.2, (add, left) => {
       const pts = [];
       let maxD = 0;
       const n = left();
@@ -227,129 +328,442 @@
       }
       for (const q of pts) add([q[0], q[1], q[2]], Math.pow(Math.min(1, q[3] / maxD * 1.3), 0.5), 0.9, 1, 1);
     });
+    // The cloud is a standing wave: probability sloshes between the lobes and
+    // the ring, shells breathe outward, and every point drifts around the axis
+    // at its own rate. Click = excite it (a burst of radial oscillation).
+    let kick = 0, last = 0;
+    shape.animate = (t, P, F) => {
+      const dt = Math.min(0.05, Math.max(0, t - last)); last = t;
+      kick *= Math.exp(-dt * 1.4);
+      const B = shape.pos, F0 = shape.field;
+      for (let k = 0; k < N; k++) {
+        const x = B[k * 3], y = B[k * 3 + 1], z = B[k * 3 + 2];
+        const rho = Math.hypot(x, z), r = Math.hypot(rho, y) + 1e-6;
+        const a = t * (0.9 / (0.35 + rho * 1.6)) * (y > 0 ? 1 : -1);
+        const c = Math.cos(a), sn = Math.sin(a);
+        const wave = Math.sin(r * 7 - t * 2.6);
+        const sc = 1 + 0.07 * wave + kick * 0.35 * Math.sin(r * 9 - t * 14);
+        const lobe = Math.abs(y) / r; // 1 on the axis lobes, 0 in the ring
+        const slosh = 1 + 0.16 * Math.sin(t * 1.1) * (lobe * 2 - 1);
+        P[k * 3] = (c * x + sn * z) * sc * (2 - slosh);
+        P[k * 3 + 1] = y * sc * slosh;
+        P[k * 3 + 2] = (-sn * x + c * z) * sc * (2 - slosh);
+        F[k * 4] = clamp01(F0[k * 4] + 0.16 * wave + kick * 0.3);
+      }
+    };
+    shape.poke = () => { kick = 1; };
+    return shape;
   }
 
   // 4) Silica network: Si on a diamond lattice, O at every Si–Si midpoint
-  //    (the β-cristobalite motif), bonds traced in white.
+  //    (the β-cristobalite motif), bonds traced in white. It is a running
+  //    simulation: every atom vibrates thermally, a pressure wave squeezes
+  //    through the cell, and the bonds stretch to follow. Click = shock it.
+  //    aux: [kind (0 Si, 1 O, 2 bond), index, ox, oy, oz]
   function shapeSilica() {
-    return makeShape(0.35, (add, left) => {
-      const A = 1.25, si = [];
-      const basis = [[0,0,0],[0,.5,.5],[.5,0,.5],[.5,.5,0],[.25,.25,.25],[.25,.75,.75],[.75,.25,.75],[.75,.75,.25]];
-      for (let a = -2; a <= 1; a++) for (let b = -2; b <= 1; b++) for (let c = -2; c <= 1; c++)
-        for (const q of basis) {
-          const p = [(a + q[0]) * A, (b + q[1]) * A, (c + q[2]) * A];
-          if (Math.hypot(p[0], p[1], p[2] * 1.4) < 1.75) si.push(p);
-        }
-      const nn = A * Math.sqrt(3) / 4 * 1.05;
-      const bonds = [];
-      for (let i = 0; i < si.length; i++) for (let j = i + 1; j < si.length; j++) {
-        const d = Math.hypot(si[i][0] - si[j][0], si[i][1] - si[j][1], si[i][2] - si[j][2]);
-        if (d < nn) bonds.push([si[i], si[j]]);
+    const A0 = 1.25, si = [];
+    const basis = [[0,0,0],[0,.5,.5],[.5,0,.5],[.5,.5,0],[.25,.25,.25],[.25,.75,.75],[.75,.25,.75],[.75,.75,.25]];
+    for (let a = -2; a <= 1; a++) for (let b = -2; b <= 1; b++) for (let c = -2; c <= 1; c++)
+      for (const q of basis) {
+        const p = [(a + q[0]) * A0, (b + q[1]) * A0, (c + q[2]) * A0];
+        if (Math.hypot(p[0], p[1], p[2] * 1.4) < 1.75) si.push(p);
       }
-      const ox = bonds.map(([p, q]) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2]);
+    const nn = A0 * Math.sqrt(3) / 4 * 1.05;
+    const bonds = [];
+    for (let i = 0; i < si.length; i++) for (let j = i + 1; j < si.length; j++) {
+      const d = Math.hypot(si[i][0] - si[j][0], si[i][1] - si[j][1], si[i][2] - si[j][2]);
+      if (d < nn) bonds.push([i, j]);
+    }
+    const mk = (p) => ({ p, w: [5 + rand() * 6, 5 + rand() * 6, 5 + rand() * 6], ph: [rand() * TAU, rand() * TAU, rand() * TAU], c: [0, 0, 0], e: 0 });
+    const siA = si.map(mk);
+    const oxA = bonds.map(([i, j]) => mk([(si[i][0] + si[j][0]) / 2, (si[i][1] + si[j][1]) / 2, (si[i][2] + si[j][2]) / 2]));
+    const shape = makeShape(0.35, (add, left) => {
       const total = left();
       for (let k = 0; k < total * 0.42; k++) {
-        const c = si[k % si.length], p = onSphere(0.12);
-        add([c[0] + p[0], c[1] + p[1], c[2] + p[2]], 0.82 + rand() * 0.12, 1, 1, 1);
+        const i = k % si.length, c = si[i], p = onSphere(0.12);
+        add([c[0] + p[0], c[1] + p[1], c[2] + p[2]], 0.82 + rand() * 0.12, 1, 1, 1, [0, i, p[0], p[1], p[2]]);
       }
       for (let k = 0; k < total * 0.33; k++) {
-        const c = ox[k % ox.length], p = onSphere(0.07);
-        add([c[0] + p[0], c[1] + p[1], c[2] + p[2]], 0.3 + rand() * 0.08, 1, 1, 1);
+        const i = k % oxA.length, c = oxA[i].p, p = onSphere(0.07);
+        add([c[0] + p[0], c[1] + p[1], c[2] + p[2]], 0.3 + rand() * 0.08, 1, 1, 1, [1, i, p[0], p[1], p[2]]);
       }
       while (left() > 0) {
-        const [p, q] = bonds[Math.floor(rand() * bonds.length)];
-        const t = rand();
-        add([lerp(p[0], q[0], t), lerp(p[1], q[1], t), lerp(p[2], q[2], t)], 0, 0, 1, 0.5);
+        const i = Math.floor(rand() * bonds.length), t = rand();
+        const p = si[bonds[i][0]], q = si[bonds[i][1]];
+        add([lerp(p[0], q[0], t), lerp(p[1], q[1], t), lerp(p[2], q[2], t)], 0, 0, 1, 0.5, [2, i, t, 0, 0]);
       }
-    });
+    }, 5);
+    let shockAt = -99;
+    function move(atoms, t, amp) {
+      const sh = (t - shockAt) * 2.6;
+      for (const a of atoms) {
+        const p = a.p;
+        // pressure wave along a body diagonal + thermal jiggle
+        const press = Math.sin(1.9 * (p[0] + 0.6 * p[1]) - t * 2.4);
+        let sq = 1 - 0.07 * (0.5 + 0.5 * Math.sin(t * 0.7)) - 0.035 * press;
+        let e = 0.5 + 0.5 * press;
+        const r = Math.hypot(p[0], p[1], p[2]);
+        if (sh < 5) {
+          const b = Math.exp(-Math.pow(r - sh, 2) / 0.12) * Math.exp(-sh * 0.4);
+          sq += 0.3 * b; e = Math.max(e, b * 1.5);
+        }
+        a.c[0] = p[0] * sq + amp * Math.sin(t * a.w[0] + a.ph[0]);
+        a.c[1] = p[1] * sq + amp * Math.sin(t * a.w[1] + a.ph[1]);
+        a.c[2] = p[2] * sq + amp * Math.sin(t * a.w[2] + a.ph[2]);
+        a.e = e;
+      }
+    }
+    shape.animate = (t, P, F) => {
+      move(siA, t, 0.035); move(oxA, t, 0.06);
+      const A = shape.aux;
+      for (let k = 0; k < N; k++) {
+        const o = k * 5, kind = A[o], i = A[o + 1];
+        if (kind === 2) {
+          const a = siA[bonds[i][0]].c, b = siA[bonds[i][1]].c, m = oxA[i].c, u = A[o + 2];
+          // Si–O–Si: the bond bends through the (moving) oxygen
+          const w0 = (1 - u) * (1 - u), w1 = 2 * u * (1 - u), w2 = u * u;
+          P[k * 3]     = w0 * a[0] + w1 * (2 * m[0] - (a[0] + b[0]) / 2) + w2 * b[0];
+          P[k * 3 + 1] = w0 * a[1] + w1 * (2 * m[1] - (a[1] + b[1]) / 2) + w2 * b[1];
+          P[k * 3 + 2] = w0 * a[2] + w1 * (2 * m[2] - (a[2] + b[2]) / 2) + w2 * b[2];
+          F[k * 4 + 3] = 0.35 + 0.4 * oxA[i].e;
+        } else {
+          const at = kind === 0 ? siA[i] : oxA[i], c = at.c;
+          P[k * 3] = c[0] + A[o + 2]; P[k * 3 + 1] = c[1] + A[o + 3]; P[k * 3 + 2] = c[2] + A[o + 4];
+          F[k * 4] = kind === 0 ? 0.72 + 0.26 * at.e : 0.22 + 0.3 * at.e;
+        }
+      }
+    };
+    shape.poke = (t) => { shockAt = t; };
+    return shape;
   }
 
-  // 5) Mantle: a cut-away slice through a rocky planet, convection plumes
-  //    rising from the core–mantle boundary.
+  // 5) Mantle: a planet sliced in half. The cut face shows the real layering
+  //    (PREM radii: inner core 1221 km, core–mantle boundary 3480 km, surface
+  //    6371 km) and it is convecting: irregular cells turn over, hot plumes
+  //    rise from the core–mantle boundary, cold slabs sink from the surface,
+  //    and the liquid outer core churns faster. Behind the face is the far
+  //    hemisphere with its continents. Colour is temperature, ~300 K (blue)
+  //    to ~6000 K (red). Click or stir with the cursor = a surge of flow.
+  //    aux: [kind, cell, rho, phase, speed]
+  //    kind 0 far hemisphere, 1 inner core, 2 outer core, 3 mantle, 4 lithosphere
   function shapeMantle() {
-    return makeShape(-0.5, (add, left) => {
-      const R = 1.75;
-      while (left() > 0) {
-        const r = Math.sqrt(rand()) * R, a = rand() * TAU, x = r / R;
-        const p = [Math.cos(a) * r, Math.sin(a) * r, gauss() * 0.025];
-        if (x < 0.2) add(p, 1.0, 1, 0, 1);
-        else if (x < 0.53) add(p, 0.8 + 0.05 * rand(), 1, 0, 0.8);
-        else if (x < 0.965) {
-          const m = (x - 0.53) / 0.435;
-          const plume = Math.pow(Math.max(0, Math.cos(a * 5 + m * 1.8)), 10);
-          const heat = Math.min(1, 0.5 - 0.42 * m + 0.5 * plume);
-          add(p, heat, 1, 0, 0.55 + 0.45 * plume);
-        } else add(p, 0, 0, 0, 1);
+    const R = 1.7;
+    const R_IC = 1221 / 6371, R_CMB = 3480 / 6371, R_LITH = 6250 / 6371;
+    const heatOfT = (T) => Math.pow(clamp01((T - 300) / 5700), 0.85);
+    // Irregular convection cells around the annulus; neighbours turn opposite ways.
+    function cells(m) {
+      const w = [];
+      for (let c = 0; c < m; c++) w.push(0.6 + rand() * 0.9);
+      const sum = w.reduce((a, b) => a + b, 0);
+      let th = rand() * TAU;
+      return w.map((wi, c) => {
+        const th0 = th; th += TAU * wi / sum;
+        return { th0, th1: th, dir: c % 2 ? -1 : 1 };
+      });
+    }
+    const mantleCells = cells(10), coreCells = cells(6);
+    const fo = new Float32Array(5); // flow() output: x, y, z, heat, glow
+    // A particle on a closed streamline of its cell. Inner streamlines are
+    // round, outer ones hug the cell walls, so the cells tile with no gaps.
+    function flow(kind, c, rho, a) {
+      const core = kind === 2;
+      const cell = (core ? coreCells : mantleCells)[c];
+      const q = 1 - 0.72 * rho, ca = Math.cos(a), sa = Math.sin(a);
+      const lu = rho * (ca < 0 ? -1 : 1) * Math.pow(Math.abs(ca), q);
+      const lv = rho * (sa < 0 ? -1 : 1) * Math.pow(Math.abs(sa), q);
+      const r0 = core ? R_IC : R_CMB, r1 = core ? R_CMB : R_LITH;
+      const r = (r0 + r1) / 2 + lv * (r1 - r0) / 2;
+      const th = (cell.th0 + cell.th1) / 2 + lu * (cell.th1 - cell.th0) / 2;
+      // Temperature: adiabat + thermal boundary layers + plume / slab.
+      const zz = (r - r0) / (r1 - r0), sd = cell.dir;
+      const up = Math.exp(-Math.pow((lu - sd) / 0.28, 2)), down = Math.exp(-Math.pow((lu + sd) / 0.28, 2));
+      const T = core
+        ? 4200 + 1200 * (1 - zz) + 450 * up - 350 * down
+        : 2500 - 900 * zz + 1400 * Math.exp(-zz / 0.08) - 1100 * Math.exp(-(1 - zz) / 0.07)
+          + 1300 * up * (1 - 0.35 * zz) - 1200 * down * (0.35 + 0.65 * zz);
+      fo[0] = Math.cos(th) * r * R; fo[1] = Math.sin(th) * r * R; fo[2] = 0;
+      fo[3] = heatOfT(T); fo[4] = Math.max(up, down);
+    }
+    const shape = makeShape(0.3, (add, left) => {
+      const total = left();
+      // Far hemisphere: continents and a sparse ocean, seen from inside the cut.
+      const nSurf = Math.floor(total * 0.16);
+      for (let k = 0; k < nSurf;) {
+        const p = onSphere(1);
+        if (p[2] > -0.02) continue;
+        const land = fbm(p[0] * 1.8 + 3.1, p[1] * 1.8, p[2] * 1.8) > 0.5 || Math.abs(p[1]) > 0.88;
+        if (!land && rand() > 0.3) continue;
+        add([p[0] * R, p[1] * R, p[2] * R], land ? 0 : 0.16, land ? 0 : 0.9, 0, land ? 0.34 : 0.22, [0, 0, 0, 0, 0]);
+        k++;
       }
-    });
+      while (left() > 0) {
+        const roll = rand();
+        if (roll < 0.04) {
+          const r = R_IC * Math.sqrt(rand()), th = rand() * TAU;
+          add([Math.cos(th) * r * R, Math.sin(th) * r * R, 0], heatOfT(5400 + 600 * (1 - r / R_IC)), 1, 0, 1, [1, 0, r, th, 0]);
+        } else if (roll < 0.25) {
+          const c = Math.floor(rand() * coreCells.length), rho = Math.pow(rand(), 0.42), a = rand() * TAU;
+          flow(2, c, rho, a);
+          add([fo[0], fo[1], fo[2]], fo[3], 1, 0, 0.9, [2, c, rho, a, 0.7 + rand() * 0.6]);
+        } else if (roll < 0.92) {
+          const c = Math.floor(rand() * mantleCells.length), rho = Math.pow(rand(), 0.42), a = rand() * TAU;
+          flow(3, c, rho, a);
+          add([fo[0], fo[1], fo[2]], fo[3], 1, 0, 0.85, [3, c, rho, a, 0.7 + rand() * 0.6]);
+        } else {
+          const r = R_LITH + (1 - R_LITH) * rand(), th = rand() * TAU;
+          add([Math.cos(th) * r * R, Math.sin(th) * r * R, 0], heatOfT(300 + 1200 * (1 - r) / (1 - R_LITH)), 0.55, 0, 1, [4, 0, r, th, 0]);
+        }
+      }
+    }, 5);
+    shape.animate = (t, P, F) => {
+      const A = shape.aux, B = shape.pos;
+      // The half-planet sways so the cut face and the hemisphere behind it
+      // both read as solid.
+      const yaw = 0.5 * Math.sin(t * 0.31) + 0.12 * Math.sin(t * 0.83), cy = Math.cos(yaw), sy = Math.sin(yaw);
+      const tt = t + flowClock;
+      for (let k = 0; k < N; k++) {
+        const o = k * 5, kind = A[o];
+        let x, y, z;
+        if (kind === 2 || kind === 3) {
+          const c = A[o + 1], rho = A[o + 2];
+          const dir = (kind === 2 ? coreCells : mantleCells)[c].dir;
+          // vortex-like turnover: inner streamlines circulate faster
+          flow(kind, c, rho, A[o + 3] + dir * tt * A[o + 4] * (kind === 2 ? 1.0 : 0.55) * (1.35 - 0.7 * rho));
+          x = fo[0]; y = fo[1]; z = 0.02 * Math.sin(k);
+          F[k * 4] = fo[3];
+          F[k * 4 + 3] = 0.7 + 0.5 * fo[4];
+        } else {
+          x = B[k * 3]; y = B[k * 3 + 1]; z = B[k * 3 + 2];
+          if (kind === 1) { // solid inner core: it only shimmers
+            F[k * 4 + 3] = 0.8 + 0.2 * Math.sin(t * 6 + k);
+          }
+        }
+        P[k * 3] = cy * x + sy * z;
+        P[k * 3 + 1] = y;
+        P[k * 3 + 2] = -sy * x + cy * z;
+      }
+    };
+    shape.poke = () => { flowSurge = 1; };
+    return shape;
   }
 
-  // 6) Earth: continents in white, oceans in deep blue, seismic wavefronts
-  //    spreading from an epicentre.
+  // 6) Earth: continents in white, oceans in deep blue — and earthquakes.
+  //    Every few seconds a rupture fires somewhere; P, S and surface-wave
+  //    fronts spread from the epicentre at their real relative speeds
+  //    (S ≈ 0.55 P, surface ≈ 0.5 P), lift the ground as they pass, fade
+  //    with distance and focus again at the antipode. Click = a new quake.
+  //    aux: [heat0, tint0, alpha0]
   function shapeEarth() {
-    return makeShape(0.4, (add, left) => {
-      const R = 1.55, epi = [0.45, 0.35, 0.82];
-      const el = Math.hypot(epi[0], epi[1], epi[2]);
+    const R = 1.55;
+    const shape = makeShape(0.4, (add, left) => {
       while (left() > 0) {
         const p = onSphere(1);
         const land = fbm(p[0] * 1.8 + 3.1, p[1] * 1.8, p[2] * 1.8) > 0.5;
         const ice = Math.abs(p[1]) > 0.88;
-        const d = Math.acos((p[0] * epi[0] + p[1] * epi[1] + p[2] * epi[2]) / el);
-        const wave = d < 1.3 && Math.sin(d * 16) > 0.82;
         const q = [p[0] * R, p[1] * R, p[2] * R];
-        if (wave) add(q, 0.95 - d * 0.45, 1, 1, 1);
-        else if (land || ice) add(q, 0, 0, 1, 1);
-        else if (rand() < 0.3) add(q, 0.16, 0.9, 1, 0.6);
+        if (land || ice) add(q, 0, 0, 1, 0.7, [0, 0, 0.7]);
+        else if (rand() < 0.42) add(q, 0.16, 0.9, 1, 0.6, [0.16, 0.9, 0.6]);
       }
-    });
+    }, 3);
+    const quakes = [];
+    let nextAt = 0.4;
+    function fire(t, mag) {
+      quakes.push({ e: onSphere(1), t0: t, mag });
+      if (quakes.length > 3) quakes.shift();
+    }
+    const VP = 0.8, FRONTS = [[1, 0.9, 0.005], [0.55, 1.1, 0.009], [0.5, 0.7, 0.022]]; // speed/VP, amp, width
+    shape.animate = (t, P, F) => {
+      if (t > nextAt) { fire(t, 0.6 + rand() * 0.4); nextAt = t + 2.2 + rand() * 2.2; }
+      while (quakes.length && (t - quakes[0].t0) * VP * 0.5 > Math.PI + 0.6) quakes.shift();
+      const B = shape.pos, A = shape.aux, nq = quakes.length;
+      for (let k = 0; k < N; k++) {
+        const x = B[k * 3] / R, y = B[k * 3 + 1] / R, z = B[k * 3 + 2] / R;
+        let amp = 0;
+        for (let q = 0; q < nq; q++) {
+          const Q = quakes[q], age = t - Q.t0;
+          const dot = x * Q.e[0] + y * Q.e[1] + z * Q.e[2];
+          const d = Math.acos(dot > 1 ? 1 : dot < -1 ? -1 : dot);
+          // geometric spreading on a sphere: energy ∝ 1 / sin(d)
+          const spread = Q.mag / Math.sqrt(Math.max(0.12, Math.sin(d)));
+          for (let w = 0; w < 3; w++) {
+            const fr = FRONTS[w], x0 = d - age * VP * fr[0];
+            if (x0 > 0.5 || x0 < -0.5) continue;
+            amp += fr[1] * spread * Math.exp(-x0 * x0 / fr[2]) * Math.exp(-age * 0.28);
+          }
+          if (age < 0.7 && d < 0.14) amp += (1 - age / 0.7) * 2; // rupture flash
+        }
+        if (amp > 1.6) amp = 1.6;
+        const lift = 1 + 0.03 * amp;
+        P[k * 3] = B[k * 3] * lift; P[k * 3 + 1] = B[k * 3 + 1] * lift; P[k * 3 + 2] = B[k * 3 + 2] * lift;
+        const a = amp > 1 ? 1 : amp;
+        F[k * 4] = lerp(A[k * 3], 0.42 + 0.58 * a * a, a);
+        F[k * 4 + 1] = lerp(A[k * 3 + 1], 1, a);
+        F[k * 4 + 3] = lerp(A[k * 3 + 2], 1.3, a);
+      }
+    };
+    shape.poke = (t) => { fire(t, 1.3); nextAt = t + 2.5; };
+    return shape;
   }
 
-  // 7) Solar system: the Sun, six orbits, the planets on them.
+  // 7) Solar system: a convecting Sun, six planets on Keplerian orbits
+  //    (ω ∝ r^-3/2, so the inner ones race), a moon, Saturn's ring and an
+  //    asteroid belt. Click = a solar flare.
+  //    aux: [kind, i, a, b, c]  0 sun, 1 planet, 2 orbit, 3 asteroid, 4 moon, 5 ring
   function shapeSolar() {
-    return makeShape(0.42, (add, left) => {
-      const orbits = [0.5, 0.72, 0.97, 1.24, 1.72, 2.15];
-      const sizes  = [0.035, 0.05, 0.055, 0.045, 0.12, 0.1];
-      const heats  = [0.7, 0.62, 0.22, 0.85, 0.6, 0.55];
+    const orbits = [0.5, 0.72, 0.97, 1.24, 1.78, 2.2];
+    const sizes  = [0.035, 0.05, 0.055, 0.045, 0.12, 0.1];
+    const heats  = [0.7, 0.62, 0.22, 0.85, 0.6, 0.55];
+    const ang0 = orbits.map(() => rand() * TAU);
+    const omega = (r) => 0.55 * Math.pow(r, -1.5);
+    const shape = makeShape(0.42, (add, left) => {
       const total = left();
-      for (let k = 0; k < total * 0.27; k++) {
-        const p = onSphere(Math.cbrt(rand()) * 0.26);
-        add(p, 0.82 + rand() * 0.18, 1, 1, 1);
+      for (let k = 0; k < total * 0.25; k++) {
+        const u = onSphere(1), rr = Math.cbrt(rand()) * 0.26;
+        add([u[0] * rr, u[1] * rr, u[2] * rr], 0.82 + rand() * 0.18, 1, 1, 1, [0, rr, u[0], u[1], u[2]]);
       }
-      const ang = orbits.map(() => rand() * TAU);
-      for (let k = 0; k < total * 0.16; k++) {
+      for (let k = 0; k < total * 0.15; k++) {
         const o = k % orbits.length, p = onSphere(sizes[o]);
-        add([Math.cos(ang[o]) * orbits[o] + p[0], p[1], Math.sin(ang[o]) * orbits[o] + p[2]], heats[o], 1, 1, 1);
+        add([orbits[o] + p[0], p[1], p[2]], heats[o], 1, 1, 1, [1, o, p[0], p[1], p[2]]);
+      }
+      for (let k = 0; k < total * 0.012; k++) {
+        const p = onSphere(0.016);
+        add([orbits[2], 0, 0], 0, 0, 1, 1, [4, 0, p[0], p[1], p[2]]);
+      }
+      for (let k = 0; k < total * 0.035; k++) {
+        const a = rand() * TAU, rr = 0.15 + rand() * 0.07;
+        add([orbits[5], 0, 0], 0.5, 0.5, 1, 0.7, [5, 0, Math.cos(a) * rr, 0, Math.sin(a) * rr]);
+      }
+      for (let k = 0; k < total * 0.16; k++) {
+        const rr = 1.42 + gauss() * 0.07, a = rand() * TAU;
+        add([Math.cos(a) * rr, 0, Math.sin(a) * rr], 0.6, 0.35, 1, 0.5, [3, rr, a, gauss() * 0.02, 0]);
       }
       while (left() > 0) {
         const o = Math.floor(rand() * orbits.length), a = rand() * TAU;
-        add([Math.cos(a) * orbits[o], gauss() * 0.004, Math.sin(a) * orbits[o]], 0, 0, 1, 0.42);
+        add([Math.cos(a) * orbits[o], gauss() * 0.004, Math.sin(a) * orbits[o]], 0, 0, 1, 0.42, [2, o, a, 0, 0]);
       }
-    });
+    }, 5);
+    let flareAt = -99;
+    const fdir = [1, 0, 0];
+    shape.animate = (t, P, F) => {
+      const A = shape.aux, B = shape.pos;
+      const pa = orbits.map((r, o) => ang0[o] + t * omega(r));
+      const fl = t - flareAt;
+      for (let k = 0; k < N; k++) {
+        const o = k * 5, kind = A[o];
+        if (kind === 0) {
+          const ux = A[o + 2], uy = A[o + 3], uz = A[o + 4];
+          // granulation + prominences that loop out and fall back
+          let rr = A[o + 1] * (1 + 0.1 * Math.sin(ux * 9 + t * 2.1) * Math.sin(uy * 8 - t * 1.7) + 0.06 * Math.sin(uz * 13 + t * 3.3));
+          const prom = Math.pow(Math.max(0, Math.sin(ux * 3.1 + uy * 2.3 + uz * 2.7 + t * 0.6)), 14);
+          rr *= 1 + 1.1 * prom * (0.5 + 0.5 * Math.sin(t * 2 + k));
+          if (fl < 2.5) {
+            const al = ux * fdir[0] + uy * fdir[1] + uz * fdir[2];
+            if (al > 0.75) rr += (al - 0.75) * 4 * fl * 1.3 * Math.exp(-fl * 1.2) * (0.4 + (k % 7) / 7);
+          }
+          P[k * 3] = ux * rr; P[k * 3 + 1] = uy * rr; P[k * 3 + 2] = uz * rr;
+          F[k * 4] = 0.8 + 0.2 * Math.sin(t * 3 + k) * 0.5 + 0.1;
+        } else if (kind === 1) {
+          const i = A[o + 1], r = orbits[i], a = pa[i], sp = t * (2 + i);
+          const c = Math.cos(sp), sn = Math.sin(sp);
+          P[k * 3] = Math.cos(a) * r + c * A[o + 2] + sn * A[o + 4];
+          P[k * 3 + 1] = A[o + 3];
+          P[k * 3 + 2] = Math.sin(a) * r - sn * A[o + 2] + c * A[o + 4];
+        } else if (kind === 4) {
+          const a = pa[2], m = t * 4.2;
+          P[k * 3] = Math.cos(a) * orbits[2] + Math.cos(m) * 0.1 + A[o + 2];
+          P[k * 3 + 1] = Math.sin(m) * 0.02 + A[o + 3];
+          P[k * 3 + 2] = Math.sin(a) * orbits[2] + Math.sin(m) * 0.1 + A[o + 4];
+        } else if (kind === 5) {
+          const a = pa[5], w = t * 1.5, c = Math.cos(w), sn = Math.sin(w);
+          const lx = c * A[o + 2] + sn * A[o + 4], lz = -sn * A[o + 2] + c * A[o + 4];
+          P[k * 3] = Math.cos(a) * orbits[5] + lx;
+          P[k * 3 + 1] = lx * 0.42;
+          P[k * 3 + 2] = Math.sin(a) * orbits[5] + lz;
+        } else if (kind === 3) {
+          const r = A[o + 1], a = A[o + 2] + t * omega(r);
+          P[k * 3] = Math.cos(a) * r; P[k * 3 + 1] = A[o + 3]; P[k * 3 + 2] = Math.sin(a) * r;
+        } else {
+          // orbit lines: a bright wake trails each planet
+          const i = A[o + 1];
+          let da = (pa[i] - A[o + 2]) % TAU; if (da < 0) da += TAU;
+          const wake = Math.exp(-da * 1.6);
+          F[k * 4] = 0.75; F[k * 4 + 1] = wake; F[k * 4 + 3] = 0.3 + 0.7 * wake;
+        }
+      }
+    };
+    shape.poke = (t) => { flareAt = t; const d = onSphere(1); fdir[0] = d[0]; fdir[1] = d[1] * 0.4; fdir[2] = d[2]; };
+    return shape;
   }
 
   // 8) Galaxy: two-armed log spiral with a warm bulge and red star-forming
-  //    knots along the arms.
+  //    knots. Stars orbit on a flat rotation curve while the arms turn as a
+  //    slower density wave: stars drift through the arms, bunching up and
+  //    brightening inside them. Now and then a supernova goes off (click = one more).
+  //    aux: [kind (0 bulge, 1 disc), r, theta0, y, heat0]
   function shapeGalaxy() {
-    return makeShape(0.62, (add, left) => {
-      const RMAX = 2.25, WIND = 2.6;
+    const RMAX = 2.25, WIND = 1.5;
+    const shape = makeShape(0.62, (add, left) => {
       while (left() > 0) {
         const roll = rand();
         if (roll < 0.2) {
           const p = [gauss() * 0.24, gauss() * 0.09, gauss() * 0.24];
-          add(p, 0.68 + rand() * 0.12, 0.85, 1, 1);
+          add(p, 0.58 + rand() * 0.12, 0.8, 1, 1, [0, Math.hypot(p[0], p[2]), Math.atan2(p[2], p[0]), p[1], 0.6]);
           continue;
         }
-        const arm = rand() < 0.5 ? 0 : Math.PI;
-        const t = Math.pow(rand(), 0.75);
-        const r = 0.35 + t * (RMAX - 0.35);
-        const th = t * WIND * TAU * 0.5 + arm + gauss() * 0.18;
-        const spread = 0.06 + 0.16 * t;
-        const p = [Math.cos(th) * r + gauss() * spread, gauss() * 0.04 * (1.3 - t), Math.sin(th) * r + gauss() * spread];
-        if (roll < 0.235) add(p, 0.93 + rand() * 0.07, 1, 1, 1);      // star-forming knots
-        else if (roll < 0.55) add(p, 0.18 + rand() * 0.12, 0.6, 1, 0.8); // young blue stars
-        else add(p, 0, 0, 1, 0.65);
+        const r = 0.35 + Math.pow(rand(), 0.75) * (RMAX - 0.35) + gauss() * 0.05;
+        const th = rand() * TAU, y = gauss() * 0.04 * (1.3 - r / RMAX);
+        const h = roll < 0.235 ? 0.93 + rand() * 0.07 : roll < 0.55 ? 0.18 + rand() * 0.12 : 0;
+        add([Math.cos(th) * r, y, Math.sin(th) * r], h, h ? 0.8 : 0, 1, 0.7, [1, r, th, y, h]);
       }
-    });
+    }, 5);
+    const novae = [];
+    let nextNova = 2;
+    const nova = (t) => {
+      const r = 0.5 + rand() * 1.5, a = rand() * TAU;
+      novae.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, t0: t });
+      if (novae.length > 3) novae.shift();
+    };
+    shape.animate = (t, P, F) => {
+      if (t > nextNova) { nova(t); nextNova = t + 2.5 + rand() * 4; }
+      const A = shape.aux, pattern = t * 0.1;
+      for (let k = 0; k < N; k++) {
+        const o = k * 5, r = A[o + 1];
+        let x, y = A[o + 3], z;
+        if (A[o] === 0) {
+          const a = A[o + 2] + t * 0.9 / (0.25 + r);
+          x = Math.cos(a) * r; z = Math.sin(a) * r;
+          y *= 1 + 0.3 * Math.sin(t * 2 + k);
+        } else {
+          const th = A[o + 2] + t * 0.3 / (0.45 + r); // flat rotation curve
+          // phase relative to the two-armed log-spiral pattern
+          const tw = (r - 0.35) / (RMAX - 0.35) * WIND * Math.PI;
+          const psi = 2 * (th - tw - pattern);
+          const inArm = 0.5 + 0.5 * Math.cos(psi);
+          const a = th - 0.32 * Math.sin(psi); // stars linger in the arms
+          const rr = r * (1 + 0.035 * Math.cos(psi));
+          x = Math.cos(a) * rr; z = Math.sin(a) * rr;
+          const arm = inArm * inArm * inArm;
+          F[k * 4 + 3] = 0.05 + 1.1 * arm;
+          F[k * 4] = A[o + 4] ? A[o + 4] : 0.2;
+          F[k * 4 + 1] = A[o + 4] ? 0.9 : 0.35 * arm;
+        }
+        for (let n = 0; n < novae.length; n++) {
+          const nv = novae[n], age = t - nv.t0;
+          if (age > 3) continue;
+          const dx = x - nv.x, dz = z - nv.z, d = Math.hypot(dx, dz) + 1e-4;
+          const ring = Math.exp(-Math.pow(d - age * 0.35, 2) / 0.004) * Math.exp(-age * 1.1);
+          const core = Math.exp(-d * d / 0.003) * Math.exp(-age * 2.5);
+          const b = ring + core * 2;
+          if (b > 0.01) {
+            x += dx / d * ring * 0.08; z += dz / d * ring * 0.08; y += core * 0.1 * Math.sin(k);
+            F[k * 4] = Math.min(1, F[k * 4] + b); F[k * 4 + 1] = Math.min(1, F[k * 4 + 1] + b); F[k * 4 + 3] = Math.min(1.4, F[k * 4 + 3] + b);
+          }
+        }
+        P[k * 3] = x; P[k * 3 + 1] = y; P[k * 3 + 2] = z;
+      }
+    };
+    shape.poke = (t) => nova(t);
+    return shape;
   }
 
   // 9) π — the site's mark, as a thin slab of particles.
@@ -366,7 +780,7 @@
     const ink = [];
     for (let y = 0; y < 240; y++) for (let x = 0; x < 240; x++)
       if (img[(y * 240 + x) * 4 + 3] > 128) ink.push(y * 240 + x);
-    return makeShape(0, (add, left) => {
+    const shape = makeShape(0, (add, left) => {
       if (!ink.length) return;
       while (left() > 0) {
         const v = ink[Math.floor(rand() * ink.length)], x = v % 240, y = (v - x) / 240;
@@ -374,6 +788,22 @@
         add([px, py, gauss() * 0.05], clamp01(0.1 + (px + 1.4) / 2.8 * 0.85), 0.8, 0, 1);
       }
     });
+    // A flag of particles: waves run through the slab and the colormap
+    // scrolls across it. Click = a ripple from the centre.
+    let rippleAt = -99;
+    shape.animate = (t, P, F) => {
+      const B = shape.pos, rp = (t - rippleAt) * 2.4;
+      for (let k = 0; k < N; k++) {
+        const x = B[k * 3], y = B[k * 3 + 1];
+        let z = B[k * 3 + 2] + 0.16 * Math.sin(2.2 * x - t * 1.8) + 0.09 * Math.sin(3.1 * y + t * 2.3);
+        if (rp < 6) z += 0.5 * Math.exp(-Math.pow(Math.hypot(x, y) - rp, 2) / 0.08) * Math.exp(-rp * 0.4);
+        P[k * 3 + 2] = z;
+        let h = (0.1 + (x + 1.4) / 2.8 * 0.85 + t * 0.07) % 1.7;
+        F[k * 4] = h > 0.85 ? 1.7 - h : h;
+      }
+    };
+    shape.poke = (t) => { rippleAt = t; };
+    return shape;
   }
 
   // Section -> shape. Order matches the page.
@@ -432,12 +862,16 @@
     uSpin:     { value: 0 },
     uTiltA:    { value: 0 },
     uTiltB:    { value: 0 },
+    uYaw:      { value: 0 },
+    uPitch:    { value: 0 },
+    uChaos:    { value: 0 },
     uSize:     { value: isMobile ? 2.1 : 1.9 },
     uPR:       { value: PR },
     uOpacity:  { value: 1 },
     uMouse:    { value: new THREE.Vector2(9, 9) },
     uMouseStr: { value: 0 },
     uAspect:   { value: 1 },
+    uShock:    { value: [new THREE.Vector3(0, 0, 99), new THREE.Vector3(0, 0, 99), new THREE.Vector3(0, 0, 99)] },
   };
   const cloudMat = new THREE.ShaderMaterial({
     uniforms,
@@ -450,17 +884,25 @@
       attribute vec4 aFieldA;
       attribute vec4 aFieldB;
       attribute float aRand;
-      uniform float uMorph, uTime, uSpin, uTiltA, uTiltB, uSize, uPR, uMouseStr, uAspect;
+      uniform float uMorph, uTime, uSpin, uTiltA, uTiltB, uYaw, uPitch, uChaos, uSize, uPR, uMouseStr, uAspect;
       uniform vec2 uMouse;
+      uniform vec3 uShock[3]; // xy = where (NDC), z = age in seconds
       varying vec3 vColor;
       varying float vAlpha;
 
       vec3 rotY(vec3 p, float a) { float c = cos(a), s = sin(a); return vec3(c*p.x + s*p.z, p.y, -s*p.x + c*p.z); }
       vec3 rotX(vec3 p, float a) { float c = cos(a), s = sin(a); return vec3(p.x, c*p.y - s*p.z, s*p.y + c*p.z); }
+      vec3 rotZ(vec3 p, float a) { float c = cos(a), s = sin(a); return vec3(c*p.x - s*p.y, s*p.x + c*p.y, p.z); }
       // Simulation-style colormap: deep blue -> cyan -> yellow -> red.
       vec3 cmap(float x) {
         x = clamp(x, 0.0, 1.0);
         return clamp(vec3(1.6 - abs(4.0*x - 3.2), 1.5 - abs(4.0*x - 2.0), 1.6 - abs(4.0*x - 0.75)), 0.0, 1.0);
+      }
+      // Cheap divergence-free-looking turbulence (two octaves of crossed sines).
+      vec3 turb(vec3 p, float t) {
+        vec3 a = sin(p.yzx * 2.7 + t * 1.3) * cos(p.zxy * 1.9 - t * 0.9);
+        vec3 b = sin(p.zxy * 6.1 - t * 2.1) * cos(p.yzx * 5.3 + t * 1.7);
+        return a + 0.5 * b;
       }
 
       void main() {
@@ -473,30 +915,51 @@
         vec3 b = rotY(aPosB, uSpin * aFieldB.z);
         vec3 p = mix(a, b, k);
 
-        // Mid-flight the cloud swirls; at rest it only breathes.
+        // Mid-flight the cloud is torn apart: it blows outward, twists into
+        // a vortex and tumbles in turbulence before it condenses again.
         float flight = sin(3.14159 * k);
-        float s = uTime * 0.35 + aRand * 6.2831;
+        float s = uTime * 0.6 + aRand * 6.2831;
         vec3 drift = vec3(sin(s + p.y * 2.3), cos(s * 1.1 + p.z * 2.7), sin(s * 0.9 + p.x * 3.1));
-        p += drift * (0.006 + 0.42 * flight);
+        p = rotZ(p, flight * (aRand - 0.35) * 2.6);
+        p = rotY(p, flight * (0.5 - aRand) * 1.8);
+        p *= 1.0 + flight * (0.25 + 0.9 * fract(aRand * 7.31));
+        p += drift * (0.01 + 0.5 * flight);
+        p += turb(p + aRand, uTime) * (0.35 * flight + uChaos * (0.12 + 0.3 * fract(aRand * 3.7)));
 
-        p = rotX(p, mix(uTiltA, uTiltB, k));
+        p = rotY(p, uYaw);
+        p = rotX(p, mix(uTiltA, uTiltB, k) + uPitch);
 
         vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        float depthScale = -mv.z / 6.5;
 
-        // Cursor pushes nearby particles aside (measured on screen).
         vec4 clip = projectionMatrix * mv;
         vec2 ndc = clip.xy / clip.w;
+
+        // Cursor: particles are flung outward and swirl around it.
         vec2 d = (ndc - uMouse) * vec2(uAspect, 1.0);
-        float push = uMouseStr * exp(-dot(d, d) / 0.018);
-        mv.xy += normalize(d + 1e-5) * push * 0.22 * (-mv.z / 6.5);
+        float push = uMouseStr * exp(-dot(d, d) / 0.03);
+        vec2 dn = normalize(d + 1e-5);
+        mv.xy += (dn * 0.3 + vec2(-dn.y, dn.x) * 0.22) * push * depthScale;
+
+        // Click shockwaves: an expanding ring that throws particles outward.
+        float glow = 0.0;
+        for (int q = 0; q < 3; q++) {
+          vec2 ds = (ndc - uShock[q].xy) * vec2(uAspect, 1.0);
+          float age = uShock[q].z;
+          float dist = length(ds);
+          float ring = exp(-pow(dist - age * 1.5, 2.0) / 0.012) * exp(-age * 1.6);
+          mv.xy += normalize(ds + 1e-5) * ring * 0.55 * depthScale;
+          glow += ring;
+        }
 
         gl_Position = projectionMatrix * mv;
-        gl_PointSize = uSize * uPR * clamp(6.5 / -mv.z, 0.6, 1.8);
+        gl_PointSize = uSize * uPR * clamp(6.5 / -mv.z, 0.6, 1.8) * (1.0 + 0.8 * glow + 0.5 * push);
 
         vec4 f = mix(aFieldA, aFieldB, k);
         float heat = f.x + 0.06 * sin(uTime * 1.3 + aRand * 20.0) * f.y;
         vColor = mix(vec3(0.93, 0.96, 1.0), cmap(heat), f.y) * (0.9 + aRand * 0.2);
-        vAlpha = f.w * (0.85 + 0.3 * flight);
+        vColor = mix(vColor, vec3(1.0), clamp(glow, 0.0, 0.8));
+        vAlpha = f.w * (0.85 + 0.3 * flight) + glow * 0.5;
       }
     `,
     fragmentShader: `
@@ -514,23 +977,280 @@
   });
   const cloud = new THREE.Points(geo, cloudMat);
   cloud.frustumCulled = false;
+  cloud.renderOrder = 5;
   scene.add(cloud);
 
-  // Faint dust far behind, for depth when the camera leans.
-  const dustMat = new THREE.PointsMaterial({
-    color: 0xffffff, size: 1.3 * PR, sizeAttenuation: false,
-    transparent: true, opacity: 0.35, depthWrite: false,
-  });
+  // ====================================================
+  // BACKGROUND — a different sky behind every scale.
+  //   stars      twinkling, everywhere (brighter out in space)
+  //   foam       quantum scenes: virtual particles that blink in and out
+  //   gas        atomic scenes: a jittering, Brownian gas
+  //   embers     mantle: sparks rising off the hot interior
+  //   galaxies   galaxy scene: distant spirals and ellipticals, turning
+  //   streaks    comets and meteors in space; fast particle tracks below
+  // Each layer fades with the scene weights in `sceneW`.
+  // ====================================================
+  const SCENE_KEYS = sections.map((s) => s.dataset.scene);
+  const sceneW = {};
+  function weightOf() {
+    let w = 0;
+    for (let a = 0; a < arguments.length; a++) w += sceneW[arguments[a]] || 0;
+    return Math.min(1, w);
+  }
+
+  const AMB = isMobile ? 1500 : 4200;
+  const ambUniforms = {
+    uTime: { value: 0 }, uPR: { value: PR }, uScroll: { value: 0 },
+    uW: { value: new THREE.Vector4(1, 0, 0, 0) }, // stars, foam, gas, embers
+  };
   {
-    const n = isMobile ? 350 : 900;
-    const p = new Float32Array(n * 3);
-    for (let k = 0; k < n; k++) {
-      const q = onSphere(40 + rand() * 80);
-      p[k * 3] = q[0]; p[k * 3 + 1] = q[1]; p[k * 3 + 2] = q[2];
+    const pos = new Float32Array(AMB * 3), seed = new Float32Array(AMB * 4), grp = new Float32Array(AMB);
+    for (let k = 0; k < AMB; k++) {
+      const g = k < AMB * 0.4 ? 0 : k < AMB * 0.6 ? 1 : k < AMB * 0.8 ? 2 : 3;
+      grp[k] = g;
+      let q;
+      if (g === 0) q = onSphere(35 + rand() * 70);
+      else q = [(rand() - 0.5) * 22, (rand() - 0.5) * 13, -11 + rand() * 12.5];
+      pos[k * 3] = q[0]; pos[k * 3 + 1] = q[1]; pos[k * 3 + 2] = q[2];
+      seed[k * 4] = rand(); seed[k * 4 + 1] = rand(); seed[k * 4 + 2] = rand(); seed[k * 4 + 3] = rand();
     }
     const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.BufferAttribute(p, 3));
-    scene.add(new THREE.Points(g, dustMat));
+    g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    g.setAttribute("aSeed", new THREE.BufferAttribute(seed, 4));
+    g.setAttribute("aGroup", new THREE.BufferAttribute(grp, 1));
+    g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 200);
+    const m = new THREE.ShaderMaterial({
+      uniforms: ambUniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      vertexShader: `
+        attribute vec4 aSeed;
+        attribute float aGroup;
+        uniform float uTime, uPR, uScroll;
+        uniform vec4 uW;
+        varying vec3 vColor;
+        varying float vAlpha;
+        void main() {
+          vec3 p = position;
+          float t = uTime, size = 1.6, alpha = 0.0;
+          vec3 col = vec3(1.0);
+          if (aGroup < 0.5) {            // stars
+            float tw = sin(t * (1.0 + aSeed.x * 4.0) + aSeed.y * 40.0);
+            alpha = (0.25 + 0.75 * tw * tw) * (0.3 + 0.7 * aSeed.z) * uW.x;
+            size = 1.0 + 2.2 * aSeed.z * aSeed.z;
+            col = mix(vec3(0.7, 0.8, 1.0), vec3(1.0, 0.85, 0.7), aSeed.w);
+            float a = t * 0.012; float c = cos(a), s = sin(a);
+            p = vec3(c * p.x + s * p.z, p.y, -s * p.x + c * p.z);
+          } else if (aGroup < 1.5) {     // quantum foam
+            float life = fract(t * (0.25 + aSeed.x * 0.5) + aSeed.y);
+            float cyc = floor(t * (0.25 + aSeed.x * 0.5) + aSeed.y);
+            p.xy += (fract(sin(vec2(cyc, cyc + 3.7) * (12.9898 + aSeed.z)) * 43758.5453) - 0.5) * 5.0;
+            p += 0.6 * vec3(sin(t * 2.0 + aSeed.x * 30.0), cos(t * 2.3 + aSeed.y * 30.0), 0.0) * life;
+            alpha = sin(3.14159 * life) * uW.y * (0.4 + 0.6 * aSeed.w);
+            size = 1.5 + 4.0 * aSeed.w * sin(3.14159 * life);
+            col = mix(vec3(0.35, 0.8, 1.0), vec3(0.75, 0.5, 1.0), aSeed.z);
+          } else if (aGroup < 2.5) {     // Brownian gas
+            p += 0.9 * vec3(sin(t * 0.7 + aSeed.x * 50.0) + 0.4 * sin(t * 7.0 + aSeed.y * 90.0),
+                            cos(t * 0.6 + aSeed.y * 50.0) + 0.4 * sin(t * 6.3 + aSeed.z * 90.0),
+                            sin(t * 0.5 + aSeed.z * 50.0));
+            alpha = (0.3 + 0.5 * aSeed.w) * uW.z;
+            size = 1.6 + 3.2 * aSeed.w;
+            col = mix(vec3(0.6, 0.85, 1.0), vec3(1.0, 0.95, 0.8), aSeed.x);
+          } else {                       // embers
+            float sp = 0.5 + 1.6 * aSeed.x;
+            p.y = mod(p.y + t * sp + 6.5, 13.0) - 6.5;
+            p.x += 0.5 * sin(t * (0.8 + aSeed.y) + aSeed.z * 20.0 + p.y * 0.7);
+            float up = (p.y + 6.5) / 13.0;
+            alpha = (1.0 - up) * (0.5 + 0.5 * sin(t * 9.0 * aSeed.w + aSeed.y * 30.0)) * uW.w;
+            size = 1.5 + 3.5 * aSeed.w * (1.0 - up);
+            col = mix(vec3(1.0, 0.25, 0.05), vec3(1.0, 0.8, 0.3), aSeed.z * (1.0 - up));
+          }
+          if (aGroup > 0.5) p.y = mod(p.y + uScroll * (0.5 + aSeed.w) + 6.5, 13.0) - 6.5;
+          vec4 mv = modelViewMatrix * vec4(p, 1.0);
+          gl_Position = projectionMatrix * mv;
+          gl_PointSize = size * uPR;
+          vColor = col; vAlpha = alpha;
+        }
+      `,
+      fragmentShader: `
+        precision highp float;
+        varying vec3 vColor;
+        varying float vAlpha;
+        void main() {
+          vec2 c = gl_PointCoord - 0.5;
+          float d = dot(c, c);
+          if (d > 0.25 || vAlpha < 0.004) discard;
+          gl_FragColor = vec4(vColor, exp(-d * 12.0) * vAlpha);
+        }
+      `,
+    });
+    const pts = new THREE.Points(g, m);
+    pts.frustumCulled = false;
+    pts.renderOrder = 1;
+    scene.add(pts);
+  }
+
+  // Distant galaxies.
+  const galUniforms = { uTime: { value: 0 }, uPR: { value: PR }, uW: { value: 0 } };
+  {
+    const NG = isMobile ? 9 : 16, PER = isMobile ? 260 : 420, n = NG * PER;
+    const cen = new Float32Array(n * 3), U = new Float32Array(n * 3), V = new Float32Array(n * 3);
+    const pol = new Float32Array(n * 4), col = new Float32Array(n * 3);
+    let k = 0;
+    for (let g = 0; g < NG; g++) {
+      const c = [(rand() - 0.5) * 46, (rand() - 0.5) * 26, -22 - rand() * 26];
+      { // keep the middle of the frame for the main cloud
+        const k0 = Math.max(Math.abs(c[0]) / 13, Math.abs(c[1]) / 7.5) * (22 / -c[2]);
+        if (k0 < 1) { c[0] /= k0 + 0.05; c[1] /= k0 + 0.05; }
+      }
+      const u = onSphere(1), w = onSphere(1);
+      const v = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
+      const vl = Math.hypot(v[0], v[1], v[2]) || 1;
+      const size = 1.2 + rand() * 2.6, spiral = rand() < 0.7, arms = 2 + Math.floor(rand() * 2);
+      const wind = 1.5 + rand() * 2.5, sense = rand() < 0.5 ? -1 : 1;
+      const tint = [0.75 + rand() * 0.25, 0.75 + rand() * 0.2, 0.8 + rand() * 0.2];
+      for (let q = 0; q < PER; q++, k++) {
+        let r, th;
+        if (!spiral || q < PER * 0.3) { r = Math.abs(gauss()) * 0.22 * size * (spiral ? 1 : 1.8); th = rand() * TAU; }
+        else {
+          const t = Math.pow(rand(), 0.8);
+          r = (0.15 + t * 0.85) * size;
+          th = sense * t * wind + Math.floor(rand() * arms) * TAU / arms + gauss() * 0.22;
+        }
+        cen.set(c, k * 3); U.set(u, k * 3);
+        V[k * 3] = v[0] / vl; V[k * 3 + 1] = v[1] / vl; V[k * 3 + 2] = v[2] / vl;
+        pol[k * 4] = r; pol[k * 4 + 1] = th; pol[k * 4 + 2] = sense * (0.05 + rand() * 0.05); pol[k * 4 + 3] = rand();
+        const core = Math.exp(-r / (0.3 * size));
+        col[k * 3] = lerp(tint[0] * 0.75, 1.0, core); col[k * 3 + 1] = lerp(tint[1] * 0.8, 0.9, core); col[k * 3 + 2] = lerp(tint[2], 0.75, core);
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(cen, 3));
+    g.setAttribute("aU", new THREE.BufferAttribute(U, 3));
+    g.setAttribute("aV", new THREE.BufferAttribute(V, 3));
+    g.setAttribute("aPol", new THREE.BufferAttribute(pol, 4));
+    g.setAttribute("aCol", new THREE.BufferAttribute(col, 3));
+    g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 200);
+    const m = new THREE.ShaderMaterial({
+      uniforms: galUniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      vertexShader: `
+        attribute vec3 aU, aV, aCol;
+        attribute vec4 aPol;
+        uniform float uTime, uPR, uW;
+        varying vec3 vColor;
+        varying float vAlpha;
+        void main() {
+          float th = aPol.y + uTime * aPol.z * (1.0 + 1.0 / (0.6 + aPol.x));
+          vec3 p = position + (cos(th) * aU + sin(th) * aV) * aPol.x
+                 + cross(aU, aV) * (aPol.w - 0.5) * 0.08 * aPol.x;
+          p.x += sin(uTime * 0.03 + position.y) * 0.6; // the whole field drifts
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+          gl_PointSize = (1.0 + 1.6 * aPol.w) * uPR;
+          vColor = aCol;
+          vAlpha = uW * (0.2 + 0.5 * aPol.w);
+        }
+      `,
+      fragmentShader: `
+        precision highp float;
+        varying vec3 vColor;
+        varying float vAlpha;
+        void main() {
+          vec2 c = gl_PointCoord - 0.5;
+          float d = dot(c, c);
+          if (d > 0.25 || vAlpha < 0.004) discard;
+          gl_FragColor = vec4(vColor, exp(-d * 10.0) * vAlpha);
+        }
+      `,
+    });
+    const pts = new THREE.Points(g, m);
+    pts.frustumCulled = false;
+    pts.renderOrder = 0;
+    scene.add(pts);
+  }
+
+  // Streaks: comets and meteors in space, fast particle tracks at small scales.
+  const STREAKS = isMobile ? 5 : 9, TAIL = 64;
+  const stPos = new Float32Array(STREAKS * TAIL * 3), stCol = new Float32Array(STREAKS * TAIL * 4), stSize = new Float32Array(STREAKS * TAIL);
+  const stGeo = new THREE.BufferGeometry();
+  stGeo.setAttribute("position", new THREE.BufferAttribute(stPos, 3).setUsage(THREE.DynamicDrawUsage));
+  stGeo.setAttribute("aCol", new THREE.BufferAttribute(stCol, 4).setUsage(THREE.DynamicDrawUsage));
+  stGeo.setAttribute("aSize", new THREE.BufferAttribute(stSize, 1).setUsage(THREE.DynamicDrawUsage));
+  stGeo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 200);
+  {
+    const m = new THREE.ShaderMaterial({
+      uniforms: { uPR: { value: PR } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      vertexShader: `
+        attribute vec4 aCol;
+        attribute float aSize;
+        uniform float uPR;
+        varying vec4 vCol;
+        void main() {
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = aSize * uPR;
+          vCol = aCol;
+        }
+      `,
+      fragmentShader: `
+        precision highp float;
+        varying vec4 vCol;
+        void main() {
+          vec2 c = gl_PointCoord - 0.5;
+          float d = dot(c, c);
+          if (d > 0.25 || vCol.a < 0.004) discard;
+          gl_FragColor = vec4(vCol.rgb, exp(-d * 9.0) * vCol.a);
+        }
+      `,
+    });
+    const pts = new THREE.Points(stGeo, m);
+    pts.frustumCulled = false;
+    pts.renderOrder = 2;
+    scene.add(pts);
+  }
+  const streaks = [];
+  for (let q = 0; q < STREAKS; q++) streaks.push({ life: 0, dur: 1, jit: Array.from({ length: TAIL * 2 }, gauss) });
+  let streakTimer = 0.5;
+  function spawnStreak(space, micro) {
+    const st = streaks.find((x) => x.life <= 0);
+    if (!st) return;
+    const z = -9 + rand() * 6, hw = 12 * (1 - z / 14), hh = 7 * (1 - z / 14);
+    const comet = space > micro ? rand() < 0.45 : false;
+    const fromLeft = rand() < 0.5;
+    st.x = (fromLeft ? -1 : 1) * hw * (0.5 + rand() * 0.6);
+    st.y = hh * (0.2 + rand() * 0.9) * (micro > space && rand() < 0.4 ? -1 : 1);
+    st.z = z;
+    const speed = micro > space ? 22 + rand() * 18 : comet ? 2.2 + rand() * 2 : 9 + rand() * 10;
+    const ang = (fromLeft ? 0 : Math.PI) + (fromLeft ? -1 : 1) * (0.25 + rand() * 0.5) * (st.y > 0 ? 1 : -1);
+    st.vx = Math.cos(ang) * speed; st.vy = Math.sin(ang) * speed;
+    st.len = micro > space ? 1.6 + rand() * 2 : comet ? 2.6 + rand() * 2.5 : 1.2 + rand() * 1.6;
+    st.width = comet ? 0.16 : 0.015;
+    st.head = comet ? 7 : 3.2;
+    st.dur = (2 * hw + 6) / speed;
+    st.life = st.dur;
+    st.col = micro > space ? (rand() < 0.5 ? [0.45, 0.85, 1] : [0.8, 0.6, 1]) : comet ? [0.65, 0.9, 1] : [1, 0.93, 0.8];
+    st.curve = micro > space ? (rand() - 0.5) * 9 : 0; // charged tracks bend in a field
+  }
+  function updateStreaks(dt, space, micro) {
+    streakTimer -= dt * (0.35 + 1.5 * space + 1.1 * micro);
+    if (streakTimer <= 0) { spawnStreak(space, micro); streakTimer = 0.5 + rand() * 1.1; }
+    for (let q = 0; q < STREAKS; q++) {
+      const st = streaks[q], o = q * TAIL;
+      if (st.life <= 0) { for (let j = 0; j < TAIL; j++) stCol[(o + j) * 4 + 3] = 0; continue; }
+      st.life -= dt;
+      if (st.curve) { const c = Math.cos(st.curve * dt * 0.1), sn = Math.sin(st.curve * dt * 0.1), vx = st.vx; st.vx = c * vx - sn * st.vy; st.vy = sn * vx + c * st.vy; }
+      st.x += st.vx * dt; st.y += st.vy * dt;
+      const sp = Math.hypot(st.vx, st.vy), dx = st.vx / sp, dy = st.vy / sp;
+      const fade = Math.min(1, st.life / 0.4, (st.dur - st.life) / 0.25);
+      for (let j = 0; j < TAIL; j++) {
+        const u = j / (TAIL - 1), w = st.width * u * 2;
+        const i3 = (o + j) * 3, i4 = (o + j) * 4;
+        stPos[i3] = st.x - dx * u * st.len - dy * st.jit[j * 2] * w;
+        stPos[i3 + 1] = st.y - dy * u * st.len + dx * st.jit[j * 2] * w + st.jit[j * 2 + 1] * w * 0.5;
+        stPos[i3 + 2] = st.z;
+        const a = (1 - u) * (1 - u) * fade;
+        stCol[i4] = lerp(1, st.col[0], Math.min(1, u * 3)); stCol[i4 + 1] = lerp(1, st.col[1], Math.min(1, u * 3)); stCol[i4 + 2] = lerp(1, st.col[2], Math.min(1, u * 3));
+        stCol[i4 + 3] = a;
+        stSize[o + j] = j === 0 ? st.head : 1.2 + 2.2 * (1 - u);
+      }
+    }
+    stGeo.attributes.position.needsUpdate = stGeo.attributes.aCol.needsUpdate = stGeo.attributes.aSize.needsUpdate = true;
   }
 
   // Upload the pair of shapes the cloud is travelling between.
@@ -620,24 +1340,70 @@
   }
 
   // ----- Pointer -----
-  const pointer = { x: 9, y: 9, active: 0 };
+  // Moving the cursor pushes and swirls the particles, leans the camera, and
+  // a fast swipe spins the whole cloud (it coasts, then settles back).
+  // Clicking / tapping empty space sends a shockwave through the cloud and
+  // triggers the current scene's own event (a gate pulse, a π pulse, a
+  // shock, a surge of convection, an earthquake, a flare, a supernova…).
+  const pointer = { x: 9, y: 9, active: 0, px: 0, py: 0, speed: 0 };
   const lean = { x: 0, y: 0 };
+  const spin = { yaw: 0, pitch: 0, vyaw: 0, vpitch: 0 };
+  let chaosKick = 0;
+  let shockSlot = 0;
+  const clock = new THREE.Clock();
   if (!isMobile) {
     window.addEventListener("pointermove", (e) => {
-      pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
-      pointer.y = -((e.clientY / window.innerHeight) * 2 - 1);
+      const x = (e.clientX / window.innerWidth) * 2 - 1;
+      const y = -((e.clientY / window.innerHeight) * 2 - 1);
+      if (pointer.active) {
+        const dx = x - pointer.x, dy = y - pointer.y;
+        spin.vyaw += dx * 2.2; spin.vpitch += -dy * 1.4;
+        pointer.speed = Math.min(3, pointer.speed + Math.hypot(dx, dy) * 6);
+      }
+      pointer.x = x; pointer.y = y;
       pointer.active = 1;
     }, { passive: true });
     document.addEventListener("pointerleave", () => { pointer.active = 0; });
+    // The hero portrait leans toward the cursor.
+    const portrait = document.querySelector(".hero-portrait-flip__inner");
+    if (portrait) {
+      let queued = false;
+      window.addEventListener("pointermove", () => {
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame(() => {
+          queued = false;
+          portrait.style.setProperty("--ty", (pointer.x * 26).toFixed(1) + "deg");
+          portrait.style.setProperty("--tx", (-pointer.y * 20).toFixed(1) + "deg");
+        });
+      }, { passive: true });
+    }
   }
+  window.addEventListener("pointerdown", (e) => {
+    if (e.button || (e.target.closest && e.target.closest("a, button, input, textarea, select, label, nav, form, .home-outro__card"))) return;
+    const v = uniforms.uShock.value[shockSlot];
+    shockSlot = (shockSlot + 1) % 3;
+    // The cloud sits right of centre on wide screens; undo that shift.
+    v.set((e.clientX / window.innerWidth) * 2 - 1 - viewShift * 2, -((e.clientY / window.innerHeight) * 2 - 1), 0);
+    chaosKick = Math.min(1.5, chaosKick + 0.8);
+    const sh = shapes[Math.min(shapes.length - 1, Math.round(story))];
+    if (sh && sh.poke) sh.poke(clock.elapsedTime);
+  }, { passive: true });
 
   // ====================================================
   // RENDER LOOP
   // ====================================================
-  const clock = new THREE.Clock();
   let story = storyPosition();
   let firstFrame = true;
+  let viewShift = 0;
+  let lastScrollY = window.scrollY, scrollVel = 0, scrollDrift = 0;
   const wide = () => W >= 960;
+
+  function animateInto(shape, posAttr, fieldAttr, t) {
+    if (!shape || !shape.animate) return;
+    shape.animate(t, posAttr.array, fieldAttr.array);
+    posAttr.needsUpdate = fieldAttr.needsUpdate = true;
+  }
 
   function tick() {
     const dt = Math.min(clock.getDelta(), 1 / 30);
@@ -650,18 +1416,59 @@
     const i = Math.min(Math.floor(story), shapes.length - 1);
     const f = story - i;
     loadPair(i);
-    uniforms.uMorph.value = smooth(0.18, 0.82, f);
+    const morph = smooth(0.18, 0.82, f);
+    uniforms.uMorph.value = morph;
     uniforms.uTime.value = t;
-    uniforms.uSpin.value += dt * 0.12;
+    uniforms.uSpin.value += dt * 0.16;
     applyReadout(target);
 
+    // Scroll speed and clicks shake the cloud; it calms down by itself.
+    const sy = window.scrollY;
+    scrollVel += ((sy - lastScrollY) / Math.max(1, H) / Math.max(dt, 1e-3) - scrollVel) * Math.min(1, dt * 8);
+    lastScrollY = sy;
+    scrollDrift += scrollVel * dt * 3;
+    chaosKick *= Math.exp(-dt * 2.2);
+    pointer.speed *= Math.exp(-dt * 3);
+    const chaos = Math.min(1.6, Math.abs(scrollVel) * 0.5 + chaosKick + pointer.speed * 0.12);
+    uniforms.uChaos.value += (chaos - uniforms.uChaos.value) * Math.min(1, dt * 6);
+
+    // Stirring (cursor motion) and clicks speed up the planet's interior.
+    flowSurge *= Math.exp(-dt * 0.9);
+    flowClock += dt * (pointer.speed * 1.5 + flowSurge * 9);
+
+    // The shapes are live simulations: advance whichever are on screen.
+    const last = shapes.length - 1;
+    if (morph < 0.999) animateInto(shapes[i], aPosA, aFieldA, t);
+    if (morph > 0.001 && i < last) animateInto(shapes[i + 1], aPosB, aFieldB, t);
+
     // Cursor influence fades in and out instead of switching.
-    uniforms.uMouse.value.set(pointer.x, pointer.y);
+    uniforms.uMouse.value.set(pointer.x - viewShift * 2, pointer.y);
     uniforms.uMouseStr.value += ((pointer.active ? 1 : 0) - uniforms.uMouseStr.value) * Math.min(1, dt * 3);
+    for (const v of uniforms.uShock.value) v.z += dt;
+
+    // Swipe-to-spin with inertia; it springs back so every shape returns
+    // to its composed view.
+    spin.vyaw *= Math.exp(-dt * 2.4); spin.vpitch *= Math.exp(-dt * 2.4);
+    spin.yaw += spin.vyaw * dt * 4; spin.pitch += spin.vpitch * dt * 4;
+    spin.yaw *= Math.exp(-dt * 0.9); spin.pitch *= Math.exp(-dt * 1.6);
+    spin.pitch = Math.max(-1.1, Math.min(1.1, spin.pitch));
+    uniforms.uYaw.value = spin.yaw;
+    uniforms.uPitch.value = spin.pitch;
+
+    // Background layers follow the scene.
+    for (let k = 0; k < SCENE_KEYS.length; k++) sceneW[SCENE_KEYS[k]] = Math.max(0, 1 - Math.abs(story - k));
+    const space = weightOf("planet", "solar", "galaxy", "outro"), micro = weightOf("qubits", "quantum", "dft", "md");
+    ambUniforms.uTime.value = t;
+    ambUniforms.uScroll.value = scrollDrift;
+    ambUniforms.uW.value.set(0.35 + 0.65 * space, weightOf("qubits", "quantum"), weightOf("dft", "md"), weightOf("mantle"));
+    galUniforms.uTime.value = t;
+    galUniforms.uW.value = weightOf("galaxy") + 0.35 * weightOf("solar", "outro");
+    updateStreaks(dt, space, micro);
 
     // On wide screens the copy sits in a left column, so the cloud moves to
     // the right half; the hero and the outro stay centred.
     const shift = wide() ? 0.2 * smooth(0.5, 1.2, story) * (1 - smooth(sections.length - 2.6, sections.length - 2, story)) : 0;
+    viewShift = shift;
     camera.setViewOffset(W, H, -W * shift, 0, W, H);
 
     // Outro: π sits behind the contact cards, so let it recede.
@@ -671,10 +1478,13 @@
     lean.x += ((pointer.active ? pointer.x : 0) - lean.x) * ease;
     lean.y += ((pointer.active ? pointer.y : 0) - lean.y) * ease;
     // Narrow portrait screens: pull back until a ~3.4-unit object fits.
-    camera.position.z = Math.max(6.5, 3.4 / (0.828 * camera.aspect));
-    camera.position.x = lean.x * 0.4 + Math.sin(t * 0.11) * 0.06;
-    camera.position.y = lean.y * 0.25 + Math.cos(t * 0.09) * 0.05;
+    // Scrolling fast punches the camera back; it also never sits quite still.
+    const zBase = Math.max(6.5, 3.4 / (0.828 * camera.aspect));
+    camera.position.z = zBase * (1 + 0.1 * Math.min(1.5, uniforms.uChaos.value)) + Math.sin(t * 0.31) * 0.12;
+    camera.position.x = lean.x * 0.7 + Math.sin(t * 0.23) * 0.14;
+    camera.position.y = lean.y * 0.45 + Math.cos(t * 0.19) * 0.1;
     camera.lookAt(0, 0, 0);
+    camera.rotation.z += Math.sin(t * 0.13) * 0.012;
 
     renderer.render(scene, camera);
     if (firstFrame) {
