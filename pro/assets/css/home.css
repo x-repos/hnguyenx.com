@@ -620,7 +620,30 @@ html.js #home-canvas.is-ready { opacity: 1; }
   border-radius: 2px;
   overflow: visible;
 }
+/* The rail is a scrubber: hold and drag it (mouse or finger) to scroll the
+   page. Its hit area is much wider than the visible 3px line. */
+.home-scale__rail {
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.home-scale__rail::before {
+  content: "";
+  position: absolute;
+  top: -16px; bottom: -16px;
+  left: -22px; right: -22px;
+}
+.home-scale__rail:hover { background: rgba(255,255,255,0.22); }
+.home-scale__rail.is-dragging { cursor: grabbing; background: rgba(255,255,255,0.3); }
+.home-scale__rail:hover .home-scale__dot,
+.home-scale__rail.is-dragging .home-scale__dot {
+  transform: translateY(-50%) scale(1.45);
+  box-shadow: 0 0 20px rgba(143, 214, 255, 0.95);
+}
+html.is-scrubbing, html.is-scrubbing * { cursor: grabbing !important; user-select: none !important; }
 .home-scale__dot {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
   position: absolute;
   right: -5px;
   width: 13px; height: 13px;

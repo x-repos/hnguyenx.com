@@ -1481,6 +1481,42 @@
     labelSeeded = true;
   }
 
+  // ----- Scale ruler as a scrubber -----
+  // Hold the rail (or its dot) and drag, with a mouse or a finger, to scroll
+  // the page; a single press jumps there.
+  (function scrubber() {
+    const rail = document.querySelector(".home-scale__rail");
+    if (!rail) return;
+    let dragging = false;
+    function seek(e) {
+      const r = rail.getBoundingClientRect();
+      const pct = clamp01((e.clientY - r.top) / r.height);
+      const y = pct * (document.documentElement.scrollHeight - window.innerHeight);
+      if (lenis) lenis.scrollTo(y, { immediate: true, force: true });
+      else window.scrollTo(0, y);
+    }
+    rail.addEventListener("pointerdown", (e) => {
+      if (e.button) return;
+      dragging = true;
+      rail.setPointerCapture(e.pointerId);
+      rail.classList.add("is-dragging");
+      document.documentElement.classList.add("is-scrubbing");
+      seek(e);
+      e.preventDefault();
+      e.stopPropagation(); // not a click on the scene: no shockwave
+    });
+    rail.addEventListener("pointermove", (e) => { if (dragging) { seek(e); e.preventDefault(); } });
+    const end = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      rail.classList.remove("is-dragging");
+      document.documentElement.classList.remove("is-scrubbing");
+      try { rail.releasePointerCapture(e.pointerId); } catch (err) {}
+    };
+    rail.addEventListener("pointerup", end);
+    rail.addEventListener("pointercancel", end);
+  })();
+
   // ----- Pointer -----
   // Moving the cursor pushes and swirls the particles near it; it does not
   // rotate the shapes.
