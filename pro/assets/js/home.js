@@ -1828,19 +1828,38 @@
     }, { passive: true });
     document.addEventListener("pointerleave", () => { pointer.active = 0; });
   }
-  window.addEventListener("pointerdown", (e) => {
-    if (e.button || (e.target.closest && e.target.closest("a, button, input, textarea, select, label, nav, form, .home-outro__card"))) return;
+  function shock(clientX, clientY) {
     const v = uniforms.uShock.value[shockSlot];
     shockSlot = (shockSlot + 1) % 3;
     // Screen position; the shader's projection already includes the view shift.
-    v.set((e.clientX / window.innerWidth) * 2 - 1, -((e.clientY / window.innerHeight) * 2 - 1), 0);
+    // Measured against the canvas, which starts at the top left of the screen.
+    v.set((clientX / (W || window.innerWidth)) * 2 - 1, -((clientY / (H || window.innerHeight)) * 2 - 1), 0);
     // the same point in the cloud's plane (z = 0), for the sparks
     const halfH = Math.tan(camera.fov * Math.PI / 360) * camera.position.z;
     emitSparks((v.x - viewShift * 2) * halfH * camera.aspect + camera.position.x, v.y * halfH + camera.position.y, clock.elapsedTime);
     chaosKick = Math.min(1.5, chaosKick + 0.8);
     const sh = shapes[Math.min(shapes.length - 1, Math.round(story))];
     if (sh && sh.poke) sh.poke(clock.elapsedTime);
+    window.__proShocks = (window.__proShocks || 0) + 1;
+  }
+  const onControl = (el) => !!(el && el.closest && el.closest("a, button, input, textarea, select, label, nav, form, .home-outro__card"));
+  // A mouse click sends the wave at once. A finger going down may be the start of a scroll,
+  // so a touch waits: the wave is sent when the finger lifts, and only if it was a tap, that is,
+  // the finger stayed put, lifted soon, and the page did not scroll under it.
+  let tap = null;
+  window.addEventListener("pointerdown", (e) => {
+    if (e.button || onControl(e.target)) return;
+    if (e.pointerType !== "mouse") { tap = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), sy: window.scrollY }; return; }
+    shock(e.clientX, e.clientY);
   }, { passive: true });
+  window.addEventListener("pointerup", (e) => {
+    if (!tap || e.pointerId !== tap.id) return;
+    const wasTap = Math.hypot(e.clientX - tap.x, e.clientY - tap.y) < 10 && Math.abs(window.scrollY - tap.sy) < 4 && performance.now() - tap.t < 500;
+    tap = null;
+    if (wasTap) shock(e.clientX, e.clientY);
+  }, { passive: true });
+  // the browser took the touch over to scroll the page: not a tap
+  window.addEventListener("pointercancel", (e) => { if (tap && e.pointerId === tap.id) tap = null; }, { passive: true });
 
   // ====================================================
   // EQUATIONS — the maths behind each scale, as part of the picture (not in
