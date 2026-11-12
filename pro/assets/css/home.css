@@ -259,7 +259,8 @@ html[lang="vi"] [lang="en"] { display: none !important; }
     order: 3;
     width: 100%;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: flex-end;      /* the open menu hangs under the menu button, on the right */
+    text-align: right;
     gap: 14px;
     font-size: 14px;
     max-height: 0;
@@ -280,6 +281,7 @@ html[lang="vi"] [lang="en"] { display: none !important; }
     order: 4;
     position: static;
     width: 100%;
+    justify-content: flex-end;
     background: transparent;
     border: 0;
     box-shadow: none;
