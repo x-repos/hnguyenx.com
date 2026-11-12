@@ -628,11 +628,18 @@ html.js #home-canvas.is-ready { opacity: 1; }
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
 }
-.home-scale__rail::before {
-  content: "";
+.home-scale__hit {
   position: absolute;
-  top: -16px; bottom: -16px;
-  left: -22px; right: -22px;
+  top: -18px; bottom: -18px;
+  left: -26px; right: -26px;
+  /* almost-invisible fill: iOS Safari does not hit-test a fully empty box reliably */
+  background: rgba(255, 255, 255, 0.004);
+  touch-action: none;
+  z-index: 11;
+}
+@media (max-width: 720px) {
+  /* the rail sits 10px from the edge on phones: reach further left instead */
+  .home-scale__hit { left: -36px; right: -10px; }
 }
 .home-scale__rail:hover { background: rgba(255,255,255,0.22); }
 .home-scale__rail.is-dragging { cursor: grabbing; background: rgba(255,255,255,0.3); }

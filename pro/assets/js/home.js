@@ -1500,38 +1500,67 @@
 
   // ----- Scale ruler as a scrubber -----
   // Hold the rail (or its dot) and drag, with a mouse or a finger, to scroll
-  // the page; a single press jumps there.
+  // the page; a single press jumps there. Mouse and pen use pointer events;
+  // fingers use touch events with preventDefault, which is the only thing
+  // iOS Safari reliably honours to stop it treating the drag as a page scroll.
   (function scrubber() {
     const rail = document.querySelector(".home-scale__rail");
     if (!rail) return;
+    // a real element for the (much wider) hit area: easier to grab than a 2px line
+    const hit = document.createElement("div");
+    hit.className = "home-scale__hit";
+    rail.appendChild(hit);
     let dragging = false;
-    function seek(e) {
+    function seekY(clientY) {
       const r = rail.getBoundingClientRect();
-      const pct = clamp01((e.clientY - r.top) / r.height);
+      const pct = clamp01((clientY - r.top) / r.height);
       const y = pct * (document.documentElement.scrollHeight - window.innerHeight);
       if (lenis) lenis.scrollTo(y, { immediate: true, force: true });
       else window.scrollTo(0, y);
     }
-    rail.addEventListener("pointerdown", (e) => {
-      if (e.button) return;
+    function start() {
       dragging = true;
-      rail.setPointerCapture(e.pointerId);
       rail.classList.add("is-dragging");
       document.documentElement.classList.add("is-scrubbing");
-      seek(e);
-      e.preventDefault();
-      e.stopPropagation(); // not a click on the scene: no shockwave
-    });
-    rail.addEventListener("pointermove", (e) => { if (dragging) { seek(e); e.preventDefault(); } });
-    const end = (e) => {
+    }
+    function end() {
       if (!dragging) return;
       dragging = false;
       rail.classList.remove("is-dragging");
       document.documentElement.classList.remove("is-scrubbing");
+    }
+    // --- fingers ---
+    let touchId = null;
+    rail.addEventListener("touchstart", (e) => {
+      const t = e.changedTouches[0];
+      touchId = t.identifier;
+      start(); seekY(t.clientY);
+      e.preventDefault(); e.stopPropagation();
+    }, { passive: false });
+    rail.addEventListener("touchmove", (e) => {
+      if (!dragging) return;
+      for (const t of e.changedTouches) if (t.identifier === touchId) seekY(t.clientY);
+      e.preventDefault();
+    }, { passive: false });
+    const touchEnd = (e) => { touchId = null; end(); if (e.cancelable) e.preventDefault(); };
+    rail.addEventListener("touchend", touchEnd, { passive: false });
+    rail.addEventListener("touchcancel", touchEnd, { passive: false });
+    // --- mouse / pen ---
+    rail.addEventListener("pointerdown", (e) => {
+      e.stopPropagation(); // not a click on the scene: no shockwave
+      if (e.pointerType === "touch" || e.button) return;
+      start(); seekY(e.clientY);
+      try { rail.setPointerCapture(e.pointerId); } catch (err) {}
+      e.preventDefault();
+    });
+    rail.addEventListener("pointermove", (e) => { if (dragging && e.pointerType !== "touch") { seekY(e.clientY); e.preventDefault(); } });
+    const pointerEnd = (e) => {
+      if (e.pointerType === "touch") return;
+      end();
       try { rail.releasePointerCapture(e.pointerId); } catch (err) {}
     };
-    rail.addEventListener("pointerup", end);
-    rail.addEventListener("pointercancel", end);
+    rail.addEventListener("pointerup", pointerEnd);
+    rail.addEventListener("pointercancel", pointerEnd);
   })();
 
   // ----- Pointer -----
