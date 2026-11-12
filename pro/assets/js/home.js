@@ -153,15 +153,29 @@
   //    across the couplers while current streams along them.
   //    aux: [kind (0 qubit, 1 coupler), site/edge index, ox, oy, oz, t0]
   function shapeLattice() {
-    const COLS = 9, ROWS = 6, SP = 0.56;
+    // The chip runs on past the edges of the picture: it is crisp in the
+    // middle and each qubit further out is dimmer and softer, until the grid
+    // has faded away just before the screen edge. FX, FY are where it reaches
+    // zero (wide on desktop, tall on phones).
+    const SP = 0.56;
+    const COLS = isMobile ? 9 : 21, ROWS = isMobile ? 17 : 13;
+    const FX = isMobile ? 2.3 : 5.3, FY = isMobile ? 4.4 : 3.2;
+    const fadeAt = (x, y) => 1 - smooth(0.42, 1, Math.hypot(x / FX, y / FY));
     const sites = [];
     for (let r = 0; r < ROWS; r++)
-      for (let c = 0; c < COLS; c++)
+      for (let c = 0; c < COLS; c++) {
+        const x = (c - (COLS - 1) / 2) * SP, y = (r - (ROWS - 1) / 2) * SP;
         sites.push({
-          x: (c - (COLS - 1) / 2) * SP, y: (r - (ROWS - 1) / 2) * SP, h: 0.15 + rand() * 0.8,
+          x, y, h: 0.15 + rand() * 0.8, fade: fadeAt(x, y),
           w: 1.2 + rand() * 2.4, rabi: 0.7 + rand() * 1.6, ph: rand() * TAU,
           ax: onSphere(1), z: 0, heat: 0,
         });
+      }
+    // spend the particles where they can be seen
+    const visible = sites.map((q, i) => i).filter((i) => sites[i].fade > 0.02);
+    const pickSite = () => {
+      for (;;) { const i = visible[Math.floor(rand() * visible.length)]; if (rand() < 0.3 + 0.7 * sites[i].fade) return i; }
+    };
     const edges = [];
     for (let r = 0; r < ROWS; r++)
       for (let c = 0; c < COLS; c++) {
@@ -172,12 +186,13 @@
     const shape = makeShape(-0.35, (add, left) => {
       const nodePts = Math.floor(left() * 0.62);
       for (let k = 0; k < nodePts; k++) {
-        const si = k % sites.length, s = sites[si];
+        const si = pickSite(), s = sites[si];
         const p = onSphere(0.085 + rand() * 0.025);
         add([s.x + p[0], s.y + p[1], p[2]], s.h, 0.95, 0, 1, [0, si, p[0], p[1], p[2], 0]);
       }
       while (left() > 0) {
-        const ei = Math.floor(rand() * edges.length), e = edges[ei];
+        let ei, e;
+        do { ei = Math.floor(rand() * edges.length); e = edges[ei]; } while (rand() > 0.15 + 0.85 * Math.min(sites[e[0]].fade, sites[e[1]].fade));
         const t = 0.2 + rand() * 0.6;
         const a = sites[e[0]], b = sites[e[1]];
         const j = [gauss() * 0.006, gauss() * 0.006, gauss() * 0.006];
@@ -186,14 +201,14 @@
     }, 6);
     shape.animate = (t, P, F) => {
       // Gate pulse: a bright front crossing the chip every few seconds.
-      const front = ((t * 0.55) % 3.2) * 2.4 - 3.4;
+      const front = ((t * 0.3) % 1) * 15 - 7.5;
       const burst = (t - pokeAt) * 3.2; // click: a ring of gates spreading from the centre
       for (const s of sites) {
         s.z = 0.16 * Math.sin(1.9 * s.x - 1.3 * s.y - t * 2.1) + 0.06 * Math.sin(3.1 * s.y + t * 3.3 + s.ph);
         s.heat = 0.5 + 0.47 * Math.sin(t * s.rabi + s.ph);
         s.ang = t * s.w;
         s.g = Math.exp(-Math.pow((s.x * 0.8 + s.y * 0.6) - front, 2) / 0.08);
-        if (burst < 6) {
+        if (burst < 8) {
           const b = Math.exp(-Math.pow(Math.hypot(s.x, s.y) - burst, 2) / 0.1);
           s.g = Math.max(s.g, b);
           s.z += 0.45 * b;
@@ -210,12 +225,13 @@
           const vx = A[o + 2], vy = A[o + 3], vz = A[o + 4];
           const c = Math.cos(s.ang), sn = Math.sin(s.ang), dot = ux * vx + uy * vy + uz * vz;
           const cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx;
-          const sc = 1 + 0.35 * s.g + 0.12 * Math.sin(t * 4 + s.ph);
+          // far qubits swell slightly, like something out of focus
+          const sc = (1 + 0.35 * s.g + 0.12 * Math.sin(t * 4 + s.ph)) * (1 + 0.9 * (1 - s.fade));
           P[k * 3]     = s.x + sc * (vx * c + cx * sn + ux * dot * (1 - c));
           P[k * 3 + 1] = s.y + sc * (vy * c + cy * sn + uy * dot * (1 - c));
           P[k * 3 + 2] = s.z + sc * (vz * c + cz * sn + uz * dot * (1 - c));
           F[k * 4] = s.heat;
-          F[k * 4 + 3] = 0.85 + 0.15 * s.g;
+          F[k * 4 + 3] = (0.85 + 0.15 * s.g) * s.fade * s.fade;
         } else {
           const e = edges[idx], a = sites[e[0]], b = sites[e[1]];
           // current streams along the coupler, direction alternating
@@ -228,7 +244,8 @@
           const g = Math.max(a.g, b.g);
           F[k * 4] = 0.75 + 0.25 * g;
           F[k * 4 + 1] = g;
-          F[k * 4 + 3] = 0.45 + 0.55 * g;
+          const fd = Math.min(a.fade, b.fade);
+          F[k * 4 + 3] = (0.45 + 0.55 * g) * fd * fd;
         }
       }
       return 3;
