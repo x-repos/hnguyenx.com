@@ -1661,6 +1661,81 @@
   }
 
   // ====================================================
+  // PORTRAIT ORBITS — three electrons circling the hero photo on tilted
+  // orbits. Each one is in front of the photo for half its orbit and behind
+  // it for the other half: the near half is drawn on a canvas above the
+  // photo, the far half on a canvas beneath it.
+  // ====================================================
+  let drawOrbits = null;
+  (function buildOrbits() {
+    const host = document.querySelector(".hero-portrait-flip");
+    if (!host) return;
+    const mk = (cls) => {
+      const c = document.createElement("canvas");
+      c.className = "hero-orbits " + cls;
+      c.setAttribute("aria-hidden", "true");
+      return c;
+    };
+    const back = mk("hero-orbits--back"), front = mk("hero-orbits--front");
+    host.insertBefore(back, host.firstChild);
+    host.appendChild(front);
+    const gb = back.getContext("2d"), gf = front.getContext("2d");
+    const ORBITS = [
+      { tilt: -0.35, speed: 1.9,  ph: 0.0, col: [143, 214, 255] },
+      { tilt: 0.75,  speed: -1.45, ph: 2.1, col: [255, 170, 120] },
+      { tilt: 1.95,  speed: 1.15, ph: 4.2, col: [201, 168, 255] },
+    ];
+    let size = 0;
+    function fit() {
+      const w = Math.round(back.clientWidth * Math.min(window.devicePixelRatio || 1, 2));
+      if (w && w !== size) { size = w; back.width = back.height = front.width = front.height = w; }
+    }
+    const SEG = 46, TAIL = 2.3; // tail length in radians
+    drawOrbits = (t) => {
+      fit();
+      if (!size) return;
+      gb.clearRect(0, 0, size, size); gf.clearRect(0, 0, size, size);
+      const c = size / 2, R = size / 1.9 / 2;       // R = the photo's radius
+      const a = R * 1.5, b = R * 0.5;               // orbit seen at an angle
+      for (const o of ORBITS) {
+        const ct = Math.cos(o.tilt), st = Math.sin(o.tilt);
+        const at = (phi) => { const x = a * Math.cos(phi), y = b * Math.sin(phi); return [c + x * ct - y * st, c + x * st + y * ct]; };
+        const rgb = o.col.join(",");
+        // faint orbit line: the half with sin(phi) > 0 is the near side
+        for (const [g, from] of [[gf, 0], [gb, Math.PI]]) {
+          g.beginPath();
+          for (let k = 0; k <= 32; k++) { const p = at(from + k / 32 * Math.PI); k ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }
+          g.strokeStyle = "rgba(" + rgb + "," + (g === gf ? 0.2 : 0.1) + ")";
+          g.lineWidth = size / 300;
+          g.stroke();
+        }
+        // the electron and its fading tail
+        const phi0 = o.ph + t * o.speed, dir = o.speed > 0 ? -1 : 1;
+        for (let k = SEG; k >= 0; k--) {
+          const u = k / SEG, phi = phi0 + dir * u * TAIL;
+          const near = Math.sin(phi) > 0, g = near ? gf : gb;
+          const p = at(phi), q = at(phi0 + dir * Math.min(1, u + 1 / SEG) * TAIL);
+          const depth = 0.75 + 0.25 * Math.sin(phi);     // nearer = larger, brighter
+          g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]);
+          g.strokeStyle = "rgba(" + rgb + "," + ((1 - u) * (1 - u) * (near ? 0.95 : 0.5)).toFixed(3) + ")";
+          g.lineWidth = size / 95 * (1 - u * 0.8) * depth;
+          g.lineCap = "round";
+          g.stroke();
+          if (k === 0) {
+            const r = size / 52 * depth;
+            const gr = g.createRadialGradient(p[0], p[1], 0, p[0], p[1], r * 3.2);
+            gr.addColorStop(0, "rgba(255,255,255," + (near ? 1 : 0.6) + ")");
+            gr.addColorStop(0.3, "rgba(" + rgb + "," + (near ? 0.9 : 0.45) + ")");
+            gr.addColorStop(1, "rgba(" + rgb + ",0)");
+            g.fillStyle = gr;
+            g.beginPath(); g.arc(p[0], p[1], r * 3.2, 0, TAU); g.fill();
+          }
+        }
+      }
+    };
+  })();
+
+  // ====================================================
   // RENDER LOOP
   // ====================================================
   let story = storyPosition();
@@ -1734,6 +1809,7 @@
     camera.setViewOffset(W, H, -W * shift, 0, W, H);
 
     updateEquations(t, dt);
+    if (drawOrbits && story < 0.85) drawOrbits(t);
 
     // Outro: π sits behind the contact cards, so let it recede.
     uniforms.uOpacity.value = 1 - 0.6 * smooth(sections.length - 1.6, sections.length - 1, story);
