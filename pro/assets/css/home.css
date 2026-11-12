@@ -444,6 +444,20 @@ html.js #home-canvas.is-ready { opacity: 1; }
   text-shadow: var(--home-textshadow);
 }
 
+/* Phones: the hero line is two sentences on two lines. Size the type from
+   the screen width and never wrap inside a sentence, so it stays two lines. */
+@media (max-width: 720px) {
+  .home-scene--hero { padding-left: 14px; padding-right: 14px; }
+  .home-scene--hero .home-scene__inner { padding-left: 0; padding-right: 0; }
+  .home-scene--hero .home-scene__sub {
+    font-size: min(1.1rem, 3.95vw);
+    white-space: nowrap;
+    max-width: none;
+  }
+  /* the English lines are shorter than the Vietnamese ones, so they can be larger */
+  .home-scene--hero .home-scene__sub span[lang="en"] { font-size: min(1.1rem, 4.6vw); }
+}
+
 .home-scene__body {
   font-size: 1.05rem;
   line-height: 1.75;
