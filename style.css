@@ -407,8 +407,19 @@ footer {
   margin-top: 0.5rem;
 }
 
+/* Country flags. Windows has no flag emoji and shows the two letters instead
+   (US, VN...), so the flags come from this font there; it only covers the
+   flag code points, and systems with their own flag emoji still use theirs
+   first. Font: Twemoji Country Flags (Twemoji graphics, CC-BY 4.0). */
+@font-face {
+  font-family: "Twemoji Country Flags";
+  src: url("assets/fonts/TwemojiCountryFlags.woff2") format("woff2");
+  unicode-range: U+1F1E6-1F1FF, U+1F3F4, U+E0062-E0063, U+E0065, U+E0067, U+E006C, U+E006E, U+E0073-E0074, U+E0077, U+E007F;
+  font-display: swap;
+}
 .visitor-flag {
   font-size: 1rem;
+  font-family: "Twemoji Country Flags", "Crimson Pro", Georgia, serif;
 }
 
 #publications h3 {
