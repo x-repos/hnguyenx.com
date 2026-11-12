@@ -6,7 +6,7 @@
 
    Layout of this file:
      save · sound · game state · drawing · moves and game flow
-     the computer · input · menus · start
+     the computer · online play · input · menus · start
    ========================================================= */
 (() => {
   "use strict";
@@ -24,6 +24,11 @@
   const WORTH = [0, 1, 3, 3, 5, 9, 0];
   const PIECE = ["", "pawn", "knight", "bishop", "rook", "queen", "king"];
   const sqOf = (name) => (name.charCodeAt(1) - 49) * 16 + (name.charCodeAt(0) - 97);
+  // where online games meet (see chess-worker/). A local preview can point at a test relay with ?relay=ws://...
+  const RELAY = (() => {
+    const q = new URLSearchParams(location.search).get("relay");
+    return q && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? q : "wss://hnguyenx-chess.hnguyenx.workers.dev/ws";
+  })();
 
   // ====================================================
   // SAVE
@@ -80,12 +85,16 @@
 
   // ====================================================
   // GAME STATE
-  //   game   { mode: "cpu" | "two", level, human: "w" | "b", moves: [uci], flipped, counted }
+  //   game   { mode: "cpu" | "two" | "online", level, human: "w" | "b", moves: [uci], flipped, counted }
+  //          an online game also has room (its name on the relay) and ended (set if someone resigned or left)
   //   ints, sans, caps run alongside game.moves: the move, its written form, what it captured
   // ====================================================
   let game = null, ints = [], sans = [], caps = [];
   let sel = -1, targets = new Map(), state = { over: false, kind: null, winner: null, check: false };
   let thinking = false, reqId = 0, pending = null, screen = "menu", drag = null, promo = null, overTimer = 0;
+  // online play: the connection, and what it is for: null, "find" (waiting to be paired) or "game"
+  const net = { ws: null, want: null, peer: true, tries: 0, timer: 0, ping: 0, pong: 0 };
+  let resignArmed = false;
 
   const boardEl = $("board"), squaresEl = $("squares"), piecesEl = $("pieces");
   const sqEls = new Array(128);
@@ -193,7 +202,7 @@
 
   function nameOf(color) {
     if (game.mode === "two") return color === "w" ? "White" : "Black";
-    return color === game.human ? "You" : "Computer";
+    return color === game.human ? "You" : game.mode === "online" ? "Friend" : "Computer";
   }
   function paintSides() {
     const bottom = flipped() ? "b" : "w", top = bottom === "w" ? "b" : "w";
@@ -227,26 +236,34 @@
     host.scrollLeft = host.scrollWidth; host.scrollTop = host.scrollHeight;
   }
   function resultText() {
-    const who = (c) => (game.mode === "two" ? (c === "w" ? "White wins." : "Black wins.") : c === game.human ? "You win." : "The computer wins.");
+    const who = (c) => (game.mode === "two" ? (c === "w" ? "White wins." : "Black wins.") : c === game.human ? "You win." : game.mode === "online" ? "Your friend wins." : "The computer wins.");
     switch (state.kind) {
       case "checkmate": return ["Checkmate", who(state.winner)];
       case "stalemate": return ["Stalemate", "The side to move has no legal move and is not in check. It is a draw."];
       case "material": return ["Draw", "Neither side has enough pieces left to give checkmate."];
       case "fifty": return ["Draw", "Fifty moves went by with no capture and no pawn move."];
       case "repetition": return ["Draw", "The same position came up three times."];
+      case "resign": return ["Resigned", state.winner === game.human ? "Your friend resigned. You win." : "You resigned. Your friend wins."];
+      case "left": return ["Game over", "Your friend left the game."];
     }
     return ["", ""];
   }
   function paintStatus() {
     if (!game) return;
     let s;
+    const online = game.mode === "online";
     if (state.over) { const r = resultText(); s = state.kind === "checkmate" ? r[0] + ". " + r[1] : r[0]; }
+    else if (online && !netOpen()) s = "Connection lost. Reconnecting";
+    else if (online && !net.peer) s = "Your friend is offline. Waiting";
+    else if (online) s = (state.check ? "Check. " : "") + (eng.turn() === game.human ? "Your move" : "Your friend's move");
     else if (thinking) s = "The computer is thinking";
     else if (game.mode === "two") s = (state.check ? "Check. " : "") + (eng.turn() === "w" ? "White to move" : "Black to move");
     else s = (state.check ? "Check. " : "") + "Your move";
     $("status").textContent = s;
-    $("sub").textContent = game.mode === "two" ? "Two players, one screen" : "You are " + (game.human === "w" ? "White" : "Black") + ". Level: " + LEVELS[game.level].name;
-    $("btn-undo").disabled = !game.moves.length;
+    $("sub").textContent = game.mode === "two" ? "Two players, one screen" : "You are " + (game.human === "w" ? "White" : "Black") + (online ? ". Online game" : ". Level: " + LEVELS[game.level].name);
+    // online there is no taking back; the same button gives up the game instead, on a second press
+    $("btn-undo").textContent = online ? (resignArmed ? "Sure?" : "Resign") : "Undo";
+    $("btn-undo").disabled = online ? state.over : !game.moves.length;
   }
   function render(animate) {
     syncPieces(animate); paintSquares(); paintSides(); paintMoves(); paintStatus();
@@ -272,10 +289,11 @@
     if (list.length > 1) askPromo(list, instant); else commit(list[0], instant);
     return true;
   }
-  function commit(m, instant) {
+  function commit(m, instant, remote) {
     const cap = capturedBy(m), s = eng.san(m);
     eng.make(m);
     game.moves.push(eng.uci(m)); ints.push(m); sans.push(s); caps.push(cap);
+    if (game.mode === "online" && !remote) netSend({ t: "move", n: game.moves.length - 1, uci: eng.uci(m) });
     sel = -1; targets = new Map();
     state = eng.status();
     (cap ? SFX.take : SFX.move)();
@@ -293,7 +311,7 @@
       save[k][game.level]++;
       game.counted = true;
     }
-    if (state.winner === null) SFX.draw(); else if (!mine || state.winner === game.human) SFX.win(); else SFX.lose();
+    if (state.winner === null) SFX.draw(); else if (game.mode === "two" || state.winner === game.human) SFX.win(); else SFX.lose();
     paintStatus();
     clearTimeout(overTimer);
     overTimer = setTimeout(() => {
@@ -304,6 +322,7 @@
     }, 700);
   }
   function undo() {
+    if (screen === "play" && game && game.mode === "online") { resign(); return; }
     if (screen !== "play" || !game || !game.moves.length) return;
     reqId++; thinking = false; closePromo(); clearTimeout(overTimer); $("over").hidden = true;
     // against the computer, go back to your own last move, so the reply is taken back too
@@ -317,6 +336,7 @@
     if (game.mode === "cpu" && eng.turn() !== game.human) computerMove();
   }
   function startGame(mode, level, human) {
+    abandonOnline();
     reqId++; thinking = false; closePromo(); clearTimeout(overTimer);
     game = { mode, level: level | 0, human: human === "b" ? "b" : "w", moves: [], flipped: mode === "cpu" && human === "b", counted: false };
     replay([]);
@@ -328,6 +348,7 @@
   function resume() {
     if (!game) return;
     show("play"); buildSquares(); render(false);
+    if (game.mode === "online" && net.want !== "game") { net.want = "game"; net.tries = 0; netConnect(); }
     if (!state.over && game.mode === "cpu" && eng.turn() !== game.human && !thinking) computerMove();
   }
   function flip() {
@@ -391,6 +412,146 @@
     const w = getWorker();
     if (w) w.postMessage({ id, fen: START, moves: game.moves.slice(), opts }); else thinkHere(pending);
   }
+
+  // ====================================================
+  // ONLINE PLAY: two browsers joined through a small relay (see chess-worker/).
+  // The relay pairs two players and passes their messages on. Each side keeps
+  // the whole game itself and checks every move it is sent, so after a dropped
+  // connection the two only have to compare move lists to be back in step.
+  // ====================================================
+  const netOpen = () => !!net.ws && net.ws.readyState === 1;
+  function netSend(obj) { if (netOpen()) { try { net.ws.send(JSON.stringify(obj)); } catch (e) {} } }
+  function netHangUp() {
+    clearTimeout(net.timer); clearInterval(net.ping);
+    const ws = net.ws;
+    net.ws = null;
+    if (ws) { ws.onopen = ws.onmessage = ws.onclose = ws.onerror = null; try { ws.close(); } catch (e) {} }
+  }
+  function netConnect() {
+    netHangUp();
+    if (!net.want) return;
+    let ws;
+    try { ws = new WebSocket(RELAY); } catch (e) { netDown(); return; }
+    net.ws = ws;
+    ws.onopen = () => {
+      if (net.ws !== ws) return;
+      net.tries = 0; net.pong = Date.now();
+      netSend(net.want === "find" ? { t: "find" } : { t: "rejoin", room: game.room, color: game.human });
+      // a heartbeat: keeps the line open and notices when it has died without saying so
+      net.ping = setInterval(() => {
+        if (net.ws !== ws) return;
+        if (Date.now() - net.pong > 50000) { netHangUp(); netDown(); return; }
+        try { ws.send("ping"); } catch (e) {}
+      }, 20000);
+      paintOnline(); paintStatus();
+    };
+    ws.onmessage = (e) => {
+      if (net.ws !== ws) return;
+      if (e.data === "pong") { net.pong = Date.now(); return; }
+      let m;
+      try { m = JSON.parse(e.data); } catch (err) { return; }
+      if (m && typeof m.t === "string") onNet(m);
+    };
+    ws.onclose = () => { if (net.ws !== ws) return; net.ws = null; clearInterval(net.ping); netDown(); };
+    ws.onerror = () => {};
+  }
+  // the line dropped: try again, a little slower each time. A game keeps trying; the waiting room gives up.
+  function netDown() {
+    if (!net.want) return;
+    net.tries++;
+    if (net.want === "find" && net.tries > 4) { net.want = null; paintOnline(true); return; }
+    net.timer = setTimeout(netConnect, Math.min(8000, 500 * Math.pow(1.7, net.tries)));
+    paintOnline(); paintStatus();
+  }
+  // walk away from a live online game, or from the waiting room
+  function abandonOnline() {
+    if (net.want === "find" || (net.want === "game" && game && game.mode === "online" && !state.over)) netSend({ t: "leave" });
+    net.want = null;
+    netHangUp();
+  }
+  function findOnline() {
+    // looking for a new game gives up any online game still going
+    if (game && game.mode === "online") { game = null; save.game = null; persist(); }
+    net.want = "find"; net.tries = 0;
+    show("online"); paintOnline();
+    if (netOpen()) netSend({ t: "find" }); else netConnect();
+  }
+  function paintOnline(failed) {
+    if (screen !== "online") return;
+    $("online-text").textContent = failed ? "Could not reach the game server. Check your connection and try again."
+      : netOpen() ? "Waiting for another player. Ask your friend to open this page and press the same button." : "Connecting";
+    $("btn-online-retry").hidden = !failed;
+  }
+  function startOnline(room, color) {
+    reqId++; thinking = false; closePromo(); clearTimeout(overTimer);
+    game = { mode: "online", level: 0, human: color, moves: [], flipped: color === "b", counted: true, room, ended: null };
+    replay([]);
+    sel = -1; targets = new Map(); state = eng.status();
+    net.want = "game"; net.peer = true; resignArmed = false;
+    buildSquares(); piecesEl.innerHTML = "";
+    show("play"); render(false); saveGame();
+    SFX.check();
+  }
+  // the game stopped for a reason that is not on the board: someone resigned or left
+  function endOnline(kind, winner) {
+    game.ended = { kind, winner };
+    state = { over: true, kind, winner, check: state.check };
+    sel = -1; targets = new Map(); closePromo();
+    render(false); finish(); saveGame();
+  }
+  function resign() {
+    if (state.over) return;
+    if (!resignArmed) {
+      resignArmed = true; paintStatus();
+      setTimeout(() => { resignArmed = false; paintStatus(); }, 3000);
+      return;
+    }
+    resignArmed = false;
+    netSend({ t: "resign" });
+    endOnline("resign", game.human === "w" ? "b" : "w");
+  }
+  // bring the two copies of the game back in step: whoever is behind plays the moves it is missing
+  function onSync(theirs) {
+    if (!Array.isArray(theirs) || game.ended) return;
+    const mine = game.moves, n = Math.min(mine.length, theirs.length);
+    for (let i = 0; i < n; i++) if (mine[i] !== theirs[i]) return;
+    if (theirs.length < mine.length) { netSend({ t: "sync", moves: mine }); return; }
+    for (let i = mine.length; i < theirs.length && !state.over; i++) {
+      const mv = eng.fromUci(String(theirs[i]));
+      if (!mv) return;
+      commit(mv, i < theirs.length - 1, true);
+    }
+  }
+  function onNet(m) {
+    if (m.t === "waiting") { paintOnline(); return; }
+    if (m.t === "start") {
+      if (net.want === "find" && typeof m.room === "string" && (m.color === "w" || m.color === "b")) startOnline(m.room, m.color);
+      return;
+    }
+    if (!game || game.mode !== "online" || net.want !== "game") return;
+    switch (m.t) {
+      case "rejoined":
+      case "peer":
+        net.peer = m.t === "peer" ? !!m.on : !!m.peer;
+        if (net.peer) netSend({ t: "sync", moves: game.moves });
+        paintStatus();
+        break;
+      case "move": {
+        if (state.over) break;
+        const mv = m.n === game.moves.length && eng.turn() !== game.human ? eng.fromUci(String(m.uci)) : 0;
+        if (mv) { closePromo(); select(-1); commit(mv, false, true); }
+        else if (game.moves[m.n] !== m.uci) netSend({ t: "sync", moves: game.moves });      // out of step: compare notes
+        break;
+      }
+      case "sync": onSync(m.moves); break;
+      case "resign": if (!state.over) endOnline("resign", game.human); break;
+      case "left": if (!state.over) endOnline("left", null); break;
+    }
+  }
+  document.addEventListener("visibilitychange", () => {
+    // coming back to the tab: do not wait for the next retry
+    if (!document.hidden && net.want && !netOpen()) { net.tries = 0; netConnect(); }
+  });
 
   // ====================================================
   // INPUT: tap a piece then a square, or drag the piece there
@@ -473,6 +634,9 @@
   $("btn-mute").addEventListener("click", () => { audio(); setMuted(!save.muted); });
   $("btn-over-new").addEventListener("click", () => { audio(); show("menu"); });
   $("btn-over-see").addEventListener("click", () => { $("over").hidden = true; });
+  $("btn-online").addEventListener("click", () => { audio(); SFX.pick(); findOnline(); });
+  $("btn-online-retry").addEventListener("click", () => { audio(); findOnline(); });
+  $("btn-online-cancel").addEventListener("click", () => { audio(); abandonOnline(); show("menu"); });
 
   // ====================================================
   // MENUS
@@ -480,8 +644,9 @@
   function show(name) {
     screen = name;
     $("menu").hidden = name !== "menu";
+    $("online").hidden = name !== "online";
     $("over").hidden = true;
-    document.body.classList.toggle("in-menu", name === "menu");
+    document.body.classList.toggle("in-menu", name !== "play");
     if (name === "menu") { closePromo(); select(-1); paintMenu(); }
   }
   function paintMenu() {
@@ -518,8 +683,9 @@
       if (k === "enter" && document.activeElement === document.body) ($("continue-wrap").hidden ? $("btn-start") : $("btn-continue")).click();
       return;
     }
+    if (screen === "online") { if (k === "escape") $("btn-online-cancel").click(); return; }
     if (k === "escape") { if (promo) $("promo-cancel").click(); else if (!$("over").hidden) $("over").hidden = true; else show("menu"); return; }
-    if (k === "u" || k === "backspace") { e.preventDefault(); undo(); return; }
+    if ((k === "u" || k === "backspace") && game && game.mode !== "online") { e.preventDefault(); undo(); return; }
     if (k === "f") flip();
   });
   // no pinch or double tap zoom during play
@@ -535,10 +701,16 @@
   // ====================================================
   $("btn-mute").classList.toggle("is-off", save.muted);
   const g = save.game;
-  if (g && (g.mode === "cpu" || g.mode === "two") && Array.isArray(g.moves)) {
+  const usable = g && Array.isArray(g.moves) && (g.mode === "cpu" || g.mode === "two" || (g.mode === "online" && typeof g.room === "string" && g.room));
+  if (usable) {
     game = { mode: g.mode, level: Math.max(0, Math.min(3, g.level | 0)), human: g.human === "b" ? "b" : "w", moves: [], flipped: !!g.flipped, counted: !!g.counted };
     game.moves = replay(g.moves);
     state = eng.status();
+    if (g.mode === "online") {
+      game.room = g.room;
+      game.ended = g.ended && typeof g.ended === "object" ? { kind: g.ended.kind === "left" ? "left" : "resign", winner: g.ended.winner === "w" || g.ended.winner === "b" ? g.ended.winner : null } : null;
+      if (game.ended) state = { over: true, kind: game.ended.kind, winner: game.ended.winner, check: state.check };
+    }
   } else { replay([]); save.game = null; }
   buildSquares(); syncPieces(false); if (game) { paintSquares(); paintSides(); paintMoves(); paintStatus(); }
   show("menu");
@@ -549,7 +721,9 @@
     get game() { return game; }, get screen() { return screen; }, get thinking() { return thinking; },
     get state() { return state; }, get sans() { return sans.slice(); }, get selected() { return sel; },
     get targets() { return [...targets.keys()]; }, get promo() { return !!promo; }, get workerOk() { return workerOk; },
-    start: startGame, undo, flip, show, resume,
+    start: startGame, undo, flip, show, resume, findOnline, resign,
+    get online() { return { want: net.want, open: netOpen(), peer: net.peer, relay: RELAY }; },
+    netDrop: () => { if (net.ws) net.ws.close(); },
     move: (u) => { const m = eng.fromUci(u); if (!m || !game || state.over) return false; commit(m, false); return true; },
     squareAt,
   };

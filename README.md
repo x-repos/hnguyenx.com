@@ -4,6 +4,12 @@ Personal academic site of Hoang Anh (Ben) Nguyen — [hnguyenx.com](https://hngu
 
 Hand-written static HTML/CSS, no build step, hosted on GitHub Pages.
 
+## License
+
+All rights reserved. This site, its design, code and games may not be copied,
+reused, redistributed or used commercially without written permission. See
+[LICENSE](LICENSE).
+
 ## Structure
 
 - `index.html` — the whole main page (about, publications, projects, contact)
@@ -14,6 +20,7 @@ Hand-written static HTML/CSS, no build step, hosted on GitHub Pages.
 - `files/` — public PDFs (CV, etc.)
 - `assets/` — photo, CV, favicon, fonts
 - `counter-worker/` — Cloudflare Worker that tallies visits by country (KV-backed)
+- `chess-worker/` — Cloudflare Worker that pairs two players for online chess and passes their moves along (one Durable Object, WebSockets)
 - `CNAME` — custom domain for GitHub Pages
 
 ## Updating
@@ -31,7 +38,9 @@ one `<li>` block in `index.html`. Preview locally with:
 python3 -m http.server 8123   # http://localhost:8123
 ```
 
-## Reproduce this site from scratch
+## How this site is deployed
+
+Notes for my own use, in case the site ever has to be set up again.
 
 Two pieces deploy independently: the **static site** (GitHub Pages) and an
 optional **visitor counter** (Cloudflare Worker). You can ship the site without
@@ -86,3 +95,22 @@ The worker publishes to `https://hnguyenx-visits.<your-subdomain>.workers.dev`.
 Point the `api` URL near the top of the counter `<script>` in `index.html` at
 your own Worker URL, and add your domain to `ALLOWED_ORIGINS` in
 `counter-worker/worker.js`.
+
+### 4. Online chess relay (optional)
+
+`chess-worker/` is a second small Worker. It pairs two players who press
+"Play a friend online" in the chess game and passes their moves back and forth.
+It uses one Durable Object and fits in the free plan. Without it the rest of the
+chess game still works; only the online button cannot connect.
+
+```bash
+cd chess-worker
+npx wrangler login     # once
+npx wrangler deploy
+```
+
+It publishes to `https://hnguyenx-chess.<your-subdomain>.workers.dev`; opening
+that address in a browser should say the relay is running. The game connects to
+`wss://…/ws`. That address is the `RELAY` constant near the top of
+`play/chess/chess.js`, and the pages allowed to connect are `ALLOWED_ORIGIN` in
+`chess-worker/worker.js`. The pairing rules are in `chess-worker/hub.js`.

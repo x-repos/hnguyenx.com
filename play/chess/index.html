@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Chess</title>
-  <meta name="description" content="Chess: play the computer at four levels, or a friend on one screen. Play in the browser.">
+  <meta name="description" content="Chess: play the computer at four levels, a friend on one screen, or a friend online. Play in the browser.">
   <meta name="theme-color" content="#fffdf8" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#14110c" media="(prefers-color-scheme: dark)">
   <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg?v=3">
@@ -115,7 +115,7 @@
 
   <div class="panel" id="menu">
     <h1>Chess</h1>
-    <p class="panel__sub">Play the computer or a friend on one screen.</p>
+    <p class="panel__sub">Play the computer, or a friend here or online.</p>
     <div class="panel__buttons" id="continue-wrap" hidden>
       <button type="button" id="btn-continue">Continue game</button>
     </div>
@@ -139,11 +139,21 @@
         <div class="panel__buttons">
           <button type="button" id="btn-start">Play the computer</button>
           <button type="button" id="btn-two" class="is-plain">Two players, one screen</button>
+          <button type="button" id="btn-online" class="is-plain">Play a friend online</button>
         </div>
       </div>
     </div>
     <p class="panel__best" id="best"></p>
     <p class="panel__links"><a href="../">All games</a><a href="../../">Home</a></p>
+  </div>
+
+  <div class="panel panel--small" id="online" hidden>
+    <h2>Play online</h2>
+    <p class="panel__sub" id="online-text" aria-live="polite">Connecting</p>
+    <div class="panel__buttons">
+      <button type="button" id="btn-online-retry" hidden>Try again</button>
+      <button type="button" id="btn-online-cancel" class="is-plain">Cancel</button>
+    </div>
   </div>
 
   <div class="panel panel--small" id="over" hidden>
@@ -156,6 +166,6 @@
   </div>
 
   <script src="engine.js?v=1"></script>
-  <script src="chess.js?v=1"></script>
+  <script src="chess.js?v=2"></script>
 </body>
 </html>

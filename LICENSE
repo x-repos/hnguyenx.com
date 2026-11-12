@@ -1,0 +1,23 @@
+Copyright (c) 2026 Hoang Anh (Ben) Nguyen. All rights reserved.
+
+This repository is the source of the personal website hnguyenx.com: its text,
+design, images, animations, code and games.
+
+You may visit the site and read this source for your own personal reference.
+
+No other permission is given. Without the prior written permission of the
+copyright holder, you may not:
+
+  - copy, reproduce or republish any part of this material;
+  - modify it, or build your own website, game or other work from it;
+  - distribute, sublicense or sell it;
+  - use any part of it for commercial purposes.
+
+Material made by others keeps its own licence and is not covered by this
+notice. That includes the Crimson Pro typeface (SIL Open Font License), the
+Twemoji country flags font, and the libraries the site loads from public CDNs
+(three.js, GSAP, Lenis and KaTeX).
+
+THIS MATERIAL IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+
+To ask for permission, contact the author through https://hnguyenx.com.

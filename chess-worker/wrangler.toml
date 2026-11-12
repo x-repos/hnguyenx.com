@@ -1,0 +1,12 @@
+name = "hnguyenx-chess"
+main = "worker.js"
+compatibility_date = "2026-06-01"
+
+[[durable_objects.bindings]]
+name = "HUB"
+class_name = "ChessHub"
+
+# SQLite-backed, which is the kind of Durable Object the free plan allows
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ChessHub"]
