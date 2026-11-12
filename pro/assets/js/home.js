@@ -1353,20 +1353,6 @@
       pointer.active = 1;
     }, { passive: true });
     document.addEventListener("pointerleave", () => { pointer.active = 0; });
-    // The hero portrait leans toward the cursor.
-    const portrait = document.querySelector(".hero-portrait-flip__inner");
-    if (portrait) {
-      let queued = false;
-      window.addEventListener("pointermove", () => {
-        if (queued) return;
-        queued = true;
-        requestAnimationFrame(() => {
-          queued = false;
-          portrait.style.setProperty("--ty", (pointer.x * 26).toFixed(1) + "deg");
-          portrait.style.setProperty("--tx", (-pointer.y * 20).toFixed(1) + "deg");
-        });
-      }, { passive: true });
-    }
   }
   window.addEventListener("pointerdown", (e) => {
     if (e.button || (e.target.closest && e.target.closest("a, button, input, textarea, select, label, nav, form, .home-outro__card"))) return;
@@ -1380,91 +1366,120 @@
   }, { passive: true });
 
   // ====================================================
-  // EQUATIONS — the maths behind each scale, floating around the cloud as
-  // part of the picture (not in the copy). Each scene has its own set; they
-  // drift, fade in letter-sharp as the scene arrives, and blur away as it
-  // leaves. Typeset with KaTeX when it has loaded; skipped otherwise.
-  //   [tex, dx, dy]  offsets from the cloud's centre in % of the viewport
+  // EQUATIONS — the maths behind each scale, as part of the picture (not in
+  // the copy). Each scene's equations stream around the particle figure on a
+  // tilted ring: they pass in front of it large and bright, swing round the
+  // back small and dim, and the whole ring speeds up while you scroll.
+  // Typeset with KaTeX when it has loaded; skipped otherwise.
   // ====================================================
   const EQUATIONS = {
-    qubits: [
-      ["|\\psi\\rangle = \\alpha|0\\rangle + \\beta|1\\rangle", -31, -22],
-      ["H = -\\sum_{i<j} J_{ij}\\,\\sigma^z_i \\sigma^z_j - \\sum_i h_i\\,\\sigma^z_i", 30, -27],
-      ["\\min_{x \\in \\{0,1\\}^n} \; x^{\\mathsf T} Q\\, x", -32, 26],
-      ["|\\alpha|^2 + |\\beta|^2 = 1", 31, 24],
+    qubits: [   // quantum annealing / QUBO
+      "|\\psi\\rangle = \\alpha|0\\rangle + \\beta|1\\rangle",
+      "H_P = -\\sum_{i<j} J_{ij}\\,\\sigma^z_i \\sigma^z_j - \\sum_i h_i\\,\\sigma^z_i",
+      "H(s) = -A(s)\\sum_i \\sigma^x_i + B(s)\\,H_P",
+      "\\min_{x \\in \\{0,1\\}^n} \; x^{\\mathsf T} Q\\, x",
+      "x_i = \\tfrac12\\,(1 + s_i), \\quad s_i = \\pm 1",
+      "|\\alpha|^2 + |\\beta|^2 = 1",
     ],
-    quantum: [
-      ["|\\psi\\rangle = \\cos\\tfrac{\\theta}{2}\\,|0\\rangle + e^{i\\varphi}\\sin\\tfrac{\\theta}{2}\\,|1\\rangle", -3, -37],
-      ["i\\hbar\\,\\partial_t |\\psi\\rangle = \\hat H\\,|\\psi\\rangle", 14, 35],
-      ["R_{\\hat n}(\\theta) = e^{-i\\theta\\,\\hat n\\cdot\\vec\\sigma/2}", -15, 37],
+    quantum: [  // gate-based and hybrid quantum–classical inversion
+      "|\\psi\\rangle = \\cos\\tfrac{\\theta}{2}\\,|0\\rangle + e^{i\\varphi}\\sin\\tfrac{\\theta}{2}\\,|1\\rangle",
+      "i\\hbar\\,\\partial_t |\\psi\\rangle = \\hat H\\,|\\psi\\rangle",
+      "R_{\\hat n}(\\theta) = e^{-i\\theta\\,\\hat n\\cdot\\vec\\sigma/2}",
+      "\\theta^* = \\arg\\min_\\theta \\,\\langle\\psi(\\theta)|\\hat H|\\psi(\\theta)\\rangle",
+      "\\frac{\\partial \\langle \\hat O\\rangle}{\\partial\\theta} = \\tfrac12\\Big[\\langle \\hat O\\rangle_{\\theta+\\frac{\\pi}{2}} - \\langle \\hat O\\rangle_{\\theta-\\frac{\\pi}{2}}\\Big]",
+      "\\mathcal L = \\lambda_{\\mathrm{PDE}}\\mathcal L_{\\mathrm{PDE}} + \\lambda_{\\mathrm{data}}\\mathcal L_{\\mathrm{data}} + \\lambda_{\\mathrm{BC}}\\mathcal L_{\\mathrm{BC}}",
     ],
-    dft: [
-      ["\\Big[-\\tfrac{\\hbar^2}{2m}\\nabla^2 + v_{\\mathrm{eff}}(\\mathbf r)\\Big]\\varphi_i = \\varepsilon_i\\,\\varphi_i", -2, -37],
-      ["n(\\mathbf r) = \\sum_i |\\varphi_i(\\mathbf r)|^2", 15, 33],
-      ["E[n] = T_s[n] + \\int v\\,n\\,d\\mathbf r + E_H[n] + E_{xc}[n]", -8, 39],
-      ["\\psi_{320} \\propto r^2 e^{-r/3a_0}\\,(3\\cos^2\\theta - 1)", 12, -29],
+    dft: [      // density functional theory
+      "\\Big[-\\tfrac{\\hbar^2}{2m}\\nabla^2 + v_{\\mathrm{eff}}(\\mathbf r)\\Big]\\varphi_i = \\varepsilon_i\\,\\varphi_i",
+      "n(\\mathbf r) = \\sum_i |\\varphi_i(\\mathbf r)|^2",
+      "E[n] = T_s[n] + \\int v\\,n\\,d\\mathbf r + E_H[n] + E_{xc}[n]",
+      "E_0 = \\min_{n}\\, E[n]",
+      "\\mathbf F_I = -\\Big\\langle \\psi \\Big| \\frac{\\partial \\hat H}{\\partial \\mathbf R_I} \\Big| \\psi \\Big\\rangle",
+      "\\psi_{n\\mathbf k}(\\mathbf r) = e^{i\\mathbf k\\cdot\\mathbf r}\\,u_{n\\mathbf k}(\\mathbf r)",
+      "\\psi_{320} \\propto r^2 e^{-r/3a_0}\\,(3\\cos^2\\theta - 1)",
     ],
-    md: [
-      ["m_i\\,\\ddot{\\mathbf r}_i = -\\nabla_i U(\\mathbf r_1,\\dots,\\mathbf r_N)", -3, -37],
-      ["\\mathbf r(t+\\Delta t) = 2\\mathbf r(t) - \\mathbf r(t-\\Delta t) + \\tfrac{\\mathbf F}{m}\\Delta t^2", -6, 38],
-      ["P = \\frac{N k_B T}{V} + \\frac{1}{3V}\\Big\\langle \\sum_i \\mathbf r_i\\cdot\\mathbf F_i \\Big\\rangle", 13, 30],
+    md: [       // molecular dynamics of silica
+      "m_i\\,\\ddot{\\mathbf r}_i = -\\nabla_i U(\\mathbf r_1,\\dots,\\mathbf r_N)",
+      "\\mathbf r(t+\\Delta t) = 2\\mathbf r(t) - \\mathbf r(t-\\Delta t) + \\tfrac{\\mathbf F}{m}\\Delta t^2",
+      "U_{ij} = \\frac{q_i q_j}{4\\pi\\varepsilon_0 r} + A_{ij}\\,e^{-r/\\rho_{ij}} - \\frac{C_{ij}}{r^6}",
+      "P = \\frac{N k_B T}{V} + \\frac{1}{3V}\\Big\\langle \\sum_i \\mathbf r_i\\cdot\\mathbf F_i \\Big\\rangle",
+      "g(r) = \\frac{V}{4\\pi r^2 N^2}\\Big\\langle \\sum_{i\\neq j} \\delta(r - r_{ij}) \\Big\\rangle",
+      "\\tfrac32 N k_B T = \\Big\\langle \\sum_i \\tfrac12 m_i v_i^2 \\Big\\rangle",
     ],
-    mantle: [
-      ["\\mathrm{Ra} = \\frac{\\rho\\, g\\, \\alpha\\, \\Delta T\\, d^3}{\\kappa\\,\\eta}", -16, -35],
-      ["-\\nabla p + \\eta\\,\\nabla^2\\mathbf u + \\rho\\, g\\, \\alpha\\, T\\,\\hat{\\mathbf z} = 0", 6, -39],
-      ["\\frac{\\partial T}{\\partial t} + \\mathbf u\\cdot\\nabla T = \\kappa\\,\\nabla^2 T", -8, 38],
-      ["P = \\tfrac{3K_0}{2}\\Big[\\big(\\tfrac{V_0}{V}\\big)^{7/3} - \\big(\\tfrac{V_0}{V}\\big)^{5/3}\\Big]\\cdots", 12, 33],
+    mantle: [   // mantle convection and high-pressure mineral physics
+      "\\mathrm{Ra} = \\frac{\\rho\\, g\\, \\alpha\\, \\Delta T\\, d^3}{\\kappa\\,\\eta}",
+      "-\\nabla p + \\nabla\\cdot\\big(\\eta\\,\\nabla\\mathbf u\\big) + \\rho\\, g\\, \\alpha\\, T\\,\\hat{\\mathbf r} = 0",
+      "\\frac{\\partial T}{\\partial t} + \\mathbf u\\cdot\\nabla T = \\kappa\\,\\nabla^2 T + \\frac{H}{c_p}",
+      "P = \\tfrac{3K_0}{2}\\Big[\\big(\\tfrac{V_0}{V}\\big)^{7/3} - \\big(\\tfrac{V_0}{V}\\big)^{5/3}\\Big]\\Big\\{1 + \\tfrac34 (K_0' - 4)\\Big[\\big(\\tfrac{V_0}{V}\\big)^{2/3} - 1\\Big]\\Big\\}",
+      "\\Big(\\frac{\\partial T}{\\partial P}\\Big)_S = \\frac{\\alpha\\, T}{\\rho\\, c_p}",
+      "\\frac{dP}{dT} = \\frac{\\Delta S}{\\Delta V}",
+      "\\eta = \\eta_0 \\exp\\!\\Big(\\frac{E^* + P V^*}{R\\,T}\\Big)",
     ],
-    planet: [
-      ["\\rho\\,\\ddot{\\mathbf u} = \\nabla\\cdot\\boldsymbol\\sigma + \\mathbf f", -15, -34],
-      ["\\frac{1}{c^2}\\frac{\\partial^2 u}{\\partial t^2} - \\nabla^2 u = s(\\mathbf x, t)", 7, -39],
-      ["\\chi(\\mathbf m) = \\tfrac12 \\sum_{r} \\big\\| \\mathbf d_{\\mathrm{obs}} - \\mathbf d_{\\mathrm{syn}}(\\mathbf m) \\big\\|^2", -5, 38],
-      ["v_P = \\sqrt{\\frac{K + \\tfrac43 \\mu}{\\rho}}", 16, 30],
+    planet: [   // seismology, ambient noise, full-waveform inversion
+      "\\rho\\,\\ddot{\\mathbf u} = \\nabla\\cdot\\boldsymbol\\sigma + \\mathbf f",
+      "\\frac{1}{c^2}\\frac{\\partial^2 u}{\\partial t^2} - \\nabla^2 u = s(\\mathbf x, t)",
+      "\\chi(\\mathbf m) = \\tfrac12 \\sum_{r} \\big\\| \\mathbf d_{\\mathrm{obs}} - \\mathbf d_{\\mathrm{syn}}(\\mathbf m) \\big\\|^2",
+      "\\frac{\\partial \\chi}{\\partial m} = -\\int_0^T \\lambda^{\\dagger}\\,\\frac{\\partial \\mathcal L}{\\partial m}\\,u\;dt",
+      "\\frac{d}{dt}\\,C_{AB}(t) \\propto -G_{AB}(t) + G_{AB}(-t)",
+      "v_P = \\sqrt{\\frac{K + \\tfrac43 \\mu}{\\rho}}, \\quad v_S = \\sqrt{\\frac{\\mu}{\\rho}}",
     ],
-    solar: [
-      ["T^2 = \\frac{4\\pi^2}{G M}\\,a^3", -17, -33],
-      ["\\mathbf F = -\\frac{G\\,m_1 m_2}{r^2}\\,\\hat{\\mathbf r}", 12, -37],
-      ["\\frac{dP}{dr} = -\\frac{G\\,m(r)\\,\\rho(r)}{r^2}", -4, 37],
+    solar: [    // orbits and planetary interiors
+      "T^2 = \\frac{4\\pi^2}{G M}\\,a^3",
+      "\\mathbf F = -\\frac{G\\,m_1 m_2}{r^2}\\,\\hat{\\mathbf r}",
+      "v^2 = G M\\Big(\\frac{2}{r} - \\frac{1}{a}\\Big)",
+      "\\frac{dP}{dr} = -\\frac{G\\,m(r)\\,\\rho(r)}{r^2}",
+      "\\frac{dm}{dr} = 4\\pi r^2 \\rho(r)",
+      "T_{\\mathrm{eq}} = T_\\star \\sqrt{\\frac{R_\\star}{2a}}\\,(1 - A)^{1/4}",
     ],
-    galaxy: [
-      ["v(r) = \\sqrt{\\frac{G\\,M(<r)}{r}}", -16, -33],
-      ["r(\\theta) = a\\,e^{\\,b\\theta}", 13, -36],
-      ["N = R_*\\, f_p\\, n_e\\, f_l\\, f_i\\, f_c\\, L", -3, 37],
+    galaxy: [   // galactic dynamics and cosmology
+      "v(r) = \\sqrt{\\frac{G\\,M(<r)}{r}}",
+      "r(\\theta) = a\\,e^{\\,b\\theta}",
+      "2\\langle T\\rangle + \\langle U\\rangle = 0",
+      "v = H_0\\, d",
+      "\\Big(\\frac{\\dot a}{a}\\Big)^2 = \\frac{8\\pi G}{3}\\rho - \\frac{k c^2}{a^2}",
+      "N = R_*\\, f_p\\, n_e\\, f_l\\, f_i\\, f_c\\, L",
     ],
-    outro: [
-      ["e^{i\\pi} + 1 = 0", -34, -24],
-      ["\\frac{\\pi}{4} = \\sum_{k=0}^{\\infty} \\frac{(-1)^k}{2k+1}", 33, -22],
-      ["\\int_{-\\infty}^{\\infty} e^{-x^2}\\,dx = \\sqrt{\\pi}", -33, 27],
-      ["\\zeta(2) = \\sum_{n=1}^{\\infty}\\frac{1}{n^2} = \\frac{\\pi^2}{6}", 33, 26],
+    outro: [    // π
+      "e^{i\\pi} + 1 = 0",
+      "\\frac{\\pi}{4} = \\sum_{k=0}^{\\infty} \\frac{(-1)^k}{2k+1}",
+      "\\int_{-\\infty}^{\\infty} e^{-x^2}\\,dx = \\sqrt{\\pi}",
+      "\\zeta(2) = \\sum_{n=1}^{\\infty}\\frac{1}{n^2} = \\frac{\\pi^2}{6}",
+      "n! \\approx \\sqrt{2\\pi n}\\,\\Big(\\frac{n}{e}\\Big)^n",
+      "\\frac{\\pi}{2} = \\prod_{n=1}^{\\infty} \\frac{4n^2}{4n^2 - 1}",
     ],
   };
   const eqItems = [];
-  let eqLayer = null;
+  let eqLayer = null, eqPhase = 0;
   (function buildEquations() {
     if (!window.katex) return;
     eqLayer = document.createElement("div");
     eqLayer.className = "home-eqs";
     eqLayer.setAttribute("aria-hidden", "true");
     canvas.insertAdjacentElement("afterend", eqLayer);
-    SCENE_KEYS.forEach((key) => {
-      (EQUATIONS[key] || []).forEach((e, n) => {
-        if (isMobile && n > 1) return; // phones: two per scene
+    SCENE_KEYS.forEach((key, si) => {
+      const list = (EQUATIONS[key] || []).slice(0, isMobile ? 3 : 99);
+      const centred = key === "qubits" || key === "outro";
+      list.forEach((tex, n) => {
         const el = document.createElement("div");
         el.className = "home-eq";
-        try { window.katex.render(e[0], el, { throwOnError: false, displayMode: true }); }
+        try { window.katex.render(tex, el, { throwOnError: false, displayMode: true }); }
         catch (err) { return; }
-        // keep clear of the top nav and the bottom edge
-        const dx = isMobile ? (n ? 8 : -6) : e[1], dy = isMobile ? (n ? 40 : -36) : Math.max(-34, Math.min(36, e[2]));
-        el.style.left = (50 + dx) + "vw";
-        el.style.top = (50 + dy) + "%";
         eqLayer.appendChild(el);
-        eqItems.push({ el, key, ph: rand() * TAU, rot: (rand() - 0.5) * 9, sp: 0.25 + rand() * 0.3, depth: 0.5 + rand(), shown: -1 });
+        eqItems.push({
+          el, key, centred,
+          a0: n / list.length * TAU + si * 0.9,   // evenly spaced round the ring
+          track: n % 2,                           // inner / outer track, so neighbours never collide
+          dir: si % 2 ? -1 : 1,                   // alternate scenes stream the other way
+          ph: rand() * TAU, shown: -1,
+        });
       });
     });
   })();
-  function updateEquations(t) {
+  function updateEquations(t, dt) {
     if (!eqLayer) return;
-    eqLayer.style.transform = "translate3d(" + (viewShift * W).toFixed(1) + "px,0,0)";
+    // The stream never stops, and scrolling pushes it along.
+    eqPhase += dt * (0.11 + Math.min(1.2, Math.abs(scrollVel)) * 0.5);
+    const cx = W * (0.5 + viewShift), cy = H * 0.5;
     for (const q of eqItems) {
       let w = sceneW[q.key] || 0;
       w = w * w * (3 - 2 * w);
@@ -1473,14 +1488,30 @@
         continue;
       }
       q.shown = 1;
-      const x = Math.sin(t * q.sp + q.ph) * 14 - lean.x * 26 * q.depth;
-      const y = Math.cos(t * q.sp * 0.8 + q.ph * 1.7) * 10 + lean.y * 18 * q.depth + (1 - w) * 46 * (q.ph > Math.PI ? 1 : -1);
-      const pulse = 0.82 + 0.18 * Math.sin(t * 0.9 + q.ph * 3);
+      const a = q.a0 + q.dir * eqPhase;
+      const ca = Math.cos(a), sa = Math.sin(a);
+      // ring size: wide around the centred scenes, tighter beside the copy
+      let rx, ry;
+      if (isMobile) { rx = W * 0.3; ry = H * (q.track ? 0.42 : 0.36); }
+      else if (q.centred) { rx = W * (q.track ? 0.36 : 0.31); ry = H * (q.track ? 0.4 : 0.33); }
+      else { rx = W * (q.track ? 0.235 : 0.19); ry = H * (q.track ? 0.41 : 0.355); }
+      // The ring is tilted: its top half is the far side.
+      const depth = -sa * 0.75 + 0.25 * Math.cos(a * 2 + q.ph);   // -1 far … +1 near
+      const near = 0.5 + 0.5 * depth;
+      let x = cx + rx * ca - lean.x * 30 * (0.4 + near);
+      let y = cy + ry * sa + lean.y * 20 * (0.4 + near) + Math.sin(t * 0.6 + q.ph) * 8;
+      y += (1 - w) * 60 * (sa > 0 ? 1 : -1); // arrive from / leave toward the edges
+      y = Math.max(H * 0.12, Math.min(H * 0.92, y));
+      let alpha = w * (0.5 + 0.5 * near);
+      // beside the copy, dim equations as they swing over the text column
+      if (!q.centred && !isMobile) alpha *= 0.25 + 0.75 * smooth(-0.95, -0.35, ca);
       q.el.style.visibility = "visible";
-      q.el.style.opacity = (w * pulse).toFixed(3);
-      q.el.style.filter = w > 0.97 ? "none" : "blur(" + ((1 - w) * 7).toFixed(1) + "px)";
-      q.el.style.transform = "translate(-50%,-50%) translate3d(" + x.toFixed(1) + "px," + y.toFixed(1) + "px,0) rotate(" +
-        (q.rot + Math.sin(t * 0.3 + q.ph) * 1.5).toFixed(2) + "deg) scale(" + (0.86 + 0.14 * w).toFixed(3) + ")";
+      q.el.style.opacity = alpha.toFixed(3);
+      q.el.style.zIndex = near > 0.5 ? "2" : "1";
+      const blur = (1 - w) * 7 + (1 - near) * 0.6;
+      q.el.style.filter = blur < 0.3 ? "none" : "blur(" + blur.toFixed(1) + "px)";
+      q.el.style.transform = "translate3d(" + x.toFixed(1) + "px," + y.toFixed(1) + "px,0) translate(-50%,-50%) rotate(" +
+        (q.dir * ca * 5).toFixed(2) + "deg) scale(" + ((0.7 + 0.36 * near) * (0.86 + 0.14 * w)).toFixed(3) + ")";
     }
   }
 
@@ -1556,7 +1587,7 @@
     viewShift = shift;
     camera.setViewOffset(W, H, -W * shift, 0, W, H);
 
-    updateEquations(t);
+    updateEquations(t, dt);
 
     // Outro: π sits behind the contact cards, so let it recede.
     uniforms.uOpacity.value = 1 - 0.6 * smooth(sections.length - 1.6, sections.length - 1, story);
@@ -1731,15 +1762,15 @@
           form.reset();
           status.className = "home-ask__status is-success";
           status.textContent = msg(
-            "Thanks — your message landed in my inbox.",
-            "Cảm ơn — tin nhắn của bạn đã đến hộp thư của tôi."
+            "Thanks, your message landed in my inbox.",
+            "Cảm ơn, tin nhắn của bạn đã đến hộp thư của tôi."
           );
         })
         .catch(function () {
           status.className = "home-ask__status is-error";
           status.textContent = msg(
-            "Couldn't send right now — try again, or email me directly.",
-            "Không gửi được lúc này — hãy thử lại, hoặc email cho tôi trực tiếp."
+            "Couldn't send right now. Try again, or email me directly.",
+            "Không gửi được lúc này. Hãy thử lại, hoặc email cho tôi trực tiếp."
           );
         })
         .then(function () {
