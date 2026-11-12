@@ -10,6 +10,7 @@ Hand-written static HTML/CSS, no build step, hosted on GitHub Pages.
 - `style.css` — all styling (Crimson Pro, self-hosted in `assets/fonts/`)
 - `pro/` — animated "Pro Mode" homepage (three.js/GSAP, ported from the old site)
 - `blog/` — blog index and posts
+- `play/` — Starship, a canvas arcade shooter (no assets, no build step)
 - `files/` — public PDFs (CV, etc.)
 - `assets/` — photo, CV, favicon, fonts
 - `counter-worker/` — Cloudflare Worker that tallies visits by country (KV-backed)

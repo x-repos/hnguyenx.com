@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Starship</title>
+  <meta name="description" content="Starship: an arcade space shooter with 48 waves and 8 bosses. Play in the browser.">
+  <meta name="theme-color" content="#03040a">
+  <link rel="icon" type="image/svg+xml" href="../pro/images/favicon-pro.svg?v=2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="game.css?v=1">
+</head>
+<body>
+  <canvas id="game" aria-label="Starship game"></canvas>
+
+  <div class="hud" id="hud" hidden>
+    <button class="hud__btn" id="btn-pause" type="button" aria-label="Pause">II</button>
+    <button class="hud__btn" id="btn-mute" type="button" aria-label="Sound on or off">♪</button>
+  </div>
+  <button class="bomb" id="btn-bomb" type="button" aria-label="Fire a missile" hidden>✹</button>
+
+  <div class="panel" id="menu">
+    <h1>Starship</h1>
+    <p class="panel__sub">8 sectors · 48 waves · 8 bosses</p>
+    <div class="panel__buttons">
+      <button type="button" id="btn-new">New game</button>
+      <button type="button" id="btn-continue" hidden>Continue</button>
+    </div>
+    <p class="panel__best" id="best"></p>
+    <ul class="panel__help">
+      <li><b>Move</b> mouse, arrow keys or WASD. On a phone, drag anywhere.</li>
+      <li><b>Fire</b> is automatic.</li>
+      <li><b>Missile</b> Space, right click, or the ✹ button. It clears the screen.</li>
+      <li><b>Pause</b> P or Esc. <b>Sound</b> M.</li>
+    </ul>
+    <p class="panel__back"><a href="../pro/">Back to the site</a></p>
+  </div>
+
+  <div class="panel" id="paused" hidden>
+    <h2>Paused</h2>
+    <div class="panel__buttons">
+      <button type="button" id="btn-resume">Resume</button>
+      <button type="button" id="btn-quit">Quit to menu</button>
+    </div>
+  </div>
+
+  <div class="panel" id="over" hidden>
+    <h2 id="over-title">Game over</h2>
+    <p class="panel__sub" id="over-text"></p>
+    <div class="panel__buttons">
+      <button type="button" id="btn-retry">Retry this sector</button>
+      <button type="button" id="btn-menu">Menu</button>
+    </div>
+  </div>
+
+  <script src="game.js?v=1"></script>
+</body>
+</html>
