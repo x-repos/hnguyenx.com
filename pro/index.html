@@ -153,24 +153,22 @@
     </h2>
     <p class="home-scene__body">
       <span lang="en">
-        Full-waveform inversion is a high-dimensional, non-convex
-        optimization, exactly the kind of problem people want to throw at a
-        quantum computer. I work across three flavors:
-        annealing on the D-Wave Advantage (reformulating subproblems as QUBO),
-        gate-based quantum hardware (variational algorithms on
-        IBM-style devices), and hybrid quantum-classical methods
-        that hand specific kernels to the quantum solver while the rest stays on
-        classical HPC.
+        Seismic inversion is a large, non-convex optimization problem, and simulating waves
+        is expensive: both are things people hope quantum computers can speed up. I work on
+        three approaches: quantum annealing on the D-Wave Advantage, where traveltime
+        inversion is rewritten as a QUBO; explicit gate-based circuits that simulate acoustic
+        and elastic wave propagation with absorbing boundaries; and hybrid quantum-classical
+        neural networks for full-waveform inversion, where small parameterised circuits sit
+        inside a physics-informed network.
       </span>
       <span lang="vi">
-        Đảo ngược dạng sóng đầy đủ (FWI) là một bài toán tối ưu
-        nhiều chiều, không lồi, đúng kiểu bài toán người ta muốn giao cho một
-        máy tính lượng tử. Tôi nghiên cứu cả ba hướng:
-        annealing trên D-Wave Advantage (định dạng các bài toán
-        con dưới dạng QUBO), phần cứng lượng tử dựa trên cổng
-        (thuật toán biến phân trên thiết bị kiểu IBM), và các phương pháp
-        lai lượng tử-cổ điển giao những phần lõi cụ thể cho
-        máy tính lượng tử, phần còn lại chạy trên HPC cổ điển.
+        Đảo ngược địa chấn là một bài toán tối ưu lớn, không lồi, và mô phỏng sóng thì tốn kém:
+        cả hai đều là những việc người ta hy vọng máy tính lượng tử có thể tăng tốc. Tôi nghiên
+        cứu ba hướng: ủ lượng tử (annealing) trên D-Wave Advantage, nơi bài toán đảo ngược thời
+        gian truyền được viết lại dưới dạng QUBO; các mạch lượng tử dựa trên cổng mô phỏng sự
+        truyền sóng âm và sóng đàn hồi với biên hấp thụ; và mạng nơ-ron lai lượng tử-cổ điển
+        cho đảo ngược dạng sóng đầy đủ (FWI), trong đó các mạch tham số nhỏ nằm bên trong một
+        mạng nơ-ron ràng buộc vật lý.
       </span>
     </p>
   </div>
@@ -191,17 +189,17 @@
     </h2>
     <p class="home-scene__body">
       <span lang="en">
-        Before atoms have positions they have orbitals: solutions to a many-body
-        problem we don't solve exactly, but approximate beautifully with DFT,
-        running on national HPC clusters. The same machinery gives me energies,
-        forces, elastic moduli, equations of state: all the ingredients I feed into bigger
-        simulations.
+        Electrons do not sit at points. They spread out as clouds, the solutions of a
+        many-body problem that cannot be solved exactly but is approximated well by DFT. I use
+        it, with Quantum ESPRESSO, to get the electronic structure and formation enthalpies of
+        hydrogen-storage alloys such as Mg and Mg<sub>2</sub>Ni: which phases are stable, and
+        how tightly they hold hydrogen.
       </span>
       <span lang="vi">
-        Trước khi nguyên tử có vị trí, chúng có orbital: nghiệm của một bài toán
-        nhiều hạt mà ta không giải chính xác được, nhưng xấp xỉ rất đẹp bằng DFT,
-        chạy trên các cụm HPC quốc gia. Cùng cỗ máy đó cho tôi năng lượng, lực,
-        mô-đun đàn hồi, phương trình trạng thái: những thành phần tôi đưa vào các mô phỏng lớn hơn.
+        Điện tử không nằm tại một điểm. Chúng trải ra thành những đám mây, là nghiệm của một bài
+        toán nhiều hạt không thể giải chính xác nhưng được DFT xấp xỉ rất tốt. Tôi dùng DFT,
+        với Quantum ESPRESSO, để tính cấu trúc điện tử và enthalpy tạo thành của các hợp kim
+        trữ hydro như Mg và Mg<sub>2</sub>Ni: pha nào bền, và chúng giữ hydro chặt đến đâu.
       </span>
     </p>
   </div>
@@ -222,20 +220,18 @@
     </h2>
     <p class="home-scene__body">
       <span lang="en">
-        Drop ten thousand atoms in a box, give them forces, integrate Newton at one femtosecond
-        a step. Squeeze. SiO<sub>2</sub> rearranges; silicon grows from four
-        bonds to six; pores collapse irreversibly. I run these on HPC and pull
-        structure out with ring statistics, Voronoi cells, DBSCAN clustering, and increasingly
-        with deep learning models that learn the order parameters the
-        hand-crafted descriptors miss.
+        Put thousands of atoms in a box, give them forces, and integrate Newton's equations a
+        femtosecond at a time. Then squeeze. In silica and magnesium silicates the network
+        densifies and silicon goes from four oxygen neighbours to five and six. I ran these
+        simulations with parallel codes on the Fugaku supercomputer and read the structure out
+        with ring statistics and Voronoi analysis.
       </span>
       <span lang="vi">
-        Thả mười nghìn nguyên tử vào một hộp, cho chúng các lực, tích phân Newton từng bước một
-        femtô-giây. Nén lại. SiO<sub>2</sub> tái sắp xếp; silicon tăng từ bốn
-        liên kết lên sáu; các lỗ rỗng sụp đổ không thể đảo ngược. Tôi chạy chúng trên
-        HPC rồi trích xuất cấu trúc bằng thống kê vòng, ô Voronoi, phân cụm
-        DBSCAN, và ngày càng dùng các mô hình học sâu học được những tham số
-        trật tự mà các mô tả thủ công bỏ sót.
+        Đặt hàng nghìn nguyên tử vào một hộp, cho chúng các lực, rồi tích phân phương trình Newton
+        từng femtô-giây một. Sau đó nén lại. Trong silica và các silicat magie, mạng lưới đặc
+        lại và silic chuyển từ bốn nguyên tử oxy lân cận lên năm rồi sáu. Tôi chạy các mô phỏng
+        này bằng mã song song trên siêu máy tính Fugaku và phân tích cấu trúc bằng thống kê
+        vòng và phân tích Voronoi.
       </span>
     </p>
   </div>
@@ -256,16 +252,15 @@
     </h2>
     <p class="home-scene__body">
       <span lang="en">
-        The minerals from the previous scene now make up most of Earth's mantle.
-        At these conditions, materials science is planetary science: the phase you find
-        changes how seismic waves travel through it, and how mass redistributes itself over
-        billions of years.
+        Magnesium silicates like the ones in the previous scene make up most of Earth's
+        mantle. At these conditions, materials science is planetary science: the phase a
+        mineral takes changes how seismic waves travel through it and how the mantle flows
+        over billions of years.
       </span>
       <span lang="vi">
-        Các khoáng vật từ cảnh trước giờ chiếm phần lớn manti Trái Đất. Ở những
-        điều kiện này, khoa học vật liệu chính là khoa học hành tinh: pha mà bạn tìm
-        thấy thay đổi cách sóng địa chấn truyền qua, và cách khối lượng tự tái phân bố qua
-        hàng tỷ năm.
+        Các silicat magie như ở cảnh trước chiếm phần lớn manti Trái Đất. Ở những điều kiện này,
+        khoa học vật liệu chính là khoa học hành tinh: pha mà khoáng vật tồn tại thay đổi cách
+        sóng địa chấn truyền qua nó và cách manti chảy qua hàng tỷ năm.
       </span>
     </p>
   </div>
@@ -286,15 +281,16 @@
     </h2>
     <p class="home-scene__body">
       <span lang="en">
-        I image Earth's interior with ambient-noise tomography and invert it
-        with full-waveform inversion. It is the same inversion problem we threw at the
-        quantum annealer at the top of this page, just from the planetary side instead of the
-        qubit side.
+        I image the crust and upper mantle with ambient-noise tomography, down to 200 km
+        beneath the Banda arc. At a much smaller scale I run elastic full-waveform inversion on
+        geophone and fibre-optic data. It is the same kind of inverse problem as the quantum
+        work at the top of this page, approached from the planet's side instead of the qubit's.
       </span>
       <span lang="vi">
-        Tôi chụp ảnh nội thất Trái Đất bằng chụp cắt lớp nhiễu nền và đảo ngược
-        nó bằng FWI. Đó chính là bài toán đảo ngược chúng ta đã giao cho máy
-        annealer lượng tử ở đầu trang này, chỉ nhìn từ phía hành tinh thay vì phía qubit.
+        Tôi chụp ảnh vỏ và manti trên bằng chụp cắt lớp nhiễu nền, sâu đến 200 km bên dưới cung
+        Banda. Ở thang nhỏ hơn nhiều, tôi chạy đảo ngược dạng sóng đầy đủ đàn hồi (FWI) trên dữ
+        liệu geophone và cáp quang. Đó là cùng một kiểu bài toán ngược với phần lượng tử ở đầu
+        trang này, nhìn từ phía hành tinh thay vì phía qubit.
       </span>
     </p>
   </div>
@@ -315,16 +311,16 @@
     </h2>
     <p class="home-scene__body">
       <span lang="en">
-        Earth is one of several planets around an unremarkable star. The same equations of state I
-        study at the atomic scale govern super-Earths and icy moons
-        light-years from here, which is why high-pressure mineral physics is also planetary
-        science.
+        Earth is one of eight planets around an ordinary star. How silicates behave under
+        pressure, which I simulate at the atomic scale, also sets the interior structure of
+        other rocky planets, including super-Earths around other stars. That is why
+        high-pressure mineral physics is also planetary science.
       </span>
       <span lang="vi">
-        Trái Đất là một trong nhiều hành tinh quanh một ngôi sao bình thường. Cùng những phương
-        trình trạng thái tôi nghiên cứu ở thang nguyên tử cũng chi phối các
-        siêu-Trái-Đất và mặt trăng băng cách đây nhiều năm
-        ánh sáng, đó là lý do vật lý khoáng vật áp suất cao cũng là khoa học hành tinh.
+        Trái Đất là một trong tám hành tinh quanh một ngôi sao bình thường. Cách silicat ứng xử
+        dưới áp suất, điều tôi mô phỏng ở thang nguyên tử, cũng quyết định cấu trúc bên trong
+        của các hành tinh đá khác, kể cả các siêu-Trái-Đất quanh những ngôi sao khác. Đó là lý
+        do vật lý khoáng vật áp suất cao cũng là khoa học hành tinh.
       </span>
     </p>
   </div>
@@ -345,14 +341,14 @@
     </h2>
     <p class="home-scene__body">
       <span lang="en">
-        A hundred billion suns in a spiral, most of them with planets. Most of those planets are
-        rocky. Most of that rock is silicate. The little simulation cell from a few scenes ago is
-        a sample of the universe's most abundant solid.
+        More than a hundred billion suns in a spiral, most of them with planets. Many of
+        those planets are rocky, and rock means silicates. The little simulation cell from a
+        few scenes ago is a sample of what rocky worlds across the galaxy are made of.
       </span>
       <span lang="vi">
-        Một trăm tỷ mặt trời trong một xoắn ốc, đa phần có hành tinh. Đa phần các hành tinh đó là
-        đá. Đa phần đá đó là silicat. Cái ô mô phỏng nhỏ từ vài cảnh trước là một mẫu của chất
-        rắn phổ biến nhất trong vũ trụ.
+        Hơn một trăm tỷ mặt trời trong một xoắn ốc, đa phần có hành tinh. Nhiều hành tinh trong số
+        đó là hành tinh đá, và đá nghĩa là silicat. Cái ô mô phỏng nhỏ từ vài cảnh trước là một
+        mẫu của thứ tạo nên các thế giới đá khắp thiên hà.
       </span>
     </p>
   </div>
