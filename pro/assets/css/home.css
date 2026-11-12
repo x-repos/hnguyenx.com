@@ -310,6 +310,33 @@ html.js #home-canvas {
 }
 html.js #home-canvas.is-ready { opacity: 1; }
 
+/* ---------- Equations floating around the particle cloud ---------- */
+.home-eqs {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  will-change: transform;
+}
+.home-eq {
+  position: absolute;
+  opacity: 0;
+  visibility: hidden;
+  white-space: nowrap;
+  font-size: clamp(13px, 1.25vw, 21px);
+  color: rgba(214, 232, 255, 0.62);
+  text-shadow: 0 0 14px rgba(143, 214, 255, 0.55), 0 0 2px rgba(143, 214, 255, 0.5);
+  will-change: transform, opacity;
+}
+.home-eq .katex-display { margin: 0; }
+.home-eq:nth-child(3n)   { color: rgba(255, 222, 190, 0.6); text-shadow: 0 0 14px rgba(255, 170, 110, 0.5); }
+.home-eq:nth-child(3n+1) { color: rgba(226, 208, 255, 0.6); text-shadow: 0 0 14px rgba(190, 150, 255, 0.5); }
+@media (max-width: 720px) {
+  .home-eq { font-size: 11px; color: rgba(214, 232, 255, 0.34); }
+}
+.home-fallback .home-eqs { display: none; }
+
 /* ---------- Scroll progress bar ---------- */
 .home-progress {
   position: fixed;

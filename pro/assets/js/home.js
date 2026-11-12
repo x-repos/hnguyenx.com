@@ -1372,12 +1372,117 @@
     if (e.button || (e.target.closest && e.target.closest("a, button, input, textarea, select, label, nav, form, .home-outro__card"))) return;
     const v = uniforms.uShock.value[shockSlot];
     shockSlot = (shockSlot + 1) % 3;
-    // The cloud sits right of centre on wide screens; undo that shift.
-    v.set((e.clientX / window.innerWidth) * 2 - 1 - viewShift * 2, -((e.clientY / window.innerHeight) * 2 - 1), 0);
+    // Screen position; the shader's projection already includes the view shift.
+    v.set((e.clientX / window.innerWidth) * 2 - 1, -((e.clientY / window.innerHeight) * 2 - 1), 0);
     chaosKick = Math.min(1.5, chaosKick + 0.8);
     const sh = shapes[Math.min(shapes.length - 1, Math.round(story))];
     if (sh && sh.poke) sh.poke(clock.elapsedTime);
   }, { passive: true });
+
+  // ====================================================
+  // EQUATIONS — the maths behind each scale, floating around the cloud as
+  // part of the picture (not in the copy). Each scene has its own set; they
+  // drift, fade in letter-sharp as the scene arrives, and blur away as it
+  // leaves. Typeset with KaTeX when it has loaded; skipped otherwise.
+  //   [tex, dx, dy]  offsets from the cloud's centre in % of the viewport
+  // ====================================================
+  const EQUATIONS = {
+    qubits: [
+      ["|\\psi\\rangle = \\alpha|0\\rangle + \\beta|1\\rangle", -31, -22],
+      ["H = -\\sum_{i<j} J_{ij}\\,\\sigma^z_i \\sigma^z_j - \\sum_i h_i\\,\\sigma^z_i", 30, -27],
+      ["\\min_{x \\in \\{0,1\\}^n} \; x^{\\mathsf T} Q\\, x", -32, 26],
+      ["|\\alpha|^2 + |\\beta|^2 = 1", 31, 24],
+    ],
+    quantum: [
+      ["|\\psi\\rangle = \\cos\\tfrac{\\theta}{2}\\,|0\\rangle + e^{i\\varphi}\\sin\\tfrac{\\theta}{2}\\,|1\\rangle", -3, -37],
+      ["i\\hbar\\,\\partial_t |\\psi\\rangle = \\hat H\\,|\\psi\\rangle", 14, 35],
+      ["R_{\\hat n}(\\theta) = e^{-i\\theta\\,\\hat n\\cdot\\vec\\sigma/2}", -15, 37],
+    ],
+    dft: [
+      ["\\Big[-\\tfrac{\\hbar^2}{2m}\\nabla^2 + v_{\\mathrm{eff}}(\\mathbf r)\\Big]\\varphi_i = \\varepsilon_i\\,\\varphi_i", -2, -37],
+      ["n(\\mathbf r) = \\sum_i |\\varphi_i(\\mathbf r)|^2", 15, 33],
+      ["E[n] = T_s[n] + \\int v\\,n\\,d\\mathbf r + E_H[n] + E_{xc}[n]", -8, 39],
+      ["\\psi_{320} \\propto r^2 e^{-r/3a_0}\\,(3\\cos^2\\theta - 1)", 12, -29],
+    ],
+    md: [
+      ["m_i\\,\\ddot{\\mathbf r}_i = -\\nabla_i U(\\mathbf r_1,\\dots,\\mathbf r_N)", -3, -37],
+      ["\\mathbf r(t+\\Delta t) = 2\\mathbf r(t) - \\mathbf r(t-\\Delta t) + \\tfrac{\\mathbf F}{m}\\Delta t^2", -6, 38],
+      ["P = \\frac{N k_B T}{V} + \\frac{1}{3V}\\Big\\langle \\sum_i \\mathbf r_i\\cdot\\mathbf F_i \\Big\\rangle", 13, 30],
+    ],
+    mantle: [
+      ["\\mathrm{Ra} = \\frac{\\rho\\, g\\, \\alpha\\, \\Delta T\\, d^3}{\\kappa\\,\\eta}", -16, -35],
+      ["-\\nabla p + \\eta\\,\\nabla^2\\mathbf u + \\rho\\, g\\, \\alpha\\, T\\,\\hat{\\mathbf z} = 0", 6, -39],
+      ["\\frac{\\partial T}{\\partial t} + \\mathbf u\\cdot\\nabla T = \\kappa\\,\\nabla^2 T", -8, 38],
+      ["P = \\tfrac{3K_0}{2}\\Big[\\big(\\tfrac{V_0}{V}\\big)^{7/3} - \\big(\\tfrac{V_0}{V}\\big)^{5/3}\\Big]\\cdots", 12, 33],
+    ],
+    planet: [
+      ["\\rho\\,\\ddot{\\mathbf u} = \\nabla\\cdot\\boldsymbol\\sigma + \\mathbf f", -15, -34],
+      ["\\frac{1}{c^2}\\frac{\\partial^2 u}{\\partial t^2} - \\nabla^2 u = s(\\mathbf x, t)", 7, -39],
+      ["\\chi(\\mathbf m) = \\tfrac12 \\sum_{r} \\big\\| \\mathbf d_{\\mathrm{obs}} - \\mathbf d_{\\mathrm{syn}}(\\mathbf m) \\big\\|^2", -5, 38],
+      ["v_P = \\sqrt{\\frac{K + \\tfrac43 \\mu}{\\rho}}", 16, 30],
+    ],
+    solar: [
+      ["T^2 = \\frac{4\\pi^2}{G M}\\,a^3", -17, -33],
+      ["\\mathbf F = -\\frac{G\\,m_1 m_2}{r^2}\\,\\hat{\\mathbf r}", 12, -37],
+      ["\\frac{dP}{dr} = -\\frac{G\\,m(r)\\,\\rho(r)}{r^2}", -4, 37],
+    ],
+    galaxy: [
+      ["v(r) = \\sqrt{\\frac{G\\,M(<r)}{r}}", -16, -33],
+      ["r(\\theta) = a\\,e^{\\,b\\theta}", 13, -36],
+      ["N = R_*\\, f_p\\, n_e\\, f_l\\, f_i\\, f_c\\, L", -3, 37],
+    ],
+    outro: [
+      ["e^{i\\pi} + 1 = 0", -34, -24],
+      ["\\frac{\\pi}{4} = \\sum_{k=0}^{\\infty} \\frac{(-1)^k}{2k+1}", 33, -22],
+      ["\\int_{-\\infty}^{\\infty} e^{-x^2}\\,dx = \\sqrt{\\pi}", -33, 27],
+      ["\\zeta(2) = \\sum_{n=1}^{\\infty}\\frac{1}{n^2} = \\frac{\\pi^2}{6}", 33, 26],
+    ],
+  };
+  const eqItems = [];
+  let eqLayer = null;
+  (function buildEquations() {
+    if (!window.katex) return;
+    eqLayer = document.createElement("div");
+    eqLayer.className = "home-eqs";
+    eqLayer.setAttribute("aria-hidden", "true");
+    canvas.insertAdjacentElement("afterend", eqLayer);
+    SCENE_KEYS.forEach((key) => {
+      (EQUATIONS[key] || []).forEach((e, n) => {
+        if (isMobile && n > 1) return; // phones: two per scene
+        const el = document.createElement("div");
+        el.className = "home-eq";
+        try { window.katex.render(e[0], el, { throwOnError: false, displayMode: true }); }
+        catch (err) { return; }
+        // keep clear of the top nav and the bottom edge
+        const dx = isMobile ? (n ? 8 : -6) : e[1], dy = isMobile ? (n ? 40 : -36) : Math.max(-34, Math.min(36, e[2]));
+        el.style.left = (50 + dx) + "vw";
+        el.style.top = (50 + dy) + "%";
+        eqLayer.appendChild(el);
+        eqItems.push({ el, key, ph: rand() * TAU, rot: (rand() - 0.5) * 9, sp: 0.25 + rand() * 0.3, depth: 0.5 + rand(), shown: -1 });
+      });
+    });
+  })();
+  function updateEquations(t) {
+    if (!eqLayer) return;
+    eqLayer.style.transform = "translate3d(" + (viewShift * W).toFixed(1) + "px,0,0)";
+    for (const q of eqItems) {
+      let w = sceneW[q.key] || 0;
+      w = w * w * (3 - 2 * w);
+      if (w < 0.004) {
+        if (q.shown !== 0) { q.shown = 0; q.el.style.opacity = "0"; q.el.style.visibility = "hidden"; }
+        continue;
+      }
+      q.shown = 1;
+      const x = Math.sin(t * q.sp + q.ph) * 14 - lean.x * 26 * q.depth;
+      const y = Math.cos(t * q.sp * 0.8 + q.ph * 1.7) * 10 + lean.y * 18 * q.depth + (1 - w) * 46 * (q.ph > Math.PI ? 1 : -1);
+      const pulse = 0.82 + 0.18 * Math.sin(t * 0.9 + q.ph * 3);
+      q.el.style.visibility = "visible";
+      q.el.style.opacity = (w * pulse).toFixed(3);
+      q.el.style.filter = w > 0.97 ? "none" : "blur(" + ((1 - w) * 7).toFixed(1) + "px)";
+      q.el.style.transform = "translate(-50%,-50%) translate3d(" + x.toFixed(1) + "px," + y.toFixed(1) + "px,0) rotate(" +
+        (q.rot + Math.sin(t * 0.3 + q.ph) * 1.5).toFixed(2) + "deg) scale(" + (0.86 + 0.14 * w).toFixed(3) + ")";
+    }
+  }
 
   // ====================================================
   // RENDER LOOP
@@ -1431,7 +1536,7 @@
     if (morph > 0.001 && i < last) animateInto(shapes[i + 1], aPosB, aFieldB, t);
 
     // Cursor influence fades in and out instead of switching.
-    uniforms.uMouse.value.set(pointer.x - viewShift * 2, pointer.y);
+    uniforms.uMouse.value.set(pointer.x, pointer.y);
     uniforms.uMouseStr.value += ((pointer.active ? 1 : 0) - uniforms.uMouseStr.value) * Math.min(1, dt * 3);
     for (const v of uniforms.uShock.value) v.z += dt;
 
@@ -1450,6 +1555,8 @@
     const shift = wide() ? 0.2 * smooth(0.5, 1.2, story) * (1 - smooth(sections.length - 2.6, sections.length - 2, story)) : 0;
     viewShift = shift;
     camera.setViewOffset(W, H, -W * shift, 0, W, H);
+
+    updateEquations(t);
 
     // Outro: π sits behind the contact cards, so let it recede.
     uniforms.uOpacity.value = 1 - 0.6 * smooth(sections.length - 1.6, sections.length - 1, story);
