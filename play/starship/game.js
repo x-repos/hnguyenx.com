@@ -94,7 +94,7 @@
       // because they fire many times a second
       guns = ac.createWaveShaper();
       guns.curve = curve; guns.oversample = "2x";
-      const gunLevel = ac.createGain(); gunLevel.gain.value = 0.5;
+      const gunLevel = ac.createGain(); gunLevel.gain.value = 0.2;
       guns.connect(gunLevel); gunLevel.connect(master);
 
       // the space: 2.2 s of noise that decays and dulls, used as a reverb
@@ -184,16 +184,16 @@
       nz(0.05, 0.8, { type: "highpass", f0: 1500, dest: guns });
       nz(0.26, 0.9, { f0: 3200 * p, f1: 380, dest: guns, room: 0.25 });
       nz(0.2, 0.7, { type: "bandpass", f0: 800 * p, f1: 240, q: 0.6, dest: guns });
-      sub(120 * p, 42, 0.18, 0.12);
+      sub(120 * p, 42, 0.18, 0.05);
     } else if (kind === 2) {     // rotary gun: short, dry, fast
       nz(0.022, 0.7, { type: "highpass", f0: 2400 * p, dest: guns });
       nz(0.07, 0.75, { type: "bandpass", f0: 1700 * p, f1: 650, q: 0.9, dest: guns, room: 0.1 });
-      sub(190 * p, 80, 0.06, 0.1);
+      sub(190 * p, 80, 0.06, 0.04);
     } else {                     // autocannon: a hard crack and a short bark
       nz(0.035, 0.8, { type: "highpass", f0: 1800 * p, dest: guns });
       nz(0.15, 0.9, { type: "bandpass", f0: 1400 * p, f1: 340, q: 0.7, dest: guns, room: 0.2 });
       nz(0.1, 0.6, { f0: 700, f1: 200, dest: guns });
-      sub(150 * p, 50, 0.11, 0.16);
+      sub(150 * p, 50, 0.11, 0.06);
     }
   }
   // Bits of wreckage: scattered clicks over `dur` seconds.
@@ -201,16 +201,17 @@
     for (let k = 0; k < n; k++) nz(0.02 + Math.random() * 0.03, 0.2 + Math.random() * 0.3, { at: at + Math.random() * dur, type: "highpass", f0: 1800 + Math.random() * 3000, dest: crunch, room: 0.3 });
   }
   // An explosion of a given size (0 a small pod … 1 a capital ship).
-  function boom(size, at) {
+  function boom(size, at, vol) {
     at = at || 0;
+    const v = vol === undefined ? 1 : vol;       // overall level: ordinary kills are played quieter
     const p = jit(0.12), d = 0.35 + size * 1.1;
-    nz(0.04 + size * 0.03, 0.8, { at, type: "highpass", f0: 1000, dest: crunch });                                    // the crack
-    nz(d, 0.55 + size * 0.4, { at, f0: (3000 + size * 2500) * p, f1: 180, dest: crunch, room: 0.3 + size * 0.5 });    // the fireball
-    nz(d * 0.8, 0.5 + size * 0.4, { at, type: "bandpass", f0: 900 * p, f1: 220, q: 0.5, dest: crunch, room: 0.3 });   // its body, in the mid range
-    sub((115 - size * 35) * p, 30, 0.25 + size * 0.7, 0.22 + size * 0.3, at);                                         // the thump
+    nz(0.04 + size * 0.03, 0.8 * v, { at, type: "highpass", f0: 1000, dest: crunch });                                        // the crack
+    nz(d, (0.55 + size * 0.4) * v, { at, f0: (3000 + size * 2500) * p, f1: 180, dest: crunch, room: 0.3 + size * 0.5 });      // the fireball
+    nz(d * 0.8, (0.5 + size * 0.4) * v, { at, type: "bandpass", f0: 900 * p, f1: 220, q: 0.5, dest: crunch, room: 0.3 });     // its body, in the mid range
+    sub((115 - size * 35) * p, 30, 0.25 + size * 0.7, (0.22 + size * 0.3) * v, at);                                           // the thump
     if (size > 0.35) {
-      nz(d * 1.6, 0.3 + size * 0.4, { at: at + 0.02, brown: true, f0: 520, f1: 70, room: 0.5 });                       // the rolling rumble
-      debris(at + 0.12, 0.5 + size * 0.7, Math.round(3 + size * 7));
+      nz(d * 1.6, (0.3 + size * 0.4) * v, { at: at + 0.02, brown: true, f0: 520, f1: 70, room: 0.5 });                         // the rolling rumble
+      if (v > 0.6) debris(at + 0.12, 0.5 + size * 0.7, Math.round(3 + size * 7));
     }
   }
   // metal being struck: a click and two short ringing partials
@@ -229,7 +230,8 @@
       if (big) { clang(610, 0.09, 0.14, 0); sub(130, 70, 0.07, 0.1); }       // armour plate
       else clang(1850, 0.05, 0.07, 0);                                       // a small hull
     },
-    boom(big) { if (limit("boom", 45)) boom(big ? 0.7 : 0.18); },
+    // ordinary enemies: a small, quiet pop (they die constantly); gunships a bit more
+    boom(big) { if (limit("boom", 70)) boom(big ? 0.55 : 0.15, 0, big ? 0.22 : 0.1); },
     // a boss breaking up: rolling blasts under a rising reactor whine, then
     // one long explosion in several stages
     bossRumble() { boom(0.35 + Math.random() * 0.35); },
