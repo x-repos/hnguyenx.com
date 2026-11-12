@@ -44,11 +44,11 @@ body {
   font-size: 1.1rem; font-weight: 600; line-height: 1;
 }
 
-.card--starship { background: #070b14; }
-.card--starship:hover, .card--starship:focus-visible { border-color: #8fd6ff; }
-.card--starship p { color: #b9c2d6; }
-.card--starship .card__best { color: #ffc28a; }
-.card--starship .card__go { border: 1px solid #8fd6ff; background: rgba(143, 214, 255, 0.12); color: #fff; }
+.card--dark { background: #070b14; }
+.card--dark:hover, .card--dark:focus-visible { border-color: #8fd6ff; }
+.card--dark p { color: #b9c2d6; }
+.card--dark .card__best { color: #ffc28a; }
+.card--dark .card__go { border: 1px solid #8fd6ff; background: rgba(143, 214, 255, 0.12); color: #fff; }
 
 .card--pi { background: #fffdf8; color: #3b3226; border-color: rgba(138, 109, 59, 0.4); font-family: "Crimson Pro", Georgia, serif; }
 .card--pi:hover, .card--pi:focus-visible { border-color: #8a6d3b; }

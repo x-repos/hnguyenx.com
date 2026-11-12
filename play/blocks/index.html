@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Lattice</title>
+  <meta name="description" content="Lattice: a calm puzzle. Lock atoms into a crystal and clear whole rows and columns.">
+  <meta name="theme-color" content="#05060b">
+  <link rel="icon" type="image/svg+xml" href="../../pro/images/favicon-pro.svg?v=2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="lattice.css?v=1">
+</head>
+<body>
+  <canvas id="game" aria-label="Lattice game board"></canvas>
+  <div id="safe" aria-hidden="true"></div>
+
+  <header class="bar" id="bar">
+    <a class="bar__back" href="../">All games</a>
+    <div class="stats" aria-live="polite">
+      <div class="stat"><span class="stat__label">Score</span><span class="stat__num" id="score">0</span></div>
+      <div class="stat"><span class="stat__label">Best</span><span class="stat__num" id="best">0</span></div>
+      <div class="stat stat--streak" id="streak-box"><span class="stat__label">Streak</span><span class="stat__num" id="streak">0</span></div>
+    </div>
+    <div class="bar__btns">
+      <button class="round" id="btn-undo" type="button" aria-label="Undo the last move" title="Undo" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6L4 11l5 5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 11H14a5.5 5.5 0 0 1 0 11h-3" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/></svg>
+      </button>
+      <button class="round" id="btn-new" type="button" aria-label="New game" title="New game">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 12a7.5 7.5 0 1 1-2.6-5.7" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/><path d="M17.5 2.5v4.3h-4.3" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="round" id="btn-help" type="button" aria-label="How to play" title="How to play">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.6 9a3.5 3.5 0 1 1 5.3 3c-1.2.8-1.9 1.5-1.9 3" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/><circle cx="12" cy="19" r="1.5"/></svg>
+      </button>
+      <button class="round" id="btn-mute" type="button" aria-label="Sound on or off" title="Sound">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 9v6h4l6 5V4L7 9H3z"/>
+          <path class="snd-on" d="M16.5 8.5a5 5 0 0 1 0 7M19 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          <path class="snd-off" d="M16.5 9l5.5 6m0-6l-5.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="veil" id="veil" hidden></div>
+
+  <div class="panel" id="intro" hidden>
+    <h1>Lattice</h1>
+    <p class="panel__sub">Lock atoms into a crystal.</p>
+    <ul class="panel__help">
+      <li>Drag a group of atoms from the tray onto the lattice.</li>
+      <li>Fill a whole row or column and it clears.</li>
+      <li>Clear several lines at once, or clear on back to back moves, to build a streak and score more.</li>
+      <li>Undo takes back your last move, once for each set of three pieces.</li>
+      <li>The game ends when none of your pieces fits.</li>
+      <li class="keys">On a keyboard, press 1, 2 or 3 to pick a piece. Arrows move it and Enter drops it. Z is undo, N is new game, M is sound.</li>
+    </ul>
+    <div class="panel__buttons">
+      <button type="button" id="btn-play">Play</button>
+    </div>
+    <p class="panel__best" id="intro-best"></p>
+    <p class="panel__back"><a href="../">All games</a></p>
+  </div>
+
+  <div class="panel" id="confirm" hidden>
+    <h2>Start a new game?</h2>
+    <p class="panel__sub">Your current crystal will be cleared. Your best score is kept.</p>
+    <div class="panel__buttons">
+      <button type="button" id="btn-confirm">New game</button>
+      <button type="button" id="btn-cancel" class="quiet">Keep playing</button>
+    </div>
+    <p class="panel__back"><a href="../">All games</a></p>
+  </div>
+
+  <div class="panel" id="over" hidden>
+    <h2>No room left</h2>
+    <p class="panel__sub" id="over-text"></p>
+    <p class="panel__score" id="over-score"></p>
+    <p class="panel__best" id="over-best"></p>
+    <div class="panel__buttons">
+      <button type="button" id="btn-again">New game</button>
+      <button type="button" id="btn-over-undo" class="quiet" hidden>Undo the last move</button>
+    </div>
+    <p class="panel__back"><a href="../">All games</a></p>
+  </div>
+
+  <script src="lattice.js?v=2"></script>
+</body>
+</html>

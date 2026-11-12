@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Play</title>
-  <meta name="description" content="Two small browser games: Pi Flight, a flight through the digits of π, and Starship, a space shooter.">
+  <meta name="description" content="Small browser games: Pi Flight, Starship, Qubit Flip and Lattice.">
   <meta name="theme-color" content="#05060b">
   <link rel="icon" type="image/svg+xml" href="../pro/images/favicon-pro.svg?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="topnav.css?v=2">
-  <link rel="stylesheet" href="hub.css?v=8">
+  <link rel="stylesheet" href="hub.css?v=9">
 </head>
 <body>
   <!-- The same bar as Pro Mode (copied from pro/index.html); only the first link differs -->
@@ -82,7 +82,7 @@
         </div>
       </a>
 
-      <a class="card card--starship" href="starship/">
+      <a class="card card--dark card--starship" href="starship/">
         <svg class="card__art" viewBox="0 0 320 200" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
           <defs>
             <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b2233"/><stop offset="0.7" stop-color="#03040a"/></linearGradient>
@@ -112,6 +112,43 @@
           <span class="card__go"><span lang="en">Play</span><span lang="vi">Chơi</span></span>
         </div>
       </a>
+
+      <a class="card card--dark" href="qubit/">
+        <svg class="card__art" viewBox="0 0 320 200" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
+          <defs><linearGradient id="qg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fd6ff"/><stop offset="0.6" stop-color="#c9a8ff"/><stop offset="1" stop-color="#ffc28a"/></linearGradient></defs>
+          <rect width="320" height="200" fill="#070b14"/>
+          <g fill="none" stroke="#2a3550" stroke-width="2"><rect x="28" y="52" width="56" height="56" rx="10"/><rect x="92" y="52" width="56" height="56" rx="10"/><rect x="172" y="52" width="56" height="56" rx="10"/><rect x="236" y="52" width="56" height="56" rx="10"/></g>
+          <circle cx="56" cy="80" r="20" fill="#8fd6ff"/><circle cx="120" cy="80" r="5" fill="#2a3550"/>
+          <circle cx="200" cy="80" r="14" fill="#c9a8ff"/><circle cx="264" cy="80" r="14" fill="#ffc28a"/>
+          <path d="M152 80h14m-5-5 5 5-5 5" stroke="#b9c2d6" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <g font-family="Space Grotesk, sans-serif" font-weight="700" font-size="20" text-anchor="middle">
+            <rect x="60" y="134" width="44" height="40" rx="9" fill="none" stroke="url(#qg)" stroke-width="2"/><text x="82" y="161" fill="#fff">X</text>
+            <rect x="114" y="134" width="44" height="40" rx="9" fill="url(#qg)"/><text x="136" y="161" fill="#070b14">H</text>
+            <rect x="168" y="134" width="44" height="40" rx="9" fill="none" stroke="url(#qg)" stroke-width="2"/><text x="190" y="161" fill="#fff">Z</text>
+            <rect x="222" y="134" width="44" height="40" rx="9" fill="none" stroke="url(#qg)" stroke-width="2"/><text x="244" y="160" fill="#fff" font-size="13">CNOT</text>
+          </g>
+        </svg>
+        <div class="card__body">
+          <h2>Qubit Flip</h2>
+          <p><span lang="en">Turn one quantum state into another with as few gates as you can. 30 puzzles, no equations.</span><span lang="vi">Biến một trạng thái lượng tử thành trạng thái khác với ít cổng nhất có thể. 30 câu đố, không cần công thức.</span></p>
+          <p class="card__best" id="best-qubit"></p>
+          <span class="card__go"><span lang="en">Play</span><span lang="vi">Chơi</span></span>
+        </div>
+      </a>
+
+      <a class="card card--dark" href="blocks/">
+        <svg class="card__art" viewBox="0 0 320 200" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
+          <rect width="320" height="200" fill="#070b14"/>
+          <g fill="#101829" stroke="#1d2940" stroke-width="1"><rect x="92" y="12" width="21" height="21" rx="4"/><rect x="115" y="12" width="21" height="21" rx="4"/><rect x="138" y="12" width="21" height="21" rx="4"/><rect x="161" y="12" width="21" height="21" rx="4"/><rect x="184" y="12" width="21" height="21" rx="4"/><rect x="207" y="12" width="21" height="21" rx="4"/><rect x="92" y="35" width="21" height="21" rx="4"/><rect x="115" y="35" width="21" height="21" rx="4"/><rect x="138" y="35" width="21" height="21" rx="4"/><rect x="161" y="35" width="21" height="21" rx="4"/><rect x="184" y="35" width="21" height="21" rx="4"/><rect x="207" y="35" width="21" height="21" rx="4"/><rect x="92" y="58" width="21" height="21" rx="4"/><rect x="115" y="58" width="21" height="21" rx="4"/><rect x="138" y="58" width="21" height="21" rx="4"/><rect x="161" y="58" width="21" height="21" rx="4"/><rect x="184" y="58" width="21" height="21" rx="4"/><rect x="207" y="58" width="21" height="21" rx="4"/><rect x="92" y="81" width="21" height="21" rx="4"/><rect x="115" y="81" width="21" height="21" rx="4"/><rect x="138" y="81" width="21" height="21" rx="4"/><rect x="161" y="81" width="21" height="21" rx="4"/><rect x="184" y="81" width="21" height="21" rx="4"/><rect x="207" y="81" width="21" height="21" rx="4"/><rect x="92" y="104" width="21" height="21" rx="4"/><rect x="115" y="104" width="21" height="21" rx="4"/><rect x="138" y="104" width="21" height="21" rx="4"/><rect x="161" y="104" width="21" height="21" rx="4"/><rect x="184" y="104" width="21" height="21" rx="4"/><rect x="207" y="104" width="21" height="21" rx="4"/><rect x="92" y="127" width="21" height="21" rx="4"/><rect x="115" y="127" width="21" height="21" rx="4"/><rect x="138" y="127" width="21" height="21" rx="4"/><rect x="161" y="127" width="21" height="21" rx="4"/><rect x="184" y="127" width="21" height="21" rx="4"/><rect x="207" y="127" width="21" height="21" rx="4"/></g>
+          <g><rect x="92" y="127" width="21" height="21" rx="6" fill="#8fd6ff"/><rect x="115" y="127" width="21" height="21" rx="6" fill="#8fd6ff"/><rect x="138" y="127" width="21" height="21" rx="6" fill="#8fd6ff"/><rect x="161" y="127" width="21" height="21" rx="6" fill="#c9a8ff"/><rect x="184" y="127" width="21" height="21" rx="6" fill="#c9a8ff"/><rect x="161" y="104" width="21" height="21" rx="6" fill="#c9a8ff"/><rect x="184" y="104" width="21" height="21" rx="6" fill="#c9a8ff"/><rect x="92" y="104" width="21" height="21" rx="6" fill="#ffc28a"/><rect x="92" y="81" width="21" height="21" rx="6" fill="#ffc28a"/><rect x="92" y="58" width="21" height="21" rx="6" fill="#ffc28a"/><rect x="115" y="104" width="21" height="21" rx="6" fill="#7dffb0"/><rect x="115" y="81" width="21" height="21" rx="6" fill="#7dffb0"/><rect x="184" y="35" width="21" height="21" rx="6" fill="#ff7a9c"/><rect x="207" y="35" width="21" height="21" rx="6" fill="#ff7a9c"/><rect x="207" y="58" width="21" height="21" rx="6" fill="#ff7a9c"/><rect x="30" y="160" width="21" height="21" rx="6" fill="#8fd6ff" opacity="0.9"/><rect x="53" y="160" width="21" height="21" rx="6" fill="#8fd6ff" opacity="0.9"/><rect x="250" y="137" width="21" height="21" rx="6" fill="#ffc28a" opacity="0.9"/><rect x="250" y="160" width="21" height="21" rx="6" fill="#ffc28a" opacity="0.9"/><rect x="273" y="160" width="21" height="21" rx="6" fill="#ffc28a" opacity="0.9"/></g>
+        </svg>
+        <div class="card__body">
+          <h2>Lattice</h2>
+          <p><span lang="en">Lock atoms into a crystal and clear whole rows and columns. Nothing falls, you place every piece.</span><span lang="vi">Xếp các nguyên tử vào mạng tinh thể và xóa trọn từng hàng, từng cột. Không có gì rơi, bạn tự đặt từng khối.</span></p>
+          <p class="card__best" id="best-lattice"></p>
+          <span class="card__go"><span lang="en">Play</span><span lang="vi">Chơi</span></span>
+        </div>
+      </a>
     </div>
   </main>
 
@@ -124,6 +161,9 @@
     function show() {
       var vi = document.documentElement.getAttribute("lang") === "vi";
       if (s.best) document.getElementById("best-starship").textContent = (vi ? "Kỷ lục của bạn: " : "Your best: ") + Number(s.best).toLocaleString() + (s.sector ? (vi ? ", đến khu vực " : ", reached sector ") + (s.sector + 1) : "");
+      var q = read("qubit-flip-v1"), l = read("lattice-v1");
+      if (q.solved) document.getElementById("best-qubit").textContent = vi ? "Đã giải " + q.solved + " trên 30, " + (q.totalStars || 0) + " sao" : q.solved + " of 30 solved, " + (q.totalStars || 0) + " stars";
+      if (l.best) document.getElementById("best-lattice").textContent = (vi ? "Kỷ lục của bạn: " : "Your best: ") + Number(l.best).toLocaleString();
       if (p.best) document.getElementById("best-pi").textContent = (vi ? "Kỷ lục của bạn: " : "Your best: ") + p.best + (vi ? " chữ số thập phân" : " decimal places");
     }
     show();
