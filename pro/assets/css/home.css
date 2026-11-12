@@ -746,6 +746,14 @@ html.is-scrubbing, html.is-scrubbing * { cursor: grabbing !important; user-selec
 }
 
 /* ---------- Outro / about ---------- */
+/* The About paragraph is justified (flush on both sides, like Ctrl+J in a
+   word processor); its last line stays centred to match the section. */
+.home-scene--outro .home-scene__body {
+  text-align: justify;
+  text-align-last: center;
+  -webkit-hyphens: auto;
+          hyphens: auto;
+}
 .home-outro__grid {
   display: grid;
   grid-template-columns: 1fr;
