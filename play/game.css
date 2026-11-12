@@ -23,17 +23,24 @@ body.in-menu #game { cursor: default; }
 }
 .hud[hidden], .bomb[hidden], .panel[hidden] { display: none; }
 .hud__btn, .bomb {
-  width: 40px; height: 40px; border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.28); background: rgba(3,6,13,0.55);
-  color: var(--fg); font: 600 15px/1 inherit; cursor: pointer;
+  width: 46px; height: 46px; border-radius: 50%; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255,255,255,0.32); background: rgba(3,6,13,0.6);
+  color: var(--fg); cursor: pointer;
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
 }
-.hud__btn.is-off { opacity: 0.4; text-decoration: line-through; }
+/* the icons fill most of their circle */
+.hud__btn svg { width: 26px; height: 26px; fill: currentColor; display: block; }
+.hud__btn .snd-off { display: none; }
+.hud__btn.is-off { color: var(--muted); }
+.hud__btn.is-off .snd-on { display: none; }
+.hud__btn.is-off .snd-off { display: inline; }
 .bomb {
   position: fixed; right: 16px; bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 5;
-  width: 66px; height: 66px; font-size: 28px;
-  border-color: var(--warm); color: var(--warm);
+  width: 70px; height: 70px;
+  border: 2px solid var(--warm); color: var(--warm);
 }
+.bomb svg { width: 40px; height: 40px; fill: currentColor; display: block; }
 .bomb:active { transform: scale(0.94); }
 @media (hover: hover) and (pointer: fine) { .bomb { display: none; } }
 
@@ -55,9 +62,12 @@ body.in-menu #game { cursor: default; }
 .panel__sub { margin: 10px 0 0; color: var(--muted); font-size: 0.95rem; }
 .panel__buttons { display: flex; flex-direction: column; gap: 10px; margin: 22px 0 6px; }
 .panel button {
-  padding: 13px 16px; border-radius: 999px; cursor: pointer;
+  padding: 16px 18px; border-radius: 999px; cursor: pointer;
   border: 1px solid var(--accent); background: rgba(143,214,255,0.1);
-  color: var(--fg); font: 600 1rem/1 inherit;
+  color: var(--fg);
+  /* set each font property: `font: ... inherit` is invalid and was being
+     dropped, which left these buttons in the browser's small default font */
+  font-family: inherit; font-size: 1.15rem; font-weight: 600; line-height: 1.1;
 }
 .panel button:hover { background: rgba(143,214,255,0.22); }
 .panel__best { margin: 10px 0 0; color: var(--warm); font-size: 0.9rem; min-height: 1.2em; }

@@ -18,11 +18,12 @@
 
   // ----- Logical playfield: 540 wide, height follows the screen -----
   const W = 540;
-  let H = 900, scale = 1;
+  let H = 900, scale = 1, ui = 1;   // ui: how much to enlarge HUD text on small screens
   function resize() {
     const vw = window.innerWidth, vh = window.innerHeight;
     H = Math.max(760, Math.min(1200, Math.round(W * vh / vw)));
     scale = Math.min(vw / W, vh / H);
+    ui = Math.max(1, Math.min(1.45, 0.92 / scale));
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.style.width = W * scale + "px";
     canvas.style.height = H * scale + "px";
@@ -49,56 +50,190 @@
   const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} };
 
   // ====================================================
-  // AUDIO: tiny synth, created on the first tap or key
+  // AUDIO: a small synthesiser, created on the first tap or key.
+  // Every sound is built from two voices, an oscillator with a pitch sweep
+  // and filtered noise, sent through one of three paths:
+  //   crunch  soft clipping, which adds the mid-range harmonics that make an
+  //           explosion audible on a phone speaker (it cannot play deep bass)
+  //   echo    a filtered feedback delay, for the tail of big explosions
+  //   soft    a low-pass filter that takes the edge off beeps and lasers
+  // Bass: every impact also has a clean sine "sub" layer that drops to
+  // 30 to 45 Hz, and the output has a low shelf. A compressor on the output
+  // keeps the loud layered booms from clipping.
   // ====================================================
-  let ac = null, master = null;
+  let ac = null, master = null, crunch = null, echo = null, soft = null, noiseBuf = null;
+  const VOL = 0.8;
   function audioInit() {
-    if (ac) { if (ac.state === "suspended") ac.resume(); return; }
+    if (ac) { if (ac.state !== "running") ac.resume(); return; }
     try {
+      // iOS: use the media channel, so the ring/silent switch does not mute the game
+      if (navigator.audioSession) { try { navigator.audioSession.type = "playback"; } catch (e) {} }
       ac = new (window.AudioContext || window.webkitAudioContext)();
+      const comp = ac.createDynamicsCompressor();
+      comp.threshold.value = -10; comp.knee.value = 8; comp.ratio.value = 4;
+      comp.attack.value = 0.002; comp.release.value = 0.2;
       master = ac.createGain();
-      master.gain.value = save.mute ? 0 : 0.5;
-      master.connect(ac.destination);
+      master.gain.value = save.mute ? 0 : VOL;
+      // a low shelf lifts everything under about 150 Hz: the weight of the mix
+      const bass = ac.createBiquadFilter();
+      bass.type = "lowshelf"; bass.frequency.value = 150; bass.gain.value = 7;
+      master.connect(bass); bass.connect(comp); comp.connect(ac.destination);
+
+      crunch = ac.createWaveShaper();
+      const curve = new Float32Array(1024);
+      for (let k = 0; k < 1024; k++) curve[k] = Math.tanh((k / 511.5 - 1) * 3.2);
+      crunch.curve = curve; crunch.oversample = "2x";
+      crunch.connect(master);
+
+      echo = ac.createGain(); echo.gain.value = 0.55;
+      const delay = ac.createDelay(1), fb = ac.createGain(), lp = ac.createBiquadFilter();
+      delay.delayTime.value = 0.21; fb.gain.value = 0.42;
+      lp.type = "lowpass"; lp.frequency.value = 1500;
+      echo.connect(delay); delay.connect(lp); lp.connect(fb); fb.connect(delay); lp.connect(master);
+
+      soft = ac.createBiquadFilter(); soft.type = "lowpass"; soft.frequency.value = 2400;
+      soft.connect(master);
+
+      noiseBuf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
+      const nd = noiseBuf.getChannelData(0);
+      for (let k = 0; k < nd.length; k++) nd[k] = Math.random() * 2 - 1;
     } catch (e) { ac = null; }
   }
-  function tone(freq, dur, type, vol, slide) {
-    if (!ac || save.mute) return;
-    const o = ac.createOscillator(), v = ac.createGain(), t = ac.currentTime;
-    o.type = type || "square";
-    o.frequency.setValueAtTime(freq, t);
-    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq * slide), t + dur);
-    v.gain.setValueAtTime(vol || 0.1, t);
-    v.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(v); v.connect(master);
-    o.start(t); o.stop(t + dur + 0.02);
+  const audible = () => ac && !save.mute;
+  // volume envelope: a fast attack then an exponential fade, or (swell) a
+  // build-up that cuts off, for charge-ups and sirens
+  function envelope(gain, t, dur, vol, attack, swell) {
+    gain.setValueAtTime(0.0001, t);
+    if (swell) { gain.exponentialRampToValueAtTime(vol, t + dur * 0.92); gain.exponentialRampToValueAtTime(0.0001, t + dur); }
+    else { gain.linearRampToValueAtTime(vol, t + attack); gain.exponentialRampToValueAtTime(0.0001, t + dur); }
   }
-  let noiseBuf = null;
-  function noise(dur, vol, lowpass) {
-    if (!ac || save.mute) return;
-    if (!noiseBuf) {
-      noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
-      const d = noiseBuf.getChannelData(0);
-      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  function osc(type, f0, f1, dur, vol, o) {
+    if (!audible()) return;
+    o = o || {};
+    const t = ac.currentTime + (o.at || 0), src = ac.createOscillator(), v = ac.createGain();
+    src.type = type;
+    src.frequency.setValueAtTime(f0, t);
+    if (f1 && f1 !== f0) src.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
+    envelope(v.gain, t, dur, vol, o.attack || 0.004, o.swell);
+    src.connect(v); v.connect(o.dest || master);
+    if (o.echo) v.connect(echo);
+    src.start(t); src.stop(t + dur + 0.03);
+  }
+  function nz(dur, vol, o) {
+    if (!audible()) return;
+    o = o || {};
+    const t = ac.currentTime + (o.at || 0), src = ac.createBufferSource(), f = ac.createBiquadFilter(), v = ac.createGain();
+    src.buffer = noiseBuf; src.loop = true;
+    f.type = o.type || "lowpass"; f.Q.value = o.q || 0.7;
+    f.frequency.setValueAtTime(o.f0 || 2000, t);
+    if (o.f1) f.frequency.exponentialRampToValueAtTime(Math.max(30, o.f1), t + dur);
+    envelope(v.gain, t, dur, vol, o.attack || 0.003, o.swell);
+    src.connect(f); f.connect(v); v.connect(o.dest || master);
+    if (o.echo) v.connect(echo);
+    src.start(t, Math.random() * 1.5); src.stop(t + dur + 0.03);
+  }
+  // a clean low thump: a sine that falls from f0 to f1
+  function sub(f0, f1, dur, vol, at) { osc("sine", f0, f1, dur, vol, { at: at || 0, attack: 0.008 }); }
+  // a clean musical note, and a run of them
+  function note(freq, at, dur, vol) {
+    osc("triangle", freq, freq, dur, vol, { at, dest: soft });
+    osc("sine", freq * 2, freq * 2, dur * 0.7, vol * 0.35, { at });
+  }
+  function seq(freqs, step, dur, vol, at) { freqs.forEach((f, k) => note(f, (at || 0) + k * step, dur, vol)); }
+  // stop one sound stacking on itself many times in a frame
+  const gate = {};
+  function limit(name, ms) { const n = performance.now(); if (n - (gate[name] || 0) < ms) return false; gate[name] = n; return true; }
+  const jit = (a) => 1 + (Math.random() * 2 - 1) * a;
+  // An explosion of a given size (0 a small pod … 1 a capital ship): a sharp
+  // crack, a band of noise falling in pitch, a pitched body, and for big ones
+  // a second low sweep and a rumbling tail with echo.
+  function boom(size, at) {
+    at = at || 0;
+    const p = jit(0.14) * (1.25 - size * 0.5), d = 0.28 + size * 0.5;
+    nz(0.07, 0.3 + size * 0.2, { at, type: "highpass", f0: 3500 });
+    nz(d, 0.55 + size * 0.35, { at, type: "bandpass", f0: 1700 * p, f1: 160, q: 0.6, dest: crunch, echo: size > 0.4 });
+    osc("triangle", 300 * p, 55, d * 0.8, 0.5 + size * 0.3, { at, dest: crunch });
+    sub(130 * p, 38, d * 1.2 + 0.1, 0.55 + size * 0.45, at);
+    if (size > 0.4) {
+      sub(75, 30, d * 2.2, 0.7, at + 0.03);
+      osc("sawtooth", 520 * p, 42, d, 0.4, { at, dest: crunch, echo: true });
+      nz(d * 1.6, 0.35, { at: at + 0.05, f0: 1200, f1: 90 });
     }
-    const s = ac.createBufferSource(), v = ac.createGain(), f = ac.createBiquadFilter(), t = ac.currentTime;
-    s.buffer = noiseBuf; f.type = "lowpass";
-    f.frequency.setValueAtTime(lowpass || 1800, t);
-    f.frequency.exponentialRampToValueAtTime(120, t + dur);
-    v.gain.setValueAtTime(vol, t);
-    v.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    s.connect(f); f.connect(v); v.connect(master);
-    s.start(t); s.stop(t + dur + 0.02);
   }
-  let lastShot = 0;
+  const C5 = 523.25, E5 = 659.25, G5 = 783.99, B5 = 987.77, C6 = 1046.5, E6 = 1318.5, G6 = 1568;
   const sfx = {
-    shoot() { const n = performance.now(); if (n - lastShot < 70) return; lastShot = n; tone(880, 0.06, "square", 0.035, 0.5); },
-    hit() { tone(220, 0.05, "triangle", 0.06, 0.7); },
-    boom(big) { noise(big ? 0.7 : 0.28, big ? 0.5 : 0.22, big ? 2600 : 1600); if (big) tone(90, 0.6, "sawtooth", 0.2, 0.4); },
-    pickup() { tone(660, 0.07, "sine", 0.12); setTimeout(() => tone(990, 0.1, "sine", 0.12), 60); },
-    hurt() { noise(0.4, 0.4, 900); tone(160, 0.4, "sawtooth", 0.2, 0.3); },
-    bomb() { noise(1.0, 0.6, 3200); tone(60, 1.0, "sine", 0.4, 0.5); },
-    warn() { tone(440, 0.18, "square", 0.1); setTimeout(() => tone(330, 0.25, "square", 0.1), 220); },
-    win() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tone(f, 0.18, "triangle", 0.14), i * 110)); },
+    shoot(w) {
+      if (!limit("shoot", 62)) return;
+      const p = jit(0.035);
+      if (w === 1) { osc("triangle", 620 * p, 200, 0.09, 0.075, { dest: soft }); sub(150, 60, 0.09, 0.14); }          // spread: a soft thump
+      else if (w === 2) { osc("sawtooth", 1900 * p, 800, 0.055, 0.035, { dest: soft }); sub(220, 110, 0.05, 0.08); }  // laser: a zip with a low hum
+      else { osc("triangle", 1100 * p, 330, 0.075, 0.075, { dest: soft }); sub(170, 65, 0.08, 0.13); }               // blaster: a pew with a kick
+    },
+    hit(big) {
+      if (!limit("hit", 50)) return;
+      if (big) { osc("triangle", 420 * jit(0.08), 180, 0.06, 0.12, { dest: crunch }); sub(140, 70, 0.07, 0.2); }
+      else { nz(0.035, 0.09, { type: "bandpass", f0: 1900, q: 1.2 }); sub(200, 90, 0.05, 0.1); }
+    },
+    boom(big) { if (limit("boom", 45)) boom(big ? 0.75 : 0.15); },
+    // a boss breaking up: rolling blasts under a rising whine, then one huge layered explosion
+    bossRumble() { boom(0.3 + Math.random() * 0.35); },
+    bossOverload(dur) {
+      osc("sawtooth", 90, 760, dur, 0.2, { swell: true, dest: soft });
+      osc("square", 45, 380, dur, 0.1, { swell: true, dest: soft });
+      osc("sine", 38, 75, dur, 0.5, { swell: true });
+    },
+    bossBoom() {
+      nz(0.1, 0.9, { type: "highpass", f0: 2800 });
+      osc("square", 1100, 70, 0.4, 0.5, { dest: crunch });
+      osc("sawtooth", 640, 36, 1.5, 0.9, { dest: crunch, echo: true });
+      sub(190, 40, 1.4, 0.9);
+      sub(95, 28, 2.6, 1.0, 0.02);                      // the long floor-shaking drop
+      osc("triangle", 130, 34, 1.8, 0.6, { dest: crunch, echo: true });
+      nz(1.7, 1.0, { f0: 4200, f1: 90, dest: crunch, echo: true });
+      nz(2.8, 0.5, { at: 0.15, f0: 1700, f1: 70, echo: true });
+      boom(0.9, 0.14); boom(0.7, 0.32); boom(1, 0.55); boom(0.6, 0.85);
+    },
+    pickup(kind) {
+      if (kind === "gem") { if (limit("gem", 60)) note(1760 * jit(0.03), 0, 0.09, 0.06); return; }
+      if (kind === "power") { sub(165, 82, 0.25, 0.25); return seq([E5, G5, B5, E6], 0.055, 0.14, 0.16); }
+      if (kind === "weapon") { osc("sawtooth", 300, 1200, 0.18, 0.09, { dest: soft }); return seq([C5, G5], 0.09, 0.2, 0.16, 0.08); }
+      if (kind === "bomb") return seq([392, C5, 392], 0.07, 0.14, 0.18);
+      sub(131, 65, 0.5, 0.3);
+      seq([C5, E5, G5, C6, E6, G6], 0.07, 0.22, 0.18);                                     // an extra ship
+    },
+    hurt() {
+      nz(0.55, 0.9, { f0: 2600, f1: 160, dest: crunch, echo: true });
+      osc("sawtooth", 520, 60, 0.5, 0.6, { dest: crunch });
+      sub(150, 36, 0.7, 0.9);
+      osc("square", 880, 880, 0.09, 0.13, { at: 0.3, dest: soft });
+      osc("square", 880, 880, 0.09, 0.13, { at: 0.46, dest: soft });
+    },
+    bomb() {
+      nz(0.14, 0.4, { type: "bandpass", f0: 400, f1: 3600, q: 2.5, swell: true });
+      nz(0.1, 0.9, { at: 0.1, type: "highpass", f0: 2500 });
+      osc("sawtooth", 600, 38, 1.2, 0.9, { at: 0.1, dest: crunch, echo: true });
+      sub(170, 40, 1.1, 0.9, 0.1);
+      sub(90, 28, 2.2, 0.9, 0.12);
+      nz(1.5, 1.0, { at: 0.1, f0: 4000, f1: 90, dest: crunch, echo: true });
+      nz(2.2, 0.35, { at: 0.3, f0: 1500, f1: 70, echo: true });
+    },
+    warn() {     // a two-tone klaxon, three times, over a rising hiss
+      for (let k = 0; k < 3; k++) {
+        osc("sawtooth", 620, 620, 0.26, 0.2, { at: k * 0.62, dest: soft });
+        osc("sawtooth", 465, 465, 0.3, 0.2, { at: k * 0.62 + 0.28, dest: soft });
+        osc("square", 77.5, 77.5, 0.56, 0.22, { at: k * 0.62, dest: soft });      // a growl two octaves under
+      }
+      nz(2.0, 0.1, { type: "bandpass", f0: 300, f1: 1200, q: 1.5, swell: true });
+    },
+    waveClear() { seq([G5, C6], 0.09, 0.2, 0.13); },
+    win(at) {
+      at = at || 0;
+      seq([C5, E5, G5, C6, E6], 0.11, 0.24, 0.2, at);
+      for (const f of [C6, E6, G6]) note(f, at + 0.62, 0.9, 0.14);
+      sub(130.8, 130.8, 0.5, 0.3, at); sub(65.4, 65.4, 1.0, 0.4, at + 0.62);    // bass under the fanfare
+    },
+    over() { seq([392, 329.63, 261.63, 196], 0.22, 0.5, 0.2); nz(1.4, 0.3, { f0: 900, f1: 80, echo: true }); sub(98, 49, 1.6, 0.5, 0.66); },
+    ui() { osc("sine", 520, 700, 0.06, 0.1); sub(130, 90, 0.07, 0.18); },
   };
 
   // ====================================================
@@ -337,7 +472,7 @@
       const n = lv < 4 ? 1 : lv < 8 ? 2 : 3, dmg = 0.5 + lv * 0.1;
       for (let k = 0; k < n; k++) add((k - (n - 1) / 2) * 16, 0, -1250, dmg, { pierce: true, r: 3, len: 26 });
     }
-    sfx.shoot();
+    sfx.shoot(w);
   }
   function hurtPlayer() {
     const p = player;
@@ -612,7 +747,9 @@
     if (b.state === "dying") {
       b.y += 14 * dt; b.dieT -= dt;
       if (Math.random() < 0.5) explode(b.x + rand(-90, 90), b.y + rand(-50, 50), pick(["#ffd35c", "#ff7a55", "#fff"]), 18, false);
-      if (b.dieT <= 0) { explode(b.x, b.y, "#fff", 110, true); sfx.boom(true); shake = 22; flashAll = 0.7; boss = null; stageCleared(); }
+      b.rumble = (b.rumble || 0) - dt;
+      if (b.rumble <= 0) { b.rumble = rand(0.11, 0.2); sfx.bossRumble(); }
+      if (b.dieT <= 0) { explode(b.x, b.y, "#fff", 110, true); sfx.bossBoom(); shake = 22; flashAll = 0.7; boss = null; stageCleared(); }
       return;
     }
     const rage = b.hp < b.maxHp * 0.5, sp = bulletSpeed(), d = diff();
@@ -652,6 +789,7 @@
   }
   function bossDown() {
     boss.state = "dying"; boss.dieT = 2.2;
+    sfx.bossOverload(2.2); sfx.bossRumble();
     score += boss.score * (1 + loop);
     eshots.length = 0;
     for (const e of enemies) { e.dead = true; explode(e.x, e.y, "#ffd35c", 14, false); }
@@ -710,13 +848,16 @@
   function stageCleared() {
     const wasBoss = isBossStage(stage);
     stage++;
-    if (stage >= SECTORS * STAGES_PER_SECTOR) { stage = 0; loop++; sfx.win(); }
-    if (wasBoss) { sfx.win(); score += 2000 * (1 + loop); player.bombs = Math.min(5, player.bombs + 1); }
+    if (stage >= SECTORS * STAGES_PER_SECTOR) { stage = 0; loop++; }
+    // the fanfare waits for the boss's explosion to ring out
+    if (wasBoss) { sfx.win(1.1); score += 2000 * (1 + loop); player.bombs = Math.min(5, player.bombs + 1); }
+    else sfx.waveClear();
     nextAt = wasBoss ? 2.2 : 0.9;
   }
   let nextAt = 0;
   function gameOver() {
     if (score > save.best) { save.best = Math.floor(score); persist(); }
+    sfx.over();
     const sec = sectorOf(stage);
     $("over-title").textContent = "Game over";
     $("over-text").textContent = "Score " + Math.floor(score).toLocaleString() + " · reached sector " + (sec + 1) + ", " + SECTOR_NAMES[sec];
@@ -731,9 +872,11 @@
   }
   function toggleMute() {
     save.mute = !save.mute; persist();
-    if (master) master.gain.value = save.mute ? 0 : 0.5;
+    if (master) master.gain.value = save.mute ? 0 : VOL;
     $("btn-mute").classList.toggle("is-off", save.mute);
+    if (!save.mute) { audioInit(); sfx.ui(); }
   }
+  for (const id of ["btn-new", "btn-continue", "btn-resume", "btn-quit", "btn-menu", "btn-retry", "btn-pause"]) $(id).addEventListener("click", () => { audioInit(); sfx.ui(); });
   $("btn-new").onclick = () => startGame(0);
   $("btn-continue").onclick = () => startGame(save.sector);
   $("btn-resume").onclick = togglePause;
@@ -792,6 +935,7 @@
         // the boss is hit across its whole hull, not just a small circle
         if (Math.abs(s.x - boss.x) < 96 && Math.abs(s.y - boss.y) < 48 && !(s.hit && s.hit.has(-1))) {
           damage(boss, s.dmg);
+          if (!boss.dead) sfx.hit(true);
           parts.push({ x: s.x, y: s.y, vx: rand(-80, 80), vy: rand(20, 140), life: 0.2, max: 0.2, c: "#ffd35c", s: 2 });
           if (s.pierce) (s.hit || (s.hit = new Set())).add(-1); else s.dead = true;
         }
@@ -820,7 +964,7 @@
       const dx = p.x - k.x, dy = p.y - k.y, d2 = dx * dx + dy * dy;
       if (alive && d2 < 110 * 110) { const d = Math.sqrt(d2) + 1; k.x += dx / d * 340 * dt; k.y += dy / d * 340 * dt; }
       if (alive && d2 < 26 * 26) {
-        k.dead = true; sfx.pickup();
+        k.dead = true; sfx.pickup(k.kind);
         if (k.kind === "gem") { score += 50 * (1 + loop); }
         else if (k.kind === "power") { if (p.power < 10) { p.power++; popText(p.x, p.y - 30, "POWER " + p.power, "#8fd6ff"); } else { score += 500; popText(p.x, p.y - 30, "+500", "#ffd35c"); } }
         else if (k.kind === "weapon") { if (p.weapon === k.w) { p.power = Math.min(10, p.power + 1); } else p.weapon = k.w; popText(p.x, p.y - 30, WEAPONS[p.weapon].toUpperCase(), "#c9a8ff"); }
@@ -924,27 +1068,34 @@
     if (state === "play" || state === "paused") drawHud();
   }
   function drawHud() {
-    const p = player;
+    const p = player, F = "'Space Grotesk', sans-serif";
     g.textBaseline = "top"; g.textAlign = "left";
-    g.fillStyle = "#fff"; g.font = "700 20px 'Space Grotesk', sans-serif";
+    g.fillStyle = "#fff"; g.font = "700 " + Math.round(20 * ui) + "px " + F;
     g.fillText(Math.floor(score).toLocaleString(), 14, 12);
-    g.fillStyle = "#b9c2d6"; g.font = "500 12px 'Space Grotesk', sans-serif";
+    g.fillStyle = "#b9c2d6"; g.font = "500 " + Math.round(12 * ui) + "px " + F;
     const sec = sectorOf(stage), inSec = stage % STAGES_PER_SECTOR;
-    g.fillText("SECTOR " + (sec + 1) + " · " + (isBossStage(stage) ? "BOSS" : "WAVE " + (inSec + 1) + "/5") + (loop ? " · LOOP " + (loop + 1) : ""), 14, 37);
-    // lives, missiles, weapon along the bottom
-    const by = H - 26;
-    for (let k = 0; k < Math.max(0, p.lives); k++) { g.save(); g.translate(22 + k * 22, by); g.scale(0.4, 0.4); poly([0, -26, 26, 16, 0, 8, -26, 16], "#e8eeff"); g.restore(); }
-    g.fillStyle = "#ffc28a"; g.font = "700 15px 'Space Grotesk', sans-serif"; g.textBaseline = "middle";
-    g.fillText("✹".repeat(p.bombs), 22 + Math.max(0, p.lives) * 22 + 8, by + 1);
-    g.textAlign = "right"; g.fillStyle = "#c9a8ff"; g.font = "600 12px 'Space Grotesk', sans-serif";
-    g.fillText(WEAPONS[p.weapon].toUpperCase() + " " + p.power + "/10", W - 96, by + 1);
+    g.fillText("SECTOR " + (sec + 1) + " · " + (isBossStage(stage) ? "BOSS" : "WAVE " + (inSec + 1) + "/5") + (loop ? " · LOOP " + (loop + 1) : ""), 14, 14 + 23 * ui);
+    // ships left, missiles and weapon along the bottom
+    const by = H - 14 - 12 * ui, step = 22 * ui;
+    let x = 10 + 12 * ui;
+    for (let k = 0; k < Math.max(0, p.lives); k++, x += step) {
+      g.save(); g.translate(x, by); g.scale(0.4 * ui, 0.4 * ui); poly([0, -26, 26, 16, 0, 8, -26, 16], "#e8eeff"); g.restore();
+    }
+    x += 6 * ui;
+    for (let k = 0; k < p.bombs; k++, x += 13 * ui) {
+      g.save(); g.translate(x, by); g.scale(ui, ui);
+      poly([0, -9, 3, -4, 3, 4, 6, 8, -6, 8, -3, 4, -3, -4], "#ffc28a");
+      g.restore();
+    }
+    g.textBaseline = "middle"; g.textAlign = "right"; g.fillStyle = "#c9a8ff"; g.font = "600 " + Math.round(12 * ui) + "px " + F;
+    g.fillText(WEAPONS[p.weapon].toUpperCase() + " " + p.power + "/10", W - (ui > 1 ? 110 : 16), by + 1);
     g.textAlign = "left";
     // boss bar
     if (boss && boss.state !== "enter") {
-      const w = W - 120, x = 60, y = 64, f = clamp(boss.hp / boss.maxHp, 0, 1);
+      const w = W - 120, x = 60, y = 64 * ui, f = clamp(boss.hp / boss.maxHp, 0, 1);
       g.fillStyle = "rgba(255,255,255,0.14)"; g.fillRect(x, y, w, 8);
       g.fillStyle = f < 0.5 ? "#ff4d4d" : "#ffd35c"; g.fillRect(x, y, w * f, 8);
-      g.fillStyle = "#fff"; g.font = "600 11px 'Space Grotesk', sans-serif"; g.textAlign = "center"; g.textBaseline = "bottom";
+      g.fillStyle = "#fff"; g.font = "600 " + Math.round(11 * ui) + "px 'Space Grotesk', sans-serif"; g.textAlign = "center"; g.textBaseline = "bottom";
       g.fillText(BOSS_NAMES[boss.kind].toUpperCase(), W / 2, y - 3);
     }
     if (banner) {

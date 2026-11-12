@@ -10,16 +10,26 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="game.css?v=1">
+  <link rel="stylesheet" href="game.css?v=2">
 </head>
 <body>
   <canvas id="game" aria-label="Starship game"></canvas>
 
   <div class="hud" id="hud" hidden>
-    <button class="hud__btn" id="btn-pause" type="button" aria-label="Pause">II</button>
-    <button class="hud__btn" id="btn-mute" type="button" aria-label="Sound on or off">♪</button>
+    <button class="hud__btn" id="btn-pause" type="button" aria-label="Pause">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="4" width="4.5" height="16" rx="1.2"/><rect x="14" y="4" width="4.5" height="16" rx="1.2"/></svg>
+    </button>
+    <button class="hud__btn" id="btn-mute" type="button" aria-label="Sound on or off">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 9v6h4l6 5V4L7 9H3z"/>
+        <path class="snd-on" d="M16.5 8.5a5 5 0 0 1 0 7M19 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        <path class="snd-off" d="M16.5 9l5.5 6m0-6l-5.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+    </button>
   </div>
-  <button class="bomb" id="btn-bomb" type="button" aria-label="Fire a missile" hidden>✹</button>
+  <button class="bomb" id="btn-bomb" type="button" aria-label="Fire a missile" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5c3 2.6 4.2 6.4 4.2 10.3l2.6 3.4v4.3l-4.3-2.2h-5l-4.3 2.2v-4.3l2.6-3.4C7.8 7.9 9 4.1 12 1.5z"/><path d="M10 19.5h4l-2 3.5z" opacity="0.7"/></svg>
+  </button>
 
   <div class="panel" id="menu">
     <h1>Starship</h1>
@@ -32,7 +42,7 @@
     <ul class="panel__help">
       <li><b>Move</b> mouse, arrow keys or WASD. On a phone, drag anywhere.</li>
       <li><b>Fire</b> is automatic.</li>
-      <li><b>Missile</b> Space, right click, or the ✹ button. It clears the screen.</li>
+      <li><b>Missile</b> Space, right click, or the round missile button. It clears the screen.</li>
       <li><b>Pause</b> P or Esc. <b>Sound</b> M.</li>
     </ul>
     <p class="panel__back"><a href="../pro/">Back to the site</a></p>
@@ -55,6 +65,6 @@
     </div>
   </div>
 
-  <script src="game.js?v=1"></script>
+  <script src="game.js?v=2"></script>
 </body>
 </html>
