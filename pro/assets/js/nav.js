@@ -324,8 +324,8 @@
           </span>
         </p>
         <p class="omni-real">
-          <span lang="en">My real name: Hoang Anh.</span>
-          <span lang="vi">Tên thật của tôi: Hoàng Anh.</span>
+          <span lang="en">My real name is Hoang Anh.</span>
+          <span lang="vi">Tên thật của tôi là Hoàng Anh.</span>
         </p>
       </div>
       <p class="omni-hint">
