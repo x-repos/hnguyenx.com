@@ -228,7 +228,7 @@
           opacity: 1;
         }
         .omni-title {
-          font-family: "Source Serif 4", Georgia, serif;
+          font-family: "Space Grotesk", system-ui, sans-serif;
           font-weight: 600;
           font-size: clamp(1.5rem, 4vw, 2.1rem);
           margin: 0 0 12px;
@@ -237,7 +237,6 @@
         }
         .omni-title .omni-title__hl {
           color: #7fff7f;
-          font-style: italic;
         }
         .omni-body {
           color: #d3d8e3;
@@ -247,15 +246,14 @@
         }
         .omni-real {
           color: #c9a8ff;
-          font-family: "Source Serif 4", Georgia, serif;
-          font-style: italic;
+          font-family: "Space Grotesk", system-ui, sans-serif;
           font-size: 1.05rem;
           margin: 0;
         }
         .omni-hint {
           position: absolute; bottom: 28px; left: 0; right: 0;
           text-align: center;
-          font-family: Inter, sans-serif;
+          font-family: "IBM Plex Sans", system-ui, sans-serif;
           font-size: 10px;
           letter-spacing: 0.24em;
           text-transform: uppercase;
@@ -416,8 +414,7 @@
         }
         .egg-overlay.is-open .egg-card { transform: translateY(0) scale(1); }
         .egg-quote {
-          font-family: "Source Serif 4", Georgia, serif;
-          font-style: italic;
+          font-family: "Space Grotesk", system-ui, sans-serif;
           font-weight: 400;
           font-size: clamp(1.4rem, 3.6vw, 2.4rem);
           line-height: 1.4;
@@ -431,15 +428,14 @@
         }
         .egg-attrib {
           margin: 0 0 28px;
-          font-family: "Inter", sans-serif;
+          font-family: "IBM Plex Sans", system-ui, sans-serif;
           font-size: 12px;
           letter-spacing: 0.28em;
           text-transform: uppercase;
           color: #8fd6ff;
         }
         .egg-mini {
-          font-family: "Source Serif 4", Georgia, serif;
-          font-style: italic;
+          font-family: "Space Grotesk", system-ui, sans-serif;
           font-size: 14px;
           color: rgba(255,255,255,0.55);
           margin: 0;
@@ -449,7 +445,7 @@
           bottom: 28px;
           left: 0; right: 0;
           text-align: center;
-          font-family: "Inter", sans-serif;
+          font-family: "IBM Plex Sans", system-ui, sans-serif;
           font-size: 10px;
           letter-spacing: 0.24em;
           text-transform: uppercase;
