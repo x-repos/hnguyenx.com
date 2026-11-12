@@ -1415,11 +1415,14 @@
   const progressBar = document.querySelector(".home-progress__bar");
   const scaleDot   = document.getElementById("home-scale-dot");
   const scaleLabel = document.getElementById("home-scale-label");
+  // Exponents are set with <sup>, not Unicode superscript characters: those
+  // come from different parts of a font (¹ vs ⁵) and render at uneven sizes.
+  const sci = (e) => "10<sup>" + String(e).replace("-", "\u2212") + "</sup> m";
   const SCALE_FOR_SCENE = {
-    qubits: "10⁻¹⁵ m", quantum: "10⁻¹⁵ m", dft: "10⁻¹⁰ m", md: "10⁻⁹ m",
-    mantle: "10⁶ m", planet: "10⁷ m", solar: "10¹¹ m", galaxy: "10²¹ m", outro: "10²¹ m",
+    qubits: sci(-15), quantum: sci(-15), dft: sci(-10), md: sci(-9),
+    mantle: sci(6), planet: sci(7), solar: sci(11), galaxy: sci(21), outro: sci(21),
   };
-  let shownLabel = scaleLabel ? scaleLabel.textContent : "";
+  let shownLabel = "";
   let labelSeeded = false;
   function applyReadout(s) {
     const max = document.documentElement.scrollHeight - window.innerHeight;
@@ -1431,7 +1434,7 @@
     const label = (sec && SCALE_FOR_SCENE[sec.dataset.scene]) || shownLabel;
     if (label !== shownLabel) {
       shownLabel = label;
-      scaleLabel.textContent = label;
+      scaleLabel.innerHTML = label;
       if (labelSeeded) {
         gsap.fromTo(scaleLabel, { y: 8, autoAlpha: 0 },
           { y: 0, autoAlpha: 1, duration: 0.45, ease: "power2.out", overwrite: true });

@@ -634,10 +634,22 @@ html.js #home-canvas.is-ready { opacity: 1; }
   z-index: 10;
 }
 .home-scale__label {
-  font-variant-numeric: tabular-nums;
+  font-family: var(--home-display);
+  font-variant-numeric: tabular-nums lining-nums;
   color: var(--home-fg);
   font-weight: 500;
-  font-size: 17px;
+  font-size: 18px;
+  line-height: 1;
+}
+.home-scale__label sup {
+  font-size: 0.62em;
+  font-weight: 500;
+  line-height: 0;
+  vertical-align: baseline;
+  position: relative;
+  top: -0.62em;
+  margin-left: 0.06em;
+  letter-spacing: 0.02em;
 }
 .home-scale__caption {
   opacity: 0.65;
