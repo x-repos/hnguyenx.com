@@ -1,4 +1,4 @@
-/* The games page: two cards, each in its own game's colours. */
+/* The games page: one card per game, each in its own game's colours. */
 @font-face {
   font-family: "Crimson Pro";
   src: url("../assets/fonts/crimson-pro.woff2") format("woff2");
@@ -26,6 +26,14 @@ body {
 .hub__sub { margin: 10px 0 28px; color: #b9c2d6; font-size: 1.15rem; }
 .hub__cards { display: grid; grid-template-columns: 1fr; gap: 20px; }
 @media (min-width: 720px) { .hub__cards { grid-template-columns: 1fr 1fr; gap: 24px; } }
+/* the featured card: on wide screens it takes the whole row, picture on the left and text on the right */
+@media (min-width: 720px) {
+  .card.card--wide { grid-column: 1 / -1; flex-direction: row; }   /* .card.card--wide, to outrank the .card rule further down */
+  .card--wide .card__art { flex: 0 0 50%; width: 50%; }
+  .card--wide .card__body { justify-content: center; padding: 28px 36px; }
+  .card--wide .card__best { min-height: 0; }
+  .card--wide .card__best:empty { display: none; }
+}
 
 .card {
   display: flex; flex-direction: column; overflow: hidden;
