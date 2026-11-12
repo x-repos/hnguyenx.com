@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Pi Run</title>
+  <meta name="description" content="Pi Run: run π along the number line, jump the signs and collect the digits of π in order.">
+  <meta name="theme-color" content="#fffdf8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#14110c" media="(prefers-color-scheme: dark)">
+  <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg?v=3">
+  <link rel="icon" type="image/png" sizes="32x32" href="../../assets/favicon-32.png?v=3">
+  <link rel="apple-touch-icon" sizes="180x180" href="../../assets/apple-touch-icon.png?v=3">
+  <link rel="stylesheet" href="run.css?v=2">
+</head>
+<body>
+  <canvas id="game" aria-label="Pi Run game"></canvas>
+  <div id="safe" aria-hidden="true"></div>
+
+  <div class="corner">
+    <button class="round" id="btn-pause" type="button" aria-label="Pause" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="4" width="4.5" height="16" rx="1.2"/><rect x="14" y="4" width="4.5" height="16" rx="1.2"/></svg>
+    </button>
+    <button class="round" id="btn-mute" type="button" aria-label="Sound on or off">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 9v6h4l6 5V4L7 9H3z"/>
+        <path class="snd-on" d="M16.5 8.5a5 5 0 0 1 0 7M19 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        <path class="snd-off" d="M16.5 9l5.5 6m0-6l-5.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="panel" id="start">
+    <h1>Pi Run</h1>
+    <p class="panel__sub">Run π along the number line.</p>
+    <p class="panel__how">Tap to jump. Hold for a higher jump. Tap again in the air for a second jump. Dark signs end the run. Gold circles are good. Pass through each gold gate to collect the digits of π in order.</p>
+    <p class="panel__tap">Tap, click or press Space to run</p>
+    <p class="panel__best" id="start-best"></p>
+    <div class="looks" id="start-looks" aria-label="Looks for π"></div>
+    <p class="panel__links"><a href="../">All games</a><a href="../../">Home</a></p>
+  </div>
+
+  <div class="panel" id="pause" hidden>
+    <h2>Paused</h2>
+    <div class="panel__buttons">
+      <button type="button" id="btn-resume">Keep running</button>
+    </div>
+    <p class="panel__links"><a href="../">All games</a><a href="../../">Home</a></p>
+  </div>
+
+  <div class="panel" id="over" hidden>
+    <p class="panel__digits" id="over-digits"></p>
+    <h2 id="over-count"></h2>
+    <p class="panel__rank" id="over-cause"></p>
+    <p class="panel__best" id="over-best"></p>
+    <p class="panel__unlock" id="over-unlock" hidden></p>
+    <div class="looks" id="over-looks" aria-label="Looks for π"></div>
+    <div class="panel__buttons">
+      <button type="button" id="btn-again">Run again</button>
+    </div>
+    <p class="panel__links"><a href="../">All games</a><a href="../../">Home</a></p>
+  </div>
+
+  <script src="run.js?v=2"></script>
+</body>
+</html>

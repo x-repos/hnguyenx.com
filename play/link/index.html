@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Pair Path</title>
+  <meta name="description" content="Pair Path: join matching science tiles with a path of at most two turns and clear the board before the time runs out.">
+  <meta name="theme-color" content="#05070f">
+  <link rel="icon" type="image/svg+xml" href="../../pro/images/favicon-pro.svg?v=2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="pairpath.css?v=1">
+</head>
+<body class="in-menu">
+  <canvas id="game" aria-label="Pair Path game board"></canvas>
+  <div id="safe" aria-hidden="true"></div>
+
+  <div class="top" id="top" hidden>
+    <div class="top__row">
+      <a class="top__back" href="../">All games</a>
+      <div class="top__mid">
+        <span class="top__level" id="hud-level">Level 1</span>
+        <span class="top__score" id="hud-score">0</span>
+      </div>
+      <span class="top__time" id="hud-time">0:00</span>
+      <button class="round" id="btn-pause" type="button" aria-label="Pause">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="4" width="4.5" height="16" rx="1.2"/><rect x="14" y="4" width="4.5" height="16" rx="1.2"/></svg>
+      </button>
+      <button class="round" id="btn-mute" type="button" aria-label="Sound on or off">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 9v6h4l6 5V4L7 9H3z"/>
+          <path class="snd-on" d="M16.5 8.5a5 5 0 0 1 0 7M19 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          <path class="snd-off" d="M16.5 9l5.5 6m0-6l-5.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="meter" aria-hidden="true"><div class="meter__fill" id="time-fill"></div></div>
+    <div class="meter meter--combo" aria-hidden="true"><div class="meter__fill" id="combo-fill"></div></div>
+  </div>
+
+  <div class="bar" id="bar" hidden>
+    <button class="help" id="btn-hint" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a7 7 0 0 0-4.2 12.6c.7.6 1.2 1.4 1.2 2.4h6c0-1 .5-1.8 1.2-2.4A7 7 0 0 0 12 2.5z"/><rect x="9" y="19" width="6" height="2.6" rx="1.1"/></svg>
+      <span>Hint</span><b id="hint-count">3</b>
+    </button>
+    <p class="bar__mode" id="bar-mode"></p>
+    <button class="help" id="btn-shuffle" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h4.5c2 0 3.2 1 4.5 5s2.5 5 4.5 5H20M3 17h4.5c1.3 0 2.2-.4 3-1.400M13.5 8.400c.800-1 1.7-1.4 3-1.400H20M17.5 4.500L20 7l-2.5 2.500M17.5 14.500L20 17l-2.5 2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Shuffle</span><b id="shuffle-count">2</b>
+    </button>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="panel" id="menu">
+    <h1>Pair Path</h1>
+    <p class="panel__sub">Join the matching tiles before the clock runs out.</p>
+    <div class="panel__buttons">
+      <button type="button" id="btn-play">Play</button>
+    </div>
+    <p class="panel__best" id="menu-best"></p>
+    <div class="levels" id="levels" aria-label="Levels"></div>
+    <ul class="panel__help">
+      <li>Tap two tiles that show the same symbol.</li>
+      <li>They clear when a line with at most two turns can join them through empty cells. The line may run around the outside of the board.</li>
+      <li>Quick matches in a row build a combo and add time.</li>
+      <li>From level 3 the tiles slide after every match.</li>
+      <li class="keys">Keys: arrows and Enter to pick, H for a hint, S to shuffle, P to pause, M for sound.</li>
+    </ul>
+    <p class="panel__back"><a href="../">All games</a><button type="button" class="linkbtn" id="btn-sound">Sound is on</button></p>
+  </div>
+
+  <div class="panel" id="paused" hidden>
+    <h2>Paused</h2>
+    <p class="panel__sub">The tiles are hidden while you rest.</p>
+    <div class="panel__buttons">
+      <button type="button" id="btn-resume">Resume</button>
+      <button type="button" id="btn-restart">Restart level</button>
+      <button type="button" id="btn-quit">Levels</button>
+    </div>
+    <p class="panel__back"><a href="../">All games</a></p>
+  </div>
+
+  <div class="panel" id="win" hidden>
+    <h2 id="win-title">Level cleared</h2>
+    <div class="stars" id="win-stars"></div>
+    <p class="panel__sub" id="win-text"></p>
+    <p class="panel__best" id="win-best"></p>
+    <div class="panel__buttons">
+      <button type="button" id="btn-next">Next level</button>
+      <button type="button" id="btn-again">Play again</button>
+      <button type="button" id="btn-levels">Levels</button>
+    </div>
+    <p class="panel__back"><a href="../">All games</a></p>
+  </div>
+
+  <div class="panel" id="lose" hidden>
+    <h2>Time is up</h2>
+    <p class="panel__sub" id="lose-text"></p>
+    <div class="panel__buttons">
+      <button type="button" id="btn-retry">Try again</button>
+      <button type="button" id="btn-lose-levels">Levels</button>
+    </div>
+    <p class="panel__back"><a href="../">All games</a></p>
+  </div>
+
+  <script src="pairpath.js?v=2"></script>
+</body>
+</html>

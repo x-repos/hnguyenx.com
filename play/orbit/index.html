@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Orbit Sling</title>
+  <meta name="description" content="Orbit Sling: launch a probe and let real gravity bend its path around planets and moons. 24 levels. Play in the browser.">
+  <meta name="theme-color" content="#03040a">
+  <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg?v=3">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="orbit.css?v=2">
+</head>
+<body class="in-menu">
+  <canvas id="game" aria-label="Orbit Sling game"></canvas>
+
+  <button class="round mute" id="btn-mute" type="button" aria-label="Sound on or off">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 9v6h4l6 5V4L7 9H3z"/>
+      <path class="snd-on" d="M16.5 8.5a5 5 0 0 1 0 7M19 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="snd-off" d="M16.5 9l5.5 6m0-6l-5.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+    </svg>
+  </button>
+
+  <div class="hud is-off" id="hud">
+    <button class="round" id="btn-levels" type="button" aria-label="Levels">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.4"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.4"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.4"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.4"/></svg>
+    </button>
+    <a class="hud__link" href="../">All games</a>
+    <div class="hud__mid">
+      <div class="hud__title" id="hud-title"></div>
+      <div class="hud__sub"><span id="hud-probes"></span><span class="stars" id="hud-stars" aria-hidden="true"><i>★</i><i>★</i><i>★</i></span></div>
+    </div>
+  </div>
+
+  <p class="tip is-off" id="tip"></p>
+
+  <p class="rotate">Turn the phone upright for a bigger view.</p>
+
+  <div class="ctl is-off" id="ctl">
+    <div class="ctl__group">
+      <div class="ctl__label" id="read-angle">Angle 90.0°</div>
+      <div class="ctl__row">
+        <button class="round" id="btn-ccw" type="button" aria-label="Turn the aim left">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8.5a7 7 0 1 1-1.6 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M3.2 4.6l.6 6.2 6-1.6z"/></svg>
+        </button>
+        <button class="round" id="btn-cw" type="button" aria-label="Turn the aim right">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 8.5a7 7 0 1 0 1.6 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M20.8 4.6l-.6 6.2-6-1.6z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="ctl__group">
+      <div class="ctl__label" id="read-power">Power 200</div>
+      <div class="ctl__row">
+        <button class="round" id="btn-less" type="button" aria-label="Less power">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>
+        </button>
+        <button class="round" id="btn-more" type="button" aria-label="More power">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5v14" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+    <button class="ctl__launch" id="btn-launch" type="button">Launch</button>
+  </div>
+
+  <div class="panel" id="menu">
+    <h1>Orbit Sling</h1>
+    <p class="panel__sub">24 levels · real gravity · one probe at a time</p>
+    <div class="panel__buttons">
+      <button type="button" id="btn-play">Play</button>
+      <button type="button" id="btn-select" class="quiet">Levels</button>
+    </div>
+    <p class="panel__best" id="best"></p>
+    <ul class="panel__help">
+      <li>Drag back anywhere like a slingshot. The probe flies the opposite way.</li>
+      <li>Pull further for more power, then let go to launch.</li>
+      <li>Reach the glowing ring. Planets pull the probe, so let them bend its path.</li>
+      <li>On a keyboard, the arrow keys fine tune the aim and Space launches. Hold Shift for bigger steps.</li>
+      <li>A miss resets at once. Tap during a flight to call the probe back early.</li>
+      <li>Fewer probes earn more stars.</li>
+    </ul>
+    <p class="panel__back"><a href="../">All games</a><a href="../../">Home</a></p>
+  </div>
+
+  <div class="panel panel--wide" id="levels" hidden>
+    <h2>Levels</h2>
+    <p class="panel__sub" id="levels-sub"></p>
+    <div class="grid" id="grid"></div>
+    <div class="panel__buttons">
+      <button type="button" id="btn-back" class="quiet">Back</button>
+    </div>
+    <p class="panel__back"><a href="../">All games</a></p>
+  </div>
+
+  <div class="panel" id="won" hidden>
+    <h2 id="won-title">Target reached</h2>
+    <p class="stars stars--big" id="won-stars" aria-hidden="true"><i>★</i><i>★</i><i>★</i></p>
+    <p class="panel__sub" id="won-text"></p>
+    <div class="panel__buttons">
+      <button type="button" id="btn-next">Next level</button>
+      <button type="button" id="btn-again" class="quiet">Play this level again</button>
+      <button type="button" id="btn-won-levels" class="quiet">Levels</button>
+    </div>
+    <p class="panel__back"><a href="../">All games</a></p>
+  </div>
+
+  <script src="orbit.js?v=2"></script>
+</body>
+</html>

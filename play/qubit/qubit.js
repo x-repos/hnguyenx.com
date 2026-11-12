@@ -289,7 +289,7 @@
     // gate buttons
     $("gates").innerHTML = lv.gates.map((t) => '<button type="button" class="gate" data-g="' + t + '" aria-label="' + GATE[t].name + ", " + GATE[t].sub + '">' +
       '<span class="gate__name' + (GATE[t].name.length > 2 ? " is-long" : "") + '">' + GATE[t].name + '</span><span class="gate__sub">' + GATE[t].sub + '</span><span class="gate__key" aria-hidden="true">' + GATE[t].key.toUpperCase() + "</span></button>").join("");
-    $("win").hidden = true; $("controls").hidden = false;
+    showWin(false);
     show("play");
     // paint one frame later so the discs grow in
     requestAnimationFrame(() => { targetCanon = paintTiles(targetTiles, target); refresh(false); });
@@ -297,6 +297,10 @@
     refresh(false);
   }
 
+  function showWin(on) {
+    $("win").hidden = !on; $("controls").hidden = on;
+    $("stage").classList.toggle("is-won", on);
+  }
   function recompute() { state = build(lv.n, lv.start); for (const m of hist) apply(state, m); }
 
   function refresh(isNew) {
@@ -403,7 +407,7 @@
     $("win-stars").innerHTML = [1, 2, 3].map((k) => starSvg(k <= stars)).join("");
     $("btn-next").textContent = last ? "Levels" : "Next level";
     clearTimeout(winTimer);
-    winTimer = setTimeout(() => { if (solved) { $("controls").hidden = true; $("win").hidden = false; drawCircuit(false); } }, 420);
+    winTimer = setTimeout(() => { if (solved) { showWin(true); drawCircuit(false); } }, 420);
   }
   const starSvg = (on) => '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="star' + (on ? " is-on" : "") + '" d="M12 2.2l2.9 6.2 6.8.8-5 4.7 1.3 6.7-6-3.3-6 3.3 1.3-6.7-5-4.7 6.8-.8z"/></svg>';
 
@@ -435,7 +439,7 @@
     if (!hist.length || screen !== "play") return;
     clearTimeout(winTimer);
     hist.pop(); solved = false; pick = -1;
-    $("win").hidden = true; $("controls").hidden = false;
+    showWin(false);
     SFX.undo(); refresh(false);
   }
   function reset() {
@@ -443,7 +447,7 @@
     clearTimeout(winTimer);
     const had = hist.length;
     hist = []; solved = false; armed = null; pick = -1;
-    $("win").hidden = true; $("controls").hidden = false;
+    showWin(false);
     if (had) SFX.undo();
     refresh(false);
   }

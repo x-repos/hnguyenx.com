@@ -156,7 +156,7 @@ body.in-menu .stage { filter: blur(3px) brightness(0.5); pointer-events: none; }
 .gate { position: relative; }
 .gate__key { display: none; position: absolute; top: 5px; right: 7px; font-size: 0.68rem; font-weight: 600; line-height: 1; color: var(--muted); border: 1px solid rgba(255,255,255,0.28); border-radius: 5px; padding: 2px 4px; }
 .gate.is-armed .gate__key { color: #1c2234; border-color: rgba(5,7,15,0.45); }
-@media (hover: hover) and (pointer: fine) { .gate__key { display: block; } }
+@media (hover: hover) and (pointer: fine) and (min-width: 760px) and (min-height: 561px) { .gate__key { display: block; } }
 .gate:nth-child(3n+2) { border-color: rgba(201,168,255,0.65); background: rgba(201,168,255,0.08); }
 .gate:nth-child(3n) { border-color: rgba(255,194,138,0.65); background: rgba(255,194,138,0.08); }
 .gate:active { transform: scale(0.96); }
@@ -208,6 +208,7 @@ body.in-menu .stage { filter: blur(3px) brightness(0.5); pointer-events: none; }
   .tools button, .win__buttons button { height: 44px; }
   .foot a { padding: 12px 14px; }
   .n3 .tile__label { font-size: 0.8rem; }
+  .stage.is-won .prompt { display: none; }
 }
 
 /* ---------- panels ---------- */
@@ -280,4 +281,8 @@ body.in-menu .stage { filter: blur(3px) brightness(0.5); pointer-events: none; }
   .states.n3 { min-height: 104px; }
   .hint { min-height: 0; }
   .state { padding: 4px 6px 6px; } .state h2 { margin-bottom: 3px; }
+  .stage.is-won .prompt { display: none; }
+  .top__title { font-size: 1rem; } .top__sub { font-size: 0.8rem; }
+  .gate { height: 44px; } .gate__sub { display: none; }
+  .win__text { font-size: 0.88rem; }
 }
