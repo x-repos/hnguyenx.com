@@ -532,6 +532,28 @@ html.js #home-canvas.is-ready { opacity: 1; }
 /* Pure black stage: the particle cloud carries all the colour. */
 .home-scene { background: transparent; }
 
+/* Narrow screens (phones, tablets): the research scenes are left-aligned
+   with an even margin on both sides, like the desktop column. The hero and
+   the outro stay centred. */
+@media (max-width: 959px) {
+  .home-scene:not(.home-scene--hero):not(.home-scene--outro) {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  .home-scene:not(.home-scene--hero):not(.home-scene--outro) .home-scene__inner {
+    text-align: left;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .home-scene:not(.home-scene--hero):not(.home-scene--outro) .home-scene__body {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .home-scene:not(.home-scene--hero):not(.home-scene--outro) .home-scene__title br {
+    display: none;
+  }
+}
+
 /* Wide screens: research scenes read as a left-hand column while the
    particle cloud sits on the right (home.js shifts the camera to match).
    The hero and the outro stay centred. */

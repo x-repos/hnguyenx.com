@@ -887,7 +887,7 @@
     uYaw:      { value: 0 },
     uPitch:    { value: 0 },
     uChaos:    { value: 0 },
-    uSize:     { value: isMobile ? 1.9 : 1.55 },
+    uSize:     { value: isMobile ? 2.2 : 1.85 },
     uPR:       { value: PR },
     uOpacity:  { value: 1 },
     uMouse:    { value: new THREE.Vector2(9, 9) },
@@ -969,7 +969,8 @@
           vec2 ds = (ndc - uShock[q].xy) * vec2(uAspect, 1.0);
           float age = uShock[q].z;
           float dist = length(ds);
-          float ring = exp(-pow(dist - age * 1.5, 2.0) / 0.012) * exp(-age * 1.6);
+          // the front widens as it goes and only fades once it is past the screen edge
+          float ring = exp(-pow(dist - age * 1.5, 2.0) / (0.012 + 0.02 * age)) * exp(-age * 0.75);
           mv.xy += normalize(ds + 1e-5) * ring * 0.55 * depthScale;
           glow += ring;
         }
@@ -993,7 +994,9 @@
         vec2 c = gl_PointCoord - 0.5;
         float d = dot(c, c);
         if (d > 0.25) discard;
-        gl_FragColor = vec4(vColor, exp(-d * 14.0) * vAlpha * uOpacity * 0.8);
+        // a bright core with a soft halo
+        float a = exp(-d * 16.0) + 0.35 * exp(-d * 5.0);
+        gl_FragColor = vec4(vColor * 1.2, a * vAlpha * uOpacity * 1.05);
       }
     `,
   });
@@ -1024,6 +1027,7 @@
   const ambUniforms = {
     uTime: { value: 0 }, uPR: { value: PR }, uScroll: { value: 0 },
     uW: { value: new THREE.Vector4(1, 0, 0, 0) }, // stars, foam, gas, embers
+    uShock: uniforms.uShock, uAspect: uniforms.uAspect,
   };
   {
     const pos = new Float32Array(AMB * 3), seed = new Float32Array(AMB * 4), grp = new Float32Array(AMB);
@@ -1046,8 +1050,9 @@
       vertexShader: `
         attribute vec4 aSeed;
         attribute float aGroup;
-        uniform float uTime, uPR, uScroll;
+        uniform float uTime, uPR, uScroll, uAspect;
         uniform vec4 uW;
+        uniform vec3 uShock[3];
         varying vec3 vColor;
         varying float vAlpha;
         void main() {
@@ -1087,9 +1092,20 @@
           }
           if (aGroup > 0.5) p.y = mod(p.y + uScroll * (0.5 + aSeed.w) + 6.5, 13.0) - 6.5;
           vec4 mv = modelViewMatrix * vec4(p, 1.0);
+          // click shockwaves sweep through the background as well
+          vec4 clip = projectionMatrix * mv;
+          vec2 ndc = clip.xy / clip.w;
+          float glow = 0.0;
+          for (int q = 0; q < 3; q++) {
+            vec2 ds = (ndc - uShock[q].xy) * vec2(uAspect, 1.0);
+            float age = uShock[q].z;
+            float ring = exp(-pow(length(ds) - age * 1.5, 2.0) / (0.012 + 0.02 * age)) * exp(-age * 0.75);
+            mv.xy += normalize(ds + 1e-5) * ring * 0.09 * -mv.z;
+            glow += ring;
+          }
           gl_Position = projectionMatrix * mv;
-          gl_PointSize = size * uPR;
-          vColor = col; vAlpha = alpha;
+          gl_PointSize = size * uPR * (1.0 + 1.5 * glow);
+          vColor = mix(col, vec3(1.0), clamp(glow, 0.0, 0.7)); vAlpha = alpha * (1.0 + 3.0 * glow);
         }
       `,
       fragmentShader: `
@@ -1186,6 +1202,69 @@
     pts.frustumCulled = false;
     pts.renderOrder = 0;
     scene.add(pts);
+  }
+
+  // Click sparks: each click throws a ring of sparks from the pointer that
+  // keeps going until it is off-screen, so the wave has no edge.
+  const SPARKS = isMobile ? 160 : 320, BURSTS = 3;
+  const spStart = new Float32Array(SPARKS * BURSTS * 3), spDir = new Float32Array(SPARKS * BURSTS * 3), spBirth = new Float32Array(SPARKS * BURSTS).fill(-99);
+  const spGeo = new THREE.BufferGeometry();
+  spGeo.setAttribute("position", new THREE.BufferAttribute(spStart, 3).setUsage(THREE.DynamicDrawUsage));
+  spGeo.setAttribute("aDir", new THREE.BufferAttribute(spDir, 3).setUsage(THREE.DynamicDrawUsage));
+  spGeo.setAttribute("aBirth", new THREE.BufferAttribute(spBirth, 1).setUsage(THREE.DynamicDrawUsage));
+  spGeo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 200);
+  const spUniforms = { uTime: uniforms.uTime, uPR: { value: PR } };
+  {
+    const m = new THREE.ShaderMaterial({
+      uniforms: spUniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      vertexShader: `
+        attribute vec3 aDir;   // xy = direction * speed, z = seed
+        attribute float aBirth;
+        uniform float uTime, uPR;
+        varying vec3 vColor;
+        varying float vAlpha;
+        void main() {
+          float age = uTime - aBirth;
+          float life = 2.6 + aDir.z;
+          vec3 p = position;
+          p.xy += aDir.xy * age * (1.0 + 0.35 * age);            // accelerating outward
+          p.xy += 0.12 * age * vec2(sin(age * 5.0 + aDir.z * 40.0), cos(age * 4.3 + aDir.z * 31.0));
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+          float k = clamp(1.0 - age / life, 0.0, 1.0);
+          vAlpha = (age < 0.0 || age > life) ? 0.0 : k * k;
+          gl_PointSize = (1.5 + 3.5 * fract(aDir.z * 7.7)) * uPR * (0.6 + 0.8 * k);
+          vColor = mix(vec3(0.55, 0.85, 1.0), vec3(1.0, 0.8, 0.55), fract(aDir.z * 3.3));
+          vColor = mix(vColor, vec3(1.0), k * k);
+        }
+      `,
+      fragmentShader: `
+        precision highp float;
+        varying vec3 vColor;
+        varying float vAlpha;
+        void main() {
+          vec2 c = gl_PointCoord - 0.5;
+          float d = dot(c, c);
+          if (d > 0.25 || vAlpha < 0.004) discard;
+          gl_FragColor = vec4(vColor, exp(-d * 10.0) * vAlpha);
+        }
+      `,
+    });
+    const pts = new THREE.Points(spGeo, m);
+    pts.frustumCulled = false;
+    pts.renderOrder = 6;
+    scene.add(pts);
+  }
+  let spBurst = 0;
+  function emitSparks(wx, wy, t) {
+    const o = spBurst * SPARKS;
+    spBurst = (spBurst + 1) % BURSTS;
+    for (let k = 0; k < SPARKS; k++) {
+      const a = rand() * TAU, sp = 1.6 + rand() * 3.2, i3 = (o + k) * 3;
+      spStart[i3] = wx; spStart[i3 + 1] = wy; spStart[i3 + 2] = 0.2;
+      spDir[i3] = Math.cos(a) * sp; spDir[i3 + 1] = Math.sin(a) * sp; spDir[i3 + 2] = rand();
+      spBirth[o + k] = t;
+    }
+    spGeo.attributes.position.needsUpdate = spGeo.attributes.aDir.needsUpdate = spGeo.attributes.aBirth.needsUpdate = true;
   }
 
   // Streaks: comets and meteors in space, fast particle tracks at small scales.
@@ -1391,6 +1470,9 @@
     shockSlot = (shockSlot + 1) % 3;
     // Screen position; the shader's projection already includes the view shift.
     v.set((e.clientX / window.innerWidth) * 2 - 1, -((e.clientY / window.innerHeight) * 2 - 1), 0);
+    // the same point in the cloud's plane (z = 0), for the sparks
+    const halfH = Math.tan(camera.fov * Math.PI / 360) * camera.position.z;
+    emitSparks((v.x - viewShift * 2) * halfH * camera.aspect + camera.position.x, v.y * halfH + camera.position.y, clock.elapsedTime);
     chaosKick = Math.min(1.5, chaosKick + 0.8);
     const sh = shapes[Math.min(shapes.length - 1, Math.round(story))];
     if (sh && sh.poke) sh.poke(clock.elapsedTime);
