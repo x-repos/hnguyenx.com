@@ -374,7 +374,7 @@
       const d = Math.hypot(si[i][0] - si[j][0], si[i][1] - si[j][1], si[i][2] - si[j][2]);
       if (d < nn) bonds.push([i, j]);
     }
-    const mk = (p) => ({ p, w: [5 + rand() * 6, 5 + rand() * 6, 5 + rand() * 6], ph: [rand() * TAU, rand() * TAU, rand() * TAU], c: [0, 0, 0], e: 0 });
+    const mk = (p) => ({ p, w: [1.3 + rand() * 1.4, 1.3 + rand() * 1.4, 1.3 + rand() * 1.4], ph: [rand() * TAU, rand() * TAU, rand() * TAU], c: [0, 0, 0], e: 0 });
     const siA = si.map(mk);
     const oxA = bonds.map(([i, j]) => mk([(si[i][0] + si[j][0]) / 2, (si[i][1] + si[j][1]) / 2, (si[i][2] + si[j][2]) / 2]));
     const shape = makeShape(0.35, (add, left) => {
@@ -395,12 +395,12 @@
     }, 5);
     let shockAt = -99;
     function move(atoms, t, amp) {
-      const sh = (t - shockAt) * 2.6;
+      const sh = (t - shockAt) * 1.6;
       for (const a of atoms) {
         const p = a.p;
         // pressure wave along a body diagonal + thermal jiggle
-        const press = Math.sin(1.9 * (p[0] + 0.6 * p[1]) - t * 2.4);
-        let sq = 1 - 0.07 * (0.5 + 0.5 * Math.sin(t * 0.7)) - 0.035 * press;
+        const press = Math.sin(1.9 * (p[0] + 0.6 * p[1]) - t * 0.9);
+        let sq = 1 - 0.07 * (0.5 + 0.5 * Math.sin(t * 0.35)) - 0.035 * press;
         let e = 0.5 + 0.5 * press;
         const r = Math.hypot(p[0], p[1], p[2]);
         if (sh < 5) {
@@ -437,37 +437,47 @@
     return shape;
   }
 
-  // 5) Mantle: a planet sliced in half. The cut face shows the real layering
-  //    (PREM radii: inner core 1221 km, core–mantle boundary 3480 km, surface
-  //    6371 km) and it is convecting: irregular cells turn over, hot plumes
-  //    rise from the core–mantle boundary, cold slabs sink from the surface,
-  //    and the liquid outer core churns faster. Behind the face is the far
-  //    hemisphere with its continents. Colour is temperature, ~300 K (blue)
-  //    to ~6000 K (red). Click or stir with the cursor = a surge of flow.
-  //    aux: [kind, cell, rho, phase, speed]
-  //    kind 0 far hemisphere, 1 inner core, 2 outer core, 3 mantle, 4 lithosphere
+  // 5) Mantle: a globe with one octant cut away, turning so you can see it
+  //    is a solid planet. The three cut faces show the real layering (PREM
+  //    radii: inner core 1221 km, core–mantle boundary 3480 km, surface
+  //    6371 km) and they are convecting: cells turn over, hot plumes rise
+  //    from the core–mantle boundary, cold slabs sink from the surface, and
+  //    the liquid outer core churns faster. Colour is temperature, ~300 K
+  //    (blue) to ~6000 K (red). Click or stir with the cursor = a surge of flow.
+  //    aux: [kind, face, cell, rho, phase, speed]
+  //    kind 0 surface, 1 inner core, 2 outer core, 3 mantle, 4 lithosphere
+  //    face 0: z = 0 plane, 1: x = 0 plane, 2: y = 0 plane (the floor)
   function shapeMantle() {
-    const R = 1.7;
-    const R_IC = 1221 / 6371, R_CMB = 3480 / 6371, R_LITH = 6250 / 6371;
+    const R = 1.62, Q = Math.PI / 2;
+    const R_IC = 1221 / 6371, R_CMB = 3480 / 6371, R_LITH = 6230 / 6371;
     const heatOfT = (T) => Math.pow(clamp01((T - 300) / 5700), 0.85);
-    // Irregular convection cells around the annulus; neighbours turn opposite ways.
+    // Convection cells across each quarter-disk face; neighbours turn opposite ways.
     function cells(m) {
-      const w = [];
-      for (let c = 0; c < m; c++) w.push(0.6 + rand() * 0.9);
-      const sum = w.reduce((a, b) => a + b, 0);
-      let th = rand() * TAU;
-      return w.map((wi, c) => {
-        const th0 = th; th += TAU * wi / sum;
-        return { th0, th1: th, dir: c % 2 ? -1 : 1 };
+      return [0, 1, 2].map(() => {
+        const w = [];
+        for (let c = 0; c < m; c++) w.push(0.7 + rand() * 0.7);
+        const sum = w.reduce((a, b) => a + b, 0);
+        let th = 0;
+        const d0 = rand() < 0.5 ? 1 : -1;
+        return w.map((wi, c) => {
+          const th0 = th; th += Q * wi / sum;
+          return { th0, th1: th, dir: c % 2 ? -d0 : d0 };
+        });
       });
     }
-    const mantleCells = cells(10), coreCells = cells(6);
-    const fo = new Float32Array(5); // flow() output: x, y, z, heat, glow
+    const mantleCells = cells(3), coreCells = cells(2);
+    const fo = new Float32Array(5); // x, y, z, heat, glow
+    function onFace(f, r, th) {
+      const a = r * Math.cos(th) * R, b = r * Math.sin(th) * R;
+      if (f === 0) { fo[0] = a; fo[1] = b; fo[2] = 0; }
+      else if (f === 1) { fo[0] = 0; fo[1] = b; fo[2] = a; }
+      else { fo[0] = a; fo[1] = 0; fo[2] = b; }
+    }
     // A particle on a closed streamline of its cell. Inner streamlines are
     // round, outer ones hug the cell walls, so the cells tile with no gaps.
-    function flow(kind, c, rho, a) {
+    function flow(kind, f, c, rho, a) {
       const core = kind === 2;
-      const cell = (core ? coreCells : mantleCells)[c];
+      const cell = (core ? coreCells : mantleCells)[f][c];
       const q = 1 - 0.72 * rho, ca = Math.cos(a), sa = Math.sin(a);
       const lu = rho * (ca < 0 ? -1 : 1) * Math.pow(Math.abs(ca), q);
       const lv = rho * (sa < 0 ? -1 : 1) * Math.pow(Math.abs(sa), q);
@@ -481,66 +491,71 @@
         ? 4200 + 1200 * (1 - zz) + 450 * up - 350 * down
         : 2500 - 900 * zz + 1400 * Math.exp(-zz / 0.08) - 1100 * Math.exp(-(1 - zz) / 0.07)
           + 1300 * up * (1 - 0.35 * zz) - 1200 * down * (0.35 + 0.65 * zz);
-      fo[0] = Math.cos(th) * r * R; fo[1] = Math.sin(th) * r * R; fo[2] = 0;
+      onFace(f, r, th);
       fo[3] = heatOfT(T); fo[4] = Math.max(up, down);
     }
-    const shape = makeShape(0.3, (add, left) => {
+    const shape = makeShape(0.42, (add, left) => {
       const total = left();
-      // Far hemisphere: continents and a sparse ocean, seen from inside the cut.
-      const nSurf = Math.floor(total * 0.16);
+      // The globe: continents and ocean everywhere except the missing octant.
+      const nSurf = Math.floor(total * 0.42);
       for (let k = 0; k < nSurf;) {
         const p = onSphere(1);
-        if (p[2] > -0.02) continue;
+        if (p[0] > 0 && p[1] > 0 && p[2] > 0) continue;
         const land = fbm(p[0] * 1.8 + 3.1, p[1] * 1.8, p[2] * 1.8) > 0.5 || Math.abs(p[1]) > 0.88;
-        if (!land && rand() > 0.3) continue;
-        add([p[0] * R, p[1] * R, p[2] * R], land ? 0 : 0.16, land ? 0 : 0.9, 0, land ? 0.34 : 0.22, [0, 0, 0, 0, 0]);
+        if (!land && rand() > 0.5) continue;
+        add([p[0] * R, p[1] * R, p[2] * R], land ? 0 : 0.16, land ? 0 : 0.9, 0, land ? 1.25 : 0.7, [0, 0, 0, 0, land ? 1.25 : 0.7, 0]);
         k++;
       }
+      // The three cut faces.
       while (left() > 0) {
-        const roll = rand();
+        const f = Math.floor(rand() * 3), roll = rand();
         if (roll < 0.04) {
-          const r = R_IC * Math.sqrt(rand()), th = rand() * TAU;
-          add([Math.cos(th) * r * R, Math.sin(th) * r * R, 0], heatOfT(5400 + 600 * (1 - r / R_IC)), 1, 0, 1, [1, 0, r, th, 0]);
+          const r = R_IC * Math.sqrt(rand()), th = rand() * Q;
+          onFace(f, r, th);
+          add([fo[0], fo[1], fo[2]], heatOfT(5400 + 600 * (1 - r / R_IC)), 1, 0, 1, [1, f, 0, 0, 0, 0]);
         } else if (roll < 0.25) {
-          const c = Math.floor(rand() * coreCells.length), rho = Math.pow(rand(), 0.42), a = rand() * TAU;
-          flow(2, c, rho, a);
-          add([fo[0], fo[1], fo[2]], fo[3], 1, 0, 0.9, [2, c, rho, a, 0.7 + rand() * 0.6]);
-        } else if (roll < 0.92) {
-          const c = Math.floor(rand() * mantleCells.length), rho = Math.pow(rand(), 0.42), a = rand() * TAU;
-          flow(3, c, rho, a);
-          add([fo[0], fo[1], fo[2]], fo[3], 1, 0, 0.85, [3, c, rho, a, 0.7 + rand() * 0.6]);
+          const c = Math.floor(rand() * 2), rho = Math.pow(rand(), 0.42), a = rand() * TAU;
+          flow(2, f, c, rho, a);
+          add([fo[0], fo[1], fo[2]], fo[3], 1, 0, 0.9, [2, f, c, rho, a, 0.7 + rand() * 0.6]);
+        } else if (roll < 0.9) {
+          const c = Math.floor(rand() * 3), rho = Math.pow(rand(), 0.42), a = rand() * TAU;
+          flow(3, f, c, rho, a);
+          add([fo[0], fo[1], fo[2]], fo[3], 1, 0, 0.85, [3, f, c, rho, a, 0.7 + rand() * 0.6]);
         } else {
-          const r = R_LITH + (1 - R_LITH) * rand(), th = rand() * TAU;
-          add([Math.cos(th) * r * R, Math.sin(th) * r * R, 0], heatOfT(300 + 1200 * (1 - r) / (1 - R_LITH)), 0.55, 0, 1, [4, 0, r, th, 0]);
+          const r = R_LITH + (1 - R_LITH) * rand(), th = rand() * Q;
+          onFace(f, r, th);
+          add([fo[0], fo[1], fo[2]], heatOfT(300 + 1200 * (1 - r) / (1 - R_LITH)), 0.6, 0, 1, [4, f, 0, 0, 0, 0]);
         }
       }
-    }, 5);
+    }, 6);
     shape.animate = (t, P, F) => {
       const A = shape.aux, B = shape.pos;
-      // The half-planet sways so the cut face and the hemisphere behind it
-      // both read as solid.
-      const yaw = 0.5 * Math.sin(t * 0.31) + 0.12 * Math.sin(t * 0.83), cy = Math.cos(yaw), sy = Math.sin(yaw);
+      // The planet turns back and forth through the cut, far enough to show
+      // the round far side and each face in turn.
+      const yaw = -Math.PI / 4 + 0.72 * Math.sin(t * 0.33) + 0.1 * Math.sin(t * 0.71);
+      const cy = Math.cos(yaw), sy = Math.sin(yaw);
       const tt = t + flowClock;
       for (let k = 0; k < N; k++) {
-        const o = k * 5, kind = A[o];
+        const o = k * 6, kind = A[o];
         let x, y, z;
         if (kind === 2 || kind === 3) {
-          const c = A[o + 1], rho = A[o + 2];
-          const dir = (kind === 2 ? coreCells : mantleCells)[c].dir;
+          const f = A[o + 1], c = A[o + 2], rho = A[o + 3];
+          const dir = (kind === 2 ? coreCells : mantleCells)[f][c].dir;
           // vortex-like turnover: inner streamlines circulate faster
-          flow(kind, c, rho, A[o + 3] + dir * tt * A[o + 4] * (kind === 2 ? 1.0 : 0.55) * (1.35 - 0.7 * rho));
-          x = fo[0]; y = fo[1]; z = 0.02 * Math.sin(k);
+          flow(kind, f, c, rho, A[o + 4] + dir * tt * A[o + 5] * (kind === 2 ? 1.0 : 0.55) * (1.35 - 0.7 * rho));
+          x = fo[0]; y = fo[1]; z = fo[2];
           F[k * 4] = fo[3];
           F[k * 4 + 3] = 0.7 + 0.5 * fo[4];
         } else {
           x = B[k * 3]; y = B[k * 3 + 1]; z = B[k * 3 + 2];
-          if (kind === 1) { // solid inner core: it only shimmers
-            F[k * 4 + 3] = 0.8 + 0.2 * Math.sin(t * 6 + k);
-          }
+          if (kind === 1) F[k * 4 + 3] = 0.8 + 0.2 * Math.sin(t * 6 + k); // solid inner core shimmers
         }
+        const zr = -sy * x + cy * z;
         P[k * 3] = cy * x + sy * z;
         P[k * 3 + 1] = y;
-        P[k * 3 + 2] = -sy * x + cy * z;
+        P[k * 3 + 2] = zr;
+        // the far side of the globe is dimmer, so the sphere reads as solid
+        if (kind === 0) F[k * 4 + 3] = A[o + 4] * (0.2 + 0.8 * smooth(-0.6, 0.3, zr / R));
       }
     };
     shape.poke = () => { flowSurge = 1; };
