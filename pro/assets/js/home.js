@@ -1690,7 +1690,7 @@
   }
   gsap.utils.toArray(".home-scene:not(.home-scene--hero) .home-scene__inner").forEach((inner) => {
     const items = inner.querySelectorAll(
-      ".home-scene__eyebrow, .home-scene__title, .home-scene__body, .home-outro__card, .home-outro__contact, .home-ask, .home-visitors"
+      ".home-scene__eyebrow, .home-scene__title, .home-scene__body, .home-outro__grid, .home-outro__contact, .home-ask, .home-visitors"
     );
     if (!items.length) return;
     gsap.from(items, {
