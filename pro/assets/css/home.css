@@ -80,6 +80,9 @@ html.home-immersive a { color: var(--home-accent); }
   gap: 14px;
   line-height: 1;
 }
+.home-topnav__brand a { text-decoration: none; }
+.home-topnav__brand .brand-name { color: var(--home-fg) !important; transition: color 0.2s ease; }
+.home-topnav__brand .brand-name:hover { color: var(--home-accent) !important; }
 .brand-name {
   font-family: var(--home-ui);
   font-size: 15px;
@@ -115,7 +118,7 @@ html.home-immersive a { color: var(--home-accent); }
           mask: url("../../../pi/downloads/pi-mark.svg") center / 112% no-repeat;
   transition: transform 0.25s ease, filter 0.25s ease;
 }
-.home-topnav__brand:hover .brand-pi,
+.home-topnav__brand .brand-pi:hover,
 .site-nav__brand:hover   .brand-pi {
   transform: scale(1.08) rotate(-3deg);
   filter: brightness(1.2);
