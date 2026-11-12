@@ -9,6 +9,56 @@
 (function () {
   "use strict";
 
+  // ====================================================
+  // A STEADY SCREEN HEIGHT
+  // Every section is one screen tall and the canvas fills the screen. In
+  // Safari and Chrome on a phone, the height that "100vh" stands for stays put
+  // while the address bar slides away. Inside an app's own browser (Facebook,
+  // Instagram, Zalo and the like) the app resizes the whole web view when its
+  // bars slide in and out, so 100vh changes in the middle of a scroll: every
+  // section above you changes height and the page jumps.
+  // So the height is measured once and held in two CSS variables:
+  //   --vh-lock    the height of one section
+  //   --canvas-h   the height of the canvas (phones only), with room to spare
+  //                so it still covers the screen once the bars have gone
+  // On a phone only a change of width (a rotation) renews them. A change of
+  // height alone is taken to be a bar sliding, and is ignored.
+  // ====================================================
+  const steady = (function () {
+    const root = document.documentElement;
+    const phone = window.matchMedia("(max-width: 720px)").matches || window.matchMedia("(pointer: coarse) and (hover: none)").matches;
+    const probe = (h) => {
+      const el = document.createElement("div");
+      el.style.cssText = "position:fixed;left:0;top:0;width:0;visibility:hidden;pointer-events:none;height:" + h;
+      document.body.appendChild(el);
+      return el;
+    };
+    const vh = probe("100vh"), lvh = probe("100lvh"), svh = probe("100svh");
+    const SPARE = 130;                       // more than the bars of an in-app browser take up
+    let width = -1, section = 0, canvasH = 0;
+    function update() {
+      const w = window.innerWidth, h = window.innerHeight;
+      if (phone && w === width) {
+        // the height alone changed. Sections stay as they are. The canvas only ever grows, and only if it must.
+        if (h > canvasH) { canvasH = h; root.style.setProperty("--canvas-h", canvasH + "px"); }
+        return;
+      }
+      width = w;
+      section = vh.offsetHeight || h;
+      root.style.setProperty("--vh-lock", section + "px");
+      if (!phone) { canvasH = 0; root.style.removeProperty("--canvas-h"); return; }
+      // a browser with sliding bars of its own reports a tallest and a shortest screen, and its tallest is enough.
+      // A web view reports one height for both, so nothing says how far it may grow: leave room to spare.
+      const tall = lvh.offsetHeight || section, short = svh.offsetHeight || section;
+      canvasH = Math.max(tall, h) + (tall - short > 2 ? 0 : SPARE);
+      root.style.setProperty("--canvas-h", canvasH + "px");
+    }
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("orientationchange", () => setTimeout(update, 250));
+    return { update, get section() { return section || window.innerHeight; } };
+  })();
+
   // When the animation cannot run, fall back to the plain page and say why
   // in a small note, so a blank-looking page is never a mystery.
   function fallback(reason) {
@@ -1619,11 +1669,11 @@
     const y = window.scrollY;
     centres = sections.map((s) => {
       const r = s.getBoundingClientRect();
-      return r.top + y + Math.min(r.height, window.innerHeight) / 2;
+      return r.top + y + Math.min(r.height, steady.section) / 2;
     });
   }
   function storyPosition() {
-    const y = window.scrollY + window.innerHeight / 2;
+    const y = window.scrollY + steady.section / 2;
     if (!centres.length || y <= centres[0]) return 0;
     for (let i = 0; i < centres.length - 1; i++) {
       if (y < centres[i + 1]) return i + (y - centres[i]) / (centres[i + 1] - centres[i]);
@@ -1632,11 +1682,13 @@
   }
 
   // ----- Resize -----
-  // Measure the canvas itself, never the window: on iOS the canvas is the
-  // large viewport and stays put when the address bar collapses, while
-  // innerHeight jumps ~100px. Sizing from the element keeps the scene still.
+  // Measure the canvas itself, never the window: the canvas is held at a
+  // steady height (see the top of this file) and stays put when a browser bar
+  // slides away, while innerHeight jumps ~100px. Sizing from the element
+  // keeps the scene still.
   let W = 0, H = 0;
   function resize() {
+    steady.update();          // settle the held heights first, so the canvas is measured at its final size
     const w = canvas.clientWidth || window.innerWidth;
     const h = canvas.clientHeight || window.innerHeight;
     if (w === W && h === H) return;

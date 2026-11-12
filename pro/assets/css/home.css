@@ -306,8 +306,13 @@ html[lang="vi"] [lang="en"] { display: none !important; }
 #home-canvas {
   position: fixed;
   inset: 0;
+  /* On phones home.js holds the height steady in --canvas-h, so the scene is
+     not rebuilt each time a browser bar slides in or out. With a set height
+     the bottom edge is free: the canvas may reach below the screen. */
+  bottom: auto;
   width: 100vw;
   height: 100vh;
+  height: var(--canvas-h, 100vh);
   z-index: 0;
   display: block;
   background: #000;
@@ -326,6 +331,9 @@ html.js #home-canvas.is-ready { opacity: 1; }
 .home-eqs {
   position: fixed;
   inset: 0;
+  /* the same steady height as the canvas it lies over */
+  bottom: auto;
+  height: var(--canvas-h, 100%);
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
@@ -376,7 +384,11 @@ html.js #home-canvas.is-ready { opacity: 1; }
 
 .home-scene {
   position: relative;
+  /* One screen tall. home.js measures that once and holds it in --vh-lock:
+     inside an app's own browser 100vh changes whenever the app's bars slide,
+     and nine sections changing height at once made the page jump. */
   min-height: 100vh;
+  min-height: var(--vh-lock, 100vh);
   display: flex;
   align-items: center;
   justify-content: center;
