@@ -355,68 +355,106 @@
     return shape;
   }
 
-  // 4) Silica network: Si on a diamond lattice, O at every Si–Si midpoint
-  //    (the β-cristobalite motif). Atoms only, no bond lines. It is a running
-  //    simulation: every atom vibrates thermally and a pressure wave squeezes
-  //    through the cell. Click = shock it.
-  //    aux: [kind (0 Si, 1 O), index, ox, oy, oz]
+  // 4) Silica under pressure: a simulation box of disordered SiO2, drawn the
+  //    way MD snapshots are rendered: every atom a small lit sphere, silicon
+  //    coloured by its coordination number. The box is squeezed and released
+  //    in a slow cycle. As it compresses, pores collapse and silicon goes from
+  //    4-fold (blue) through 5-fold (yellow) to 6-fold (red); on release most
+  //    of it relaxes back. The thin frame is the simulation cell, not bonds.
+  //    Click = a sudden shock compression.
+  //    aux: [kind (0 Si, 1 O, 2 cell frame), index, nx, ny, nz]
   function shapeSilica() {
-    const A0 = 1.25, si = [];
+    const L = isMobile ? 2 : 3, HB = 1.12, A0 = 2 * HB / L;
+    const R_SI = 0.3 / L, R_O = 0.2 / L;
     const basis = [[0,0,0],[0,.5,.5],[.5,0,.5],[.5,.5,0],[.25,.25,.25],[.25,.75,.75],[.75,.25,.75],[.75,.75,.25]];
-    for (let a = -2; a <= 1; a++) for (let b = -2; b <= 1; b++) for (let c = -2; c <= 1; c++)
-      for (const q of basis) {
-        const p = [(a + q[0]) * A0, (b + q[1]) * A0, (c + q[2]) * A0];
-        if (Math.hypot(p[0], p[1], p[2] * 1.4) < 1.75) si.push(p);
-      }
+    const ideal = [];
+    for (let a = 0; a < L; a++) for (let b = 0; b < L; b++) for (let c = 0; c < L; c++)
+      for (const q of basis) ideal.push([(a + q[0] + 0.06) * A0 - HB, (b + q[1] + 0.06) * A0 - HB, (c + q[2] + 0.06) * A0 - HB]);
+    // pores: a few voids that the squeeze will close
+    const voids = [];
+    for (let v = 0; v < (isMobile ? 2 : 4); v++)
+      voids.push({ c: [(rand() - 0.5) * HB * 1.3, (rand() - 0.5) * HB * 1.3, (rand() - 0.5) * HB * 1.3], r: A0 * (0.42 + rand() * 0.2) });
+    const inVoid = (p) => voids.some((v) => Math.hypot(p[0] - v.c[0], p[1] - v.c[1], p[2] - v.c[2]) < v.r);
     const nn = A0 * Math.sqrt(3) / 4 * 1.05;
-    const bonds = [];
-    for (let i = 0; i < si.length; i++) for (let j = i + 1; j < si.length; j++) {
-      const d = Math.hypot(si[i][0] - si[j][0], si[i][1] - si[j][1], si[i][2] - si[j][2]);
-      if (d < nn) bonds.push([i, j]);
+    const atoms = { 0: [], 1: [] };
+    function mk(p) {
+      // displacement that carries this atom into the nearest pore when squeezed
+      const pull = [0, 0, 0];
+      for (const v of voids) {
+        const d = [v.c[0] - p[0], v.c[1] - p[1], v.c[2] - p[2]], dist = Math.hypot(d[0], d[1], d[2]);
+        const w = Math.exp(-Math.pow(dist / v.r - 1, 2) * 1.6) * 0.55 * (dist > 1e-3 ? (dist - v.r * 0.35) / dist : 0);
+        pull[0] += d[0] * w; pull[1] += d[1] * w; pull[2] += d[2] * w;
+      }
+      return { p, pull, thr: rand(), w: [1.1 + rand() * 1.3, 1.1 + rand() * 1.3, 1.1 + rand() * 1.3], ph: [rand() * TAU, rand() * TAU, rand() * TAU], c: [0, 0, 0], heat: 0 };
     }
-    const mk = (p) => ({ p, w: [1.3 + rand() * 1.4, 1.3 + rand() * 1.4, 1.3 + rand() * 1.4], ph: [rand() * TAU, rand() * TAU, rand() * TAU], c: [0, 0, 0], e: 0 });
-    const siA = si.map(mk);
-    const oxA = bonds.map(([i, j]) => mk([(si[i][0] + si[j][0]) / 2, (si[i][1] + si[j][1]) / 2, (si[i][2] + si[j][2]) / 2]));
-    const shape = makeShape(0.35, (add, left) => {
+    for (let i = 0; i < ideal.length; i++) for (let k = i + 1; k < ideal.length; k++) {
+      const d = Math.hypot(ideal[i][0] - ideal[k][0], ideal[i][1] - ideal[k][1], ideal[i][2] - ideal[k][2]);
+      if (d < nn) {
+        // bent Si–O–Si bridge: oxygen sits off the midpoint
+        const m = [(ideal[i][0] + ideal[k][0]) / 2 + gauss() * 0.07 * A0, (ideal[i][1] + ideal[k][1]) / 2 + gauss() * 0.07 * A0, (ideal[i][2] + ideal[k][2]) / 2 + gauss() * 0.07 * A0];
+        if (!inVoid(m)) atoms[1].push(mk(m));
+      }
+    }
+    for (const q of ideal) {
+      const p = [q[0] + gauss() * 0.045 * A0, q[1] + gauss() * 0.045 * A0, q[2] + gauss() * 0.045 * A0]; // glassy disorder
+      if (!inVoid(p)) atoms[0].push(mk(p));
+    }
+    const EDGES = [];
+    for (let ax = 0; ax < 3; ax++) for (const u of [-1, 1]) for (const v of [-1, 1]) EDGES.push([ax, u, v]);
+    const shape = makeShape(0.38, (add, left) => {
       const total = left();
-      // atoms only, no bond lines: big Si (warm), small O (blue)
-      for (let k = 0; k < total * 0.55; k++) {
-        const i = k % si.length, c = si[i], p = onSphere(0.13 * Math.cbrt(0.4 + 0.6 * rand()));
-        add([c[0] + p[0], c[1] + p[1], c[2] + p[2]], 0.82 + rand() * 0.12, 1, 1, 1, [0, i, p[0], p[1], p[2]]);
+      for (let k = 0; k < total * 0.05; k++) {
+        const e = EDGES[k % 12], t = rand() * 2 - 1, q = [0, 0, 0];
+        q[e[0]] = t; q[(e[0] + 1) % 3] = e[1]; q[(e[0] + 2) % 3] = e[2];
+        add([q[0] * HB, q[1] * HB, q[2] * HB], 0, 0, 0, 0.5, [2, 0, q[0], q[1], q[2]]);
+      }
+      const nSi = Math.floor(total * 0.5);
+      for (let k = 0; k < nSi; k++) {
+        const i = k % atoms[0].length, n = onSphere(1), c = atoms[0][i].p;
+        add([c[0] + n[0] * R_SI, c[1] + n[1] * R_SI, c[2] + n[2] * R_SI], 0.15, 1, 0, 1, [0, i, n[0], n[1], n[2]]);
       }
       while (left() > 0) {
-        const i = Math.floor(rand() * oxA.length), c = oxA[i].p, p = onSphere(0.08 * Math.cbrt(0.4 + 0.6 * rand()));
-        add([c[0] + p[0], c[1] + p[1], c[2] + p[2]], 0.3 + rand() * 0.08, 1, 1, 1, [1, i, p[0], p[1], p[2]]);
+        const i = Math.floor(rand() * atoms[1].length), n = onSphere(1), c = atoms[1][i].p;
+        add([c[0] + n[0] * R_O, c[1] + n[1] * R_O, c[2] + n[2] * R_O], 0.3, 0.12, 0, 1, [1, i, n[0], n[1], n[2]]);
       }
     }, 5);
     let shockAt = -99;
-    function move(atoms, t, amp) {
-      const sh = (t - shockAt) * 1.6;
-      for (const a of atoms) {
-        const p = a.p;
-        // pressure wave along a body diagonal + thermal jiggle
-        const press = Math.sin(1.9 * (p[0] + 0.6 * p[1]) - t * 0.9);
-        let sq = 1 - 0.07 * (0.5 + 0.5 * Math.sin(t * 0.35)) - 0.035 * press;
-        let e = 0.5 + 0.5 * press;
-        const r = Math.hypot(p[0], p[1], p[2]);
-        if (sh < 5) {
-          const b = Math.exp(-Math.pow(r - sh, 2) / 0.12) * Math.exp(-sh * 0.4);
-          sq += 0.3 * b; e = Math.max(e, b * 1.5);
-        }
-        a.c[0] = p[0] * sq + amp * Math.sin(t * a.w[0] + a.ph[0]);
-        a.c[1] = p[1] * sq + amp * Math.sin(t * a.w[1] + a.ph[1]);
-        a.c[2] = p[2] * sq + amp * Math.sin(t * a.w[2] + a.ph[2]);
-        a.e = e;
-      }
-    }
+    const LX = -0.45, LY = 0.6, LZ = 0.66; // light from upper left, toward the viewer
     shape.animate = (t, P, F) => {
-      move(siA, t, 0.035); move(oxA, t, 0.06);
+      // squeeze cycle: compress, hold, release, rest
+      const ph = (t * 0.085) % 1;
+      let sq = ph < 0.4 ? smooth(0, 0.4, ph) : ph < 0.58 ? 1 : ph < 0.86 ? 1 - smooth(0.58, 0.86, ph) : 0;
+      const sh = t - shockAt;
+      if (sh < 4) sq = Math.min(1.25, sq + 1.1 * Math.exp(-sh * 0.9) * (1 - Math.exp(-sh * 9)));
+      const scale = 1 - 0.2 * sq;
+      for (const kind of [0, 1]) for (const a of atoms[kind]) {
+        const amp = (kind ? 0.022 : 0.014) * (3 / L);
+        a.c[0] = (a.p[0] + a.pull[0] * sq) * scale + amp * Math.sin(t * a.w[0] + a.ph[0]);
+        a.c[1] = (a.p[1] + a.pull[1] * sq) * scale + amp * Math.sin(t * a.w[1] + a.ph[1]);
+        a.c[2] = (a.p[2] + a.pull[2] * sq) * scale + amp * Math.sin(t * a.w[2] + a.ph[2]);
+        // coordination: each silicon converts at its own pressure, 4 -> 5 -> 6
+        const c = sq * 1.25 - a.thr * 0.85;
+        a.heat = 0.15 + 0.4 * smooth(0.1, 0.22, c) + 0.42 * smooth(0.5, 0.62, c);
+      }
+      const yaw = t * 0.16, cy = Math.cos(yaw), sy = Math.sin(yaw);
       const A = shape.aux;
       for (let k = 0; k < N; k++) {
-        const o = k * 5, kind = A[o], i = A[o + 1];
-        const at = kind === 0 ? siA[i] : oxA[i], c = at.c;
-        P[k * 3] = c[0] + A[o + 2]; P[k * 3 + 1] = c[1] + A[o + 3]; P[k * 3 + 2] = c[2] + A[o + 4];
-        F[k * 4] = kind === 0 ? 0.72 + 0.26 * at.e : 0.22 + 0.3 * at.e;
+        const o = k * 5, kind = A[o];
+        let x, y, z;
+        if (kind === 2) {
+          x = A[o + 2] * HB * scale; y = A[o + 3] * HB * scale; z = A[o + 4] * HB * scale;
+          F[k * 4 + 3] = 0.35 + 0.4 * sq;
+        } else {
+          const at = atoms[kind][A[o + 1]], r = kind ? R_O : R_SI;
+          const nx = A[o + 2], ny = A[o + 3], nz = A[o + 4];
+          x = at.c[0] + nx * r; y = at.c[1] + ny * r; z = at.c[2] + nz * r;
+          // lit sphere: brightness from the surface normal in view space
+          const vx = cy * nx + sy * nz, vz = -sy * nx + cy * nz;
+          const lam = vx * LX + ny * LY + vz * LZ;
+          F[k * 4 + 3] = vz < -0.1 ? 0.04 : 0.3 + 1.9 * (lam > 0 ? lam * Math.sqrt(lam) : 0);
+          if (kind === 0) F[k * 4] = at.heat;
+        }
+        P[k * 3] = cy * x + sy * z; P[k * 3 + 1] = y; P[k * 3 + 2] = -sy * x + cy * z;
       }
     };
     shape.poke = (t) => { shockAt = t; };
