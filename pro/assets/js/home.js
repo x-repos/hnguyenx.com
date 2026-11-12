@@ -1805,8 +1805,8 @@
   })();
 
   // ----- Pointer -----
-  // Moving the cursor pushes and swirls the particles near it; it does not
-  // rotate the shapes.
+  // Moving the cursor pushes and swirls the particles near it. Holding the
+  // mouse down on empty space and dragging turns the whole object.
   // Clicking / tapping empty space sends a shockwave through the cloud and
   // triggers the current scene's own event (a gate pulse, a π pulse, a
   // shock, a surge of convection, an earthquake, a flare, a supernova…).
@@ -1843,23 +1843,72 @@
     window.__proShocks = (window.__proShocks || 0) + 1;
   }
   const onControl = (el) => !!(el && el.closest && el.closest("a, button, input, textarea, select, label, nav, form, .home-outro__card"));
-  // A mouse click sends the wave at once. A finger going down may be the start of a scroll,
-  // so a touch waits: the wave is sent when the finger lifts, and only if it was a tap, that is,
-  // the finger stayed put, lifted soon, and the page did not scroll under it.
-  let tap = null;
+  // ----- Pressing: a click, a tap, or a drag that turns the object -----
+  // A press on empty space that is let go without moving is a click, and sends the wave.
+  // With a mouse, holding and dragging instead turns the cloud: left and right spins it,
+  // up and down tips it. Let go and it keeps a little momentum, then eases back to the
+  // pose the scene was designed in. A press that starts on the text in a box is left to
+  // select text, and a finger is left to scroll the page.
+  const turn = { yaw: 0, pitch: 0, vyaw: 0, vpitch: 0, idle: 9 };
+  const TURN = 0.0065, PITCH_MAX = 1.25;         // radians per pixel dragged, and how far it may tip
+  const TURN_COAST = 3.2;                        // the fastest it may be thrown, in radians a second
+  let press = null;
+  function endPress() {
+    press = null;
+    document.documentElement.classList.remove("is-turning");
+  }
   window.addEventListener("pointerdown", (e) => {
     if (e.button || onControl(e.target)) return;
-    if (e.pointerType !== "mouse") { tap = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), sy: window.scrollY }; return; }
-    shock(e.clientX, e.clientY);
+    const mouse = e.pointerType === "mouse";
+    press = {
+      id: e.pointerId, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, t: performance.now(), lt: performance.now(), sy: window.scrollY,
+      mouse, moved: false, turns: mouse && !(e.target.closest && e.target.closest(".home-scene__inner")),
+    };
+  }, { passive: true });
+  window.addEventListener("pointermove", (e) => {
+    if (!press || e.pointerId !== press.id) return;
+    if (!press.moved) {
+      if (Math.hypot(e.clientX - press.x, e.clientY - press.y) < 5) return;
+      press.moved = true;
+      if (press.turns) document.documentElement.classList.add("is-turning");
+    }
+    if (press.turns) {
+      const now = performance.now(), dt = Math.max(0.008, (now - press.lt) / 1000);
+      const dyaw = (e.clientX - press.lx) * TURN, dpitch = (e.clientY - press.ly) * TURN;
+      turn.yaw += dyaw;
+      turn.pitch = Math.max(-PITCH_MAX, Math.min(PITCH_MAX, turn.pitch + dpitch));
+      // the speed of the hand, kept for the momentum after letting go
+      const cap = (v) => Math.max(-TURN_COAST, Math.min(TURN_COAST, v));
+      turn.vyaw = cap(turn.vyaw + (dyaw / dt - turn.vyaw) * 0.5); turn.vpitch = cap(turn.vpitch + (dpitch / dt - turn.vpitch) * 0.5);
+      turn.idle = 0;
+      press.lt = now;
+    }
+    press.lx = e.clientX; press.ly = e.clientY;
   }, { passive: true });
   window.addEventListener("pointerup", (e) => {
-    if (!tap || e.pointerId !== tap.id) return;
-    const wasTap = Math.hypot(e.clientX - tap.x, e.clientY - tap.y) < 10 && Math.abs(window.scrollY - tap.sy) < 4 && performance.now() - tap.t < 500;
-    tap = null;
-    if (wasTap) shock(e.clientX, e.clientY);
+    if (!press || e.pointerId !== press.id) return;
+    const p = press, held = performance.now() - p.t;
+    endPress();
+    // a finger also has to lift soon and must not have scrolled the page, or it was not a tap
+    const still = !p.moved && Math.hypot(e.clientX - p.x, e.clientY - p.y) < 5;
+    const click = still && (p.mouse || (held < 500 && Math.abs(window.scrollY - p.sy) < 4));
+    if (click) shock(e.clientX, e.clientY);
+    else if (p.turns && performance.now() - p.lt > 120) { turn.vyaw = 0; turn.vpitch = 0; }      // the hand had stopped before letting go: no throw
   }, { passive: true });
   // the browser took the touch over to scroll the page: not a tap
-  window.addEventListener("pointercancel", (e) => { if (tap && e.pointerId === tap.id) tap = null; }, { passive: true });
+  window.addEventListener("pointercancel", (e) => { if (press && e.pointerId === press.id) endPress(); }, { passive: true });
+  window.addEventListener("blur", endPress);
+  // A mouse press on the empty space around the text boxes starts no text selection, so clicking
+  // and dragging there only plays with the cloud. Pressing inside a box selects text as usual.
+  window.addEventListener("mousedown", (e) => {
+    if (e.button || (e.target.closest && e.target.closest(".home-scene__inner, .home-topnav, .home-scale, .home-fallback-note, a, button, input, textarea, select, label"))) return;
+    e.preventDefault();
+    // preventing the press also keeps a text field from losing focus, so let go of it by hand
+    const el = document.activeElement;
+    if (el && el !== document.body && el.blur) el.blur();
+    const sel = window.getSelection && window.getSelection();
+    if (sel && !sel.isCollapsed) sel.removeAllRanges();      // and a click on empty space clears a selection, as it always did
+  });
 
   // ====================================================
   // EQUATIONS — the maths behind each scale, as part of the picture (not in
@@ -2202,6 +2251,24 @@
 
     // Outro: π sits behind the contact cards, so let it recede.
     uniforms.uOpacity.value = 1 - 0.6 * smooth(sections.length - 1.6, sections.length - 1, story);
+
+    // The turn the visitor has given the cloud. In the hand it follows the drag. Let go, it coasts,
+    // slows, and after a moment eases back to facing front, by the shorter way round.
+    if (!(press && press.moved && press.turns)) {
+      turn.idle += dt;
+      turn.yaw += turn.vyaw * dt;
+      turn.pitch = Math.max(-PITCH_MAX, Math.min(PITCH_MAX, turn.pitch + turn.vpitch * dt));
+      const slow = Math.exp(-dt * 3.6);
+      turn.vyaw *= slow; turn.vpitch *= slow;
+      if (turn.idle > 1.6) {
+        const back = 1 - Math.exp(-dt * 1.2);
+        turn.yaw = Math.atan2(Math.sin(turn.yaw), Math.cos(turn.yaw));
+        turn.yaw -= turn.yaw * back; turn.pitch -= turn.pitch * back;
+      }
+    }
+    uniforms.uYaw.value = turn.yaw;
+    uniforms.uPitch.value = turn.pitch;
+    window.__proTurn = turn;
 
     const ease = Math.min(1, dt * 2.2);
     lean.x += ((pointer.active ? pointer.x : 0) - lean.x) * ease;

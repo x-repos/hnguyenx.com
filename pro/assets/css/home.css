@@ -389,6 +389,13 @@ html.js #home-canvas.is-ready { opacity: 1; }
      and nine sections changing height at once made the page jump. */
   min-height: 100vh;
   min-height: var(--vh-lock, 100vh);
+  /* The empty space around a text box is for playing with the cloud. A click
+     and drag that starts there must not sweep up a text selection. Text inside
+     a box can still be selected by starting the drag in the box. */
+  -webkit-user-select: none;
+  user-select: none;
+  /* and it can be held and dragged, to turn the object */
+  cursor: grab;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -398,6 +405,9 @@ html.js #home-canvas.is-ready { opacity: 1; }
 
 .home-scene__inner {
   position: relative;
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: auto;
   max-width: 760px;
   width: 100%;
   text-align: center;
@@ -687,6 +697,7 @@ html.js #home-canvas.is-ready { opacity: 1; }
   box-shadow: 0 0 20px rgba(143, 214, 255, 0.95);
 }
 html.is-scrubbing, html.is-scrubbing * { cursor: grabbing !important; user-select: none !important; }
+html.is-turning, html.is-turning * { cursor: grabbing !important; -webkit-user-select: none !important; user-select: none !important; }
 .home-scale__dot {
   transition: transform 0.18s ease, box-shadow 0.18s ease;
   position: absolute;
