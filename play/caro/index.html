@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Caro</title>
+  <meta name="description" content="Caro: five in a row with X and O. Play the computer at three levels, a friend on one screen, or a friend online.">
+  <meta name="theme-color" content="#fffdf8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#14110c" media="(prefers-color-scheme: dark)">
+  <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg?v=3">
+  <link rel="icon" type="image/png" sizes="32x32" href="../../assets/favicon-32.png?v=3">
+  <link rel="apple-touch-icon" sizes="180x180" href="../../assets/apple-touch-icon.png?v=3">
+  <link rel="stylesheet" href="caro.css?v=1">
+</head>
+<body class="in-menu">
+  <main class="app" id="app">
+    <header class="top">
+      <button class="round" id="btn-menu" type="button" aria-label="Menu">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="top__mid">
+        <div class="top__title" id="status" aria-live="polite">Caro</div>
+        <div class="top__sub" id="sub"></div>
+      </div>
+      <button class="round" id="btn-mute" type="button" aria-label="Sound on or off">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 9v6h4l6 5V4L7 9H3z"/>
+          <path class="snd-on" d="M16.5 8.5a5 5 0 0 1 0 7M19 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          <path class="snd-off" d="M16.5 9l5.5 6m0-6l-5.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </header>
+
+    <div class="side" id="side-top"><span class="side__mark"></span><span class="side__name"></span></div>
+
+    <div class="board" id="board" aria-label="Caro board, 15 by 15">
+      <div class="cells" id="cells"></div>
+    </div>
+
+    <div class="side" id="side-bot"><span class="side__mark"></span><span class="side__name"></span></div>
+
+    <p class="hint" id="hint"></p>
+
+    <div class="tools">
+      <button type="button" id="btn-undo">Undo</button>
+      <button type="button" id="btn-new">New game</button>
+    </div>
+  </main>
+
+  <div class="panel" id="menu">
+    <h1>Caro</h1>
+    <p class="panel__sub">Five in a row wins. X goes first.</p>
+    <div class="panel__buttons" id="continue-wrap" hidden>
+      <button type="button" id="btn-continue">Continue game</button>
+    </div>
+    <div class="menu__cols">
+      <div class="menu__col">
+        <h3>Level</h3>
+        <div class="seg" id="seg-level">
+          <button type="button" data-v="0">Easy</button>
+          <button type="button" data-v="1">Medium</button>
+          <button type="button" data-v="2">Hard</button>
+        </div>
+        <h3>You play</h3>
+        <div class="seg" id="seg-side">
+          <button type="button" data-v="x">X, first</button>
+          <button type="button" data-v="o">O, second</button>
+          <button type="button" data-v="r">Random</button>
+        </div>
+      </div>
+      <div class="menu__col">
+        <div class="panel__buttons">
+          <button type="button" id="btn-start">Play the computer</button>
+          <button type="button" id="btn-two" class="is-plain">Two players, one screen</button>
+          <button type="button" id="btn-online" class="is-plain">Play a friend online</button>
+        </div>
+      </div>
+    </div>
+    <p class="panel__best" id="best"></p>
+    <p class="panel__links"><a href="../">All games</a><a href="../../">Home</a></p>
+  </div>
+
+  <div class="panel panel--small" id="online" hidden>
+    <h2>Play online</h2>
+    <p class="panel__sub" id="online-text" aria-live="polite">Connecting</p>
+    <div class="panel__buttons">
+      <button type="button" id="btn-online-retry" hidden>Try again</button>
+      <button type="button" id="btn-online-cancel" class="is-plain">Cancel</button>
+    </div>
+  </div>
+
+  <div class="panel panel--small" id="over" hidden>
+    <h2 id="over-title"></h2>
+    <p class="panel__sub" id="over-text"></p>
+    <div class="panel__buttons">
+      <button type="button" id="btn-over-new">New game</button>
+      <button type="button" id="btn-over-see" class="is-plain">See the board</button>
+    </div>
+  </div>
+
+  <script src="engine.js?v=1"></script>
+  <script src="caro.js?v=1"></script>
+</body>
+</html>

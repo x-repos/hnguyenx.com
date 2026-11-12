@@ -16,11 +16,11 @@ reused, redistributed or used commercially without written permission. See
 - `style.css` — all styling (Crimson Pro, self-hosted in `assets/fonts/`)
 - `pro/` — animated "Pro Mode" homepage (three.js/GSAP, ported from the old site)
 - `blog/` — blog index and posts
-- `play/` — games: a chooser page and one folder per game (`pi/` Pi Flight, `chess/` Chess, `qubit/` Qubit Flip, `blocks/` Lattice, `orbit/` Orbit Sling, `run/` Pi Run, `link/` Pair Path); no assets, no build step
+- `play/` — games: a chooser page and one folder per game (`pi/` Pi Flight, `chess/` Chess, `caro/` Caro, `qubit/` Qubit Flip, `blocks/` Lattice, `orbit/` Orbit Sling, `run/` Pi Run, `link/` Pair Path); no assets, no build step
 - `files/` — public PDFs (CV, etc.)
 - `assets/` — photo, CV, favicon, fonts
 - `counter-worker/` — Cloudflare Worker that tallies visits by country (KV-backed)
-- `chess-worker/` — Cloudflare Worker that pairs two players for online chess and passes their moves along (one Durable Object, WebSockets)
+- `chess-worker/` — Cloudflare Worker that pairs two players for online chess and caro and passes their moves along (Durable Objects, WebSockets)
 - `CNAME` — custom domain for GitHub Pages
 
 ## Updating
@@ -96,12 +96,13 @@ Point the `api` URL near the top of the counter `<script>` in `index.html` at
 your own Worker URL, and add your domain to `ALLOWED_ORIGINS` in
 `counter-worker/worker.js`.
 
-### 4. Online chess relay (optional)
+### 4. Online game relay (optional)
 
 `chess-worker/` is a second small Worker. It pairs two players who press
-"Play a friend online" in the chess game and passes their moves back and forth.
-It uses one Durable Object and fits in the free plan. Without it the rest of the
-chess game still works; only the online button cannot connect.
+"Play a friend online" in chess or caro and passes their moves back and forth.
+Each game has its own Durable Object, so players of different games are never
+paired, and it fits in the free plan. Without it the games still work; only the
+online button cannot connect.
 
 ```bash
 cd chess-worker
@@ -111,6 +112,7 @@ npx wrangler deploy
 
 It publishes to `https://hnguyenx-chess.<your-subdomain>.workers.dev`; opening
 that address in a browser should say the relay is running. The game connects to
-`wss://…/ws`. That address is the `RELAY` constant near the top of
-`play/chess/chess.js`, and the pages allowed to connect are `ALLOWED_ORIGIN` in
+`wss://…/ws` (chess) or `wss://…/ws?g=caro` (caro). That address is the `RELAY`
+constant near the top of `play/chess/chess.js` and `play/caro/caro.js`. The pages
+allowed to connect are `ALLOWED_ORIGIN` and the games are `GAMES` in
 `chess-worker/worker.js`. The pairing rules are in `chess-worker/hub.js`.
