@@ -1,0 +1,60 @@
+/* The games page: two cards, each in its own game's colours. */
+@font-face {
+  font-family: "Crimson Pro";
+  src: url("../assets/fonts/crimson-pro.woff2") format("woff2");
+  font-weight: 200 900; font-style: normal; font-display: swap;
+}
+* { box-sizing: border-box; }
+html { background: #05060b; }
+body {
+  margin: 0; min-height: 100vh; color: #fff;
+  font-family: "Space Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(900px 500px at 15% -10%, rgba(143, 214, 255, 0.14), transparent 60%),
+    radial-gradient(800px 500px at 100% 110%, rgba(255, 194, 138, 0.1), transparent 60%),
+    #05060b;
+  -webkit-tap-highlight-color: transparent;
+}
+.hub { max-width: 920px; margin: 0 auto; padding: calc(28px + env(safe-area-inset-top)) 20px 48px; }
+.hub__back { margin: 0 0 28px; font-size: 0.95rem; }
+.hub__back a { color: #b9c2d6; text-decoration: none; border-bottom: 1px solid rgba(255, 255, 255, 0.25); padding-bottom: 2px; }
+.hub__back a:hover { color: #fff; }
+.hub h1 {
+  margin: 0; font-size: clamp(2.8rem, 10vw, 4.4rem); line-height: 1; letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #8fd6ff 0%, #c9a8ff 60%, #ffc28a 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  display: inline-block;
+}
+.hub__sub { margin: 10px 0 28px; color: #b9c2d6; font-size: 1.15rem; }
+.hub__cards { display: grid; grid-template-columns: 1fr; gap: 20px; }
+@media (min-width: 720px) { .hub__cards { grid-template-columns: 1fr 1fr; gap: 24px; } }
+
+.card {
+  display: flex; flex-direction: column; overflow: hidden;
+  border-radius: 18px; text-decoration: none; color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.card:hover, .card:focus-visible { transform: translateY(-4px); box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55); outline: none; }
+.card__art { display: block; width: 100%; aspect-ratio: 16 / 10; }
+.card__body { padding: 20px 22px 22px; display: flex; flex-direction: column; flex: 1; }
+.card h2 { margin: 0; font-size: 1.9rem; letter-spacing: -0.02em; line-height: 1.1; }
+.card p { margin: 8px 0 0; font-size: 1.02rem; line-height: 1.45; }
+.card__best { min-height: 1.45em; font-size: 0.95rem !important; }
+.card__go {
+  align-self: flex-start; margin-top: 14px; padding: 12px 30px; border-radius: 999px;
+  font-size: 1.1rem; font-weight: 600; line-height: 1;
+}
+
+.card--starship { background: #070b14; }
+.card--starship:hover, .card--starship:focus-visible { border-color: #8fd6ff; }
+.card--starship p { color: #b9c2d6; }
+.card--starship .card__best { color: #ffc28a; }
+.card--starship .card__go { border: 1px solid #8fd6ff; background: rgba(143, 214, 255, 0.12); color: #fff; }
+
+.card--pi { background: #fffdf8; color: #3b3226; border-color: rgba(138, 109, 59, 0.4); font-family: "Crimson Pro", Georgia, serif; }
+.card--pi:hover, .card--pi:focus-visible { border-color: #8a6d3b; }
+.card--pi h2 { color: #8a6d3b; font-weight: 600; font-size: 2.1rem; }
+.card--pi p { font-size: 1.15rem; }
+.card--pi .card__best { color: #8a6d3b; font-size: 1.05rem !important; }
+.card--pi .card__go { background: #8a6d3b; color: #fffdf8; font-size: 1.2rem; }

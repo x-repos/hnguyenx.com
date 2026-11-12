@@ -2,69 +2,93 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Starship</title>
-  <meta name="description" content="Starship: an arcade space shooter with 48 waves and 8 bosses. Play in the browser.">
-  <meta name="theme-color" content="#03040a">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Play</title>
+  <meta name="description" content="Two small browser games: Starship, a space shooter, and Pi Flight, a flight through the digits of π.">
+  <meta name="theme-color" content="#05060b">
   <link rel="icon" type="image/svg+xml" href="../pro/images/favicon-pro.svg?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="game.css?v=2">
+  <link rel="stylesheet" href="hub.css?v=1">
 </head>
 <body>
-  <canvas id="game" aria-label="Starship game"></canvas>
+  <main class="hub">
+    <p class="hub__back"><a href="../pro/">hnguyenx.com</a></p>
+    <h1>Play</h1>
+    <p class="hub__sub">Pick a game.</p>
 
-  <div class="hud" id="hud" hidden>
-    <button class="hud__btn" id="btn-pause" type="button" aria-label="Pause">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="4" width="4.5" height="16" rx="1.2"/><rect x="14" y="4" width="4.5" height="16" rx="1.2"/></svg>
-    </button>
-    <button class="hud__btn" id="btn-mute" type="button" aria-label="Sound on or off">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M3 9v6h4l6 5V4L7 9H3z"/>
-        <path class="snd-on" d="M16.5 8.5a5 5 0 0 1 0 7M19 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-        <path class="snd-off" d="M16.5 9l5.5 6m0-6l-5.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-      </svg>
-    </button>
-  </div>
-  <button class="bomb" id="btn-bomb" type="button" aria-label="Fire a missile" hidden>
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5c3 2.6 4.2 6.4 4.2 10.3l2.6 3.4v4.3l-4.3-2.2h-5l-4.3 2.2v-4.3l2.6-3.4C7.8 7.9 9 4.1 12 1.5z"/><path d="M10 19.5h4l-2 3.5z" opacity="0.7"/></svg>
-  </button>
+    <div class="hub__cards">
+      <a class="card card--starship" href="starship/">
+        <svg class="card__art" viewBox="0 0 320 200" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b2233"/><stop offset="0.7" stop-color="#03040a"/></linearGradient>
+            <radialGradient id="neb" cx="0.3" cy="0.35" r="0.6"><stop offset="0" stop-color="#2b9fd6" stop-opacity="0.35"/><stop offset="1" stop-color="#2b9fd6" stop-opacity="0"/></radialGradient>
+            <g id="pod"><path d="M-14-4-8-13 8-13 14-4 12 10 0 15-12 10z" fill="#2f8fc4" stroke="#bfe6ff" stroke-width="1.5"/><circle cx="-5" cy="-2" r="3" fill="#ff5050"/><circle cx="5" cy="-2" r="3" fill="#ff5050"/></g>
+          </defs>
+          <rect width="320" height="200" fill="url(#sky)"/><rect width="320" height="200" fill="url(#neb)"/>
+          <g fill="#fff"><circle cx="22" cy="30" r="1"/><circle cx="70" cy="150" r="1.3"/><circle cx="118" cy="22" r="0.9"/><circle cx="150" cy="96" r="1.1"/><circle cx="201" cy="170" r="1"/><circle cx="244" cy="38" r="1.4"/><circle cx="286" cy="120" r="1"/><circle cx="300" cy="18" r="0.8"/><circle cx="44" cy="92" r="0.8"/><circle cx="262" cy="182" r="0.9"/></g>
+          <!-- three alien pods -->
+          <use href="#pod" transform="translate(96 44)"/><use href="#pod" transform="translate(160 36)"/><use href="#pod" transform="translate(224 44)"/>
+          <use href="#pod" transform="translate(128 78)"/><use href="#pod" transform="translate(192 78)"/>
+          <!-- enemy shots -->
+          <g fill="#ff7a55"><circle cx="128" cy="108" r="4"/><circle cx="205" cy="124" r="4"/></g>
+          <!-- the ship and its fire -->
+          <g fill="#9fe8ff"><ellipse cx="160" cy="128" rx="2.5" ry="7"/><ellipse cx="160" cy="104" rx="2.5" ry="7"/><ellipse cx="172" cy="116" rx="2.5" ry="7"/><ellipse cx="148" cy="116" rx="2.5" ry="7"/></g>
+          <g transform="translate(160 164)">
+            <path d="M-9 16-5 16-7 30zM5 16 9 16 7 30z" fill="#9fe8ff"/>
+            <path d="M0-6-26 16-22 21-6 14 6 14 22 21 26 16z" fill="#4a6fd6" stroke="#cfe0ff" stroke-width="1.5"/>
+            <path d="M0-26 8-4 9 16-9 16-8-4z" fill="#e8eeff" stroke="#fff" stroke-width="1.2"/>
+            <path d="M0-15 4-3 0 4-4-3z" fill="#39c6ff"/>
+          </g>
+        </svg>
+        <div class="card__body">
+          <h2>Starship</h2>
+          <p>A space shooter with alien craft, jets and bosses. 8 sectors, 48 waves.</p>
+          <p class="card__best" id="best-starship"></p>
+          <span class="card__go">Play</span>
+        </div>
+      </a>
 
-  <div class="panel" id="menu">
-    <h1>Starship</h1>
-    <p class="panel__sub">8 sectors · 48 waves · 8 bosses</p>
-    <div class="panel__buttons">
-      <button type="button" id="btn-new">New game</button>
-      <button type="button" id="btn-continue" hidden>Continue</button>
+      <a class="card card--pi" href="pi/">
+        <svg class="card__art" viewBox="0 0 320 200" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
+          <rect width="320" height="200" fill="#fffdf8"/>
+          <g stroke="#8a6d3b" stroke-opacity="0.12"><path d="M0 40H320M0 78H320M0 116H320M0 154H320"/></g>
+          <g fill="#8a6d3b">
+            <rect x="92" y="0" width="34" height="52"/><rect x="88" y="52" width="42" height="8" rx="3"/>
+            <rect x="88" y="132" width="42" height="8" rx="3"/><rect x="92" y="140" width="34" height="44"/>
+            <rect x="196" y="0" width="34" height="24"/><rect x="192" y="24" width="42" height="8" rx="3"/>
+            <rect x="192" y="104" width="42" height="8" rx="3"/><rect x="196" y="112" width="34" height="72"/>
+            <rect x="290" y="0" width="34" height="88"/><rect x="286" y="88" width="42" height="8" rx="3"/>
+            <rect x="286" y="160" width="42" height="8" rx="3"/><rect x="290" y="168" width="34" height="16"/>
+          </g>
+          <g fill="#fffdf8" fill-opacity="0.6" font-family="Georgia, serif" font-weight="600" font-size="20" text-anchor="middle">
+            <text x="109" y="26">1</text><text x="109" y="166">1</text><text x="213" y="18">4</text><text x="213" y="140">4</text><text x="213" y="170">4</text><text x="307" y="30">1</text><text x="307" y="64">1</text>
+          </g>
+          <path d="M0 184H320" stroke="#8a6d3b" stroke-width="2"/>
+          <g stroke="#8a6d3b" stroke-width="1.2"><path d="M20 184v6M44 184v6M68 184v12M92 184v6M116 184v6M140 184v6M164 184v6M188 184v12M212 184v6M236 184v6M260 184v6M284 184v6M308 184v12"/></g>
+          <circle cx="160" cy="92" r="7" fill="none" stroke="#8a6d3b" stroke-width="2.5"/>
+          <g fill="#8a6d3b" fill-opacity="0.35"><circle cx="26" cy="112" r="2"/><circle cx="36" cy="106" r="2.4"/><circle cx="45" cy="101" r="2.8"/></g>
+          <g transform="translate(62 96) rotate(-14) scale(0.036) translate(-466 -443)"><path fill="#8a6d3b" fill-rule="evenodd" d="M 0 79 L 0 158 90.585 158 L 181.171 158 180.702 323.750 C 180.189 505.585, 179.893 515.439, 173.921 550 C 167.099 589.473, 148.234 639.092, 125.705 676.819 C 119.026 688.003, 103.645 708.849, 85.085 731.871 C 78.713 739.775, 67.103 754.175, 59.284 763.871 C 51.465 773.567, 44.265 783.006, 43.284 784.846 L 41.500 788.192 46 792.162 C 67.779 811.375, 160.219 887, 161.926 887 C 164.406 887, 203.422 839.570, 235.136 798 C 280.230 738.893, 313.314 663.477, 329.454 583 C 337.392 543.422, 337.821 531.897, 338.991 327 C 339.513 235.425, 339.954 160.160, 339.971 159.744 C 339.987 159.329, 378.362 159.104, 425.250 159.244 L 510.500 159.500 510.587 390.500 C 510.673 618.837, 511.198 683.440, 513.103 700 C 523.207 787.861, 582.955 856.593, 668.225 878.447 C 696.545 885.706, 733.582 885.714, 766.500 878.469 C 820.969 866.481, 874.399 823.906, 900.740 771.500 C 914.994 743.143, 918.458 728.600, 928.003 657.046 C 933.820 613.443, 933.694 615.388, 930.750 614.663 C 922.311 612.583, 789.603 595, 782.351 595 L 777.142 595 776.074 600.250 C 775.486 603.138, 772.547 622.825, 769.543 644 C 762.332 694.830, 759.720 703.795, 749.503 712.788 C 743.401 718.160, 731.401 723.939, 723.565 725.282 C 705.044 728.454, 684.513 716.921, 675 698.001 L 671 690.044 671 424.522 L 671 159 708.835 159 C 729.645 159, 770.370 158.701, 799.335 158.336 L 852 157.673 852 78.836 L 852 0 426 0 L 0 0 0 79"/></g>
+        </svg>
+        <div class="card__body">
+          <h2>Pi Flight</h2>
+          <p>Fly π through its own digits. One button. How many decimal places can you reach?</p>
+          <p class="card__best" id="best-pi"></p>
+          <span class="card__go">Play</span>
+        </div>
+      </a>
     </div>
-    <p class="panel__best" id="best"></p>
-    <ul class="panel__help">
-      <li><b>Move</b> mouse, arrow keys or WASD. On a phone, drag anywhere.</li>
-      <li><b>Fire</b> is automatic.</li>
-      <li><b>Missile</b> Space, right click, or the round missile button. It clears the screen.</li>
-      <li><b>Pause</b> P or Esc. <b>Sound</b> M.</li>
-    </ul>
-    <p class="panel__back"><a href="pi/">Another game: Pi Flight</a> · <a href="../pro/">Back to the site</a></p>
-  </div>
+  </main>
 
-  <div class="panel" id="paused" hidden>
-    <h2>Paused</h2>
-    <div class="panel__buttons">
-      <button type="button" id="btn-resume">Resume</button>
-      <button type="button" id="btn-quit">Quit to menu</button>
-    </div>
-  </div>
-
-  <div class="panel" id="over" hidden>
-    <h2 id="over-title">Game over</h2>
-    <p class="panel__sub" id="over-text"></p>
-    <div class="panel__buttons">
-      <button type="button" id="btn-retry">Retry this sector</button>
-      <button type="button" id="btn-menu">Menu</button>
-    </div>
-  </div>
-
-  <script src="game.js?v=3"></script>
+  <script>
+  // show each game's best result, saved on this device by the games themselves
+  (function () {
+    function read(key) { try { return JSON.parse(localStorage.getItem(key) || "{}"); } catch (e) { return {}; } }
+    var s = read("starship-save-v1"), p = read("pi-flight-v1");
+    if (s.best) document.getElementById("best-starship").textContent = "Your best: " + Number(s.best).toLocaleString() + (s.sector ? ", reached sector " + (s.sector + 1) : "");
+    if (p.best) document.getElementById("best-pi").textContent = "Your best: " + p.best + " decimal places";
+  })();
+  </script>
 </body>
 </html>
