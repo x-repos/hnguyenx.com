@@ -99,7 +99,7 @@
   // 1 = full colormap), spin (how much the point turns with the
   // slow rotation), alpha.
   // ====================================================
-  const N = isMobile ? 12000 : 30000;
+  const N = isMobile ? 18000 : 64000;
   // Extra "time" the planet's interior has been stirred by (cursor motion and
   // clicks speed the convection up), and the decaying click surge behind it.
   let flowClock = 0, flowSurge = 0;
@@ -356,10 +356,10 @@
   }
 
   // 4) Silica network: Si on a diamond lattice, O at every Si–Si midpoint
-  //    (the β-cristobalite motif), bonds traced in white. It is a running
-  //    simulation: every atom vibrates thermally, a pressure wave squeezes
-  //    through the cell, and the bonds stretch to follow. Click = shock it.
-  //    aux: [kind (0 Si, 1 O, 2 bond), index, ox, oy, oz]
+  //    (the β-cristobalite motif). Atoms only, no bond lines. It is a running
+  //    simulation: every atom vibrates thermally and a pressure wave squeezes
+  //    through the cell. Click = shock it.
+  //    aux: [kind (0 Si, 1 O), index, ox, oy, oz]
   function shapeSilica() {
     const A0 = 1.25, si = [];
     const basis = [[0,0,0],[0,.5,.5],[.5,0,.5],[.5,.5,0],[.25,.25,.25],[.25,.75,.75],[.75,.25,.75],[.75,.75,.25]];
@@ -379,18 +379,14 @@
     const oxA = bonds.map(([i, j]) => mk([(si[i][0] + si[j][0]) / 2, (si[i][1] + si[j][1]) / 2, (si[i][2] + si[j][2]) / 2]));
     const shape = makeShape(0.35, (add, left) => {
       const total = left();
-      for (let k = 0; k < total * 0.42; k++) {
-        const i = k % si.length, c = si[i], p = onSphere(0.12);
+      // atoms only, no bond lines: big Si (warm), small O (blue)
+      for (let k = 0; k < total * 0.55; k++) {
+        const i = k % si.length, c = si[i], p = onSphere(0.13 * Math.cbrt(0.4 + 0.6 * rand()));
         add([c[0] + p[0], c[1] + p[1], c[2] + p[2]], 0.82 + rand() * 0.12, 1, 1, 1, [0, i, p[0], p[1], p[2]]);
       }
-      for (let k = 0; k < total * 0.33; k++) {
-        const i = k % oxA.length, c = oxA[i].p, p = onSphere(0.07);
-        add([c[0] + p[0], c[1] + p[1], c[2] + p[2]], 0.3 + rand() * 0.08, 1, 1, 1, [1, i, p[0], p[1], p[2]]);
-      }
       while (left() > 0) {
-        const i = Math.floor(rand() * bonds.length), t = rand();
-        const p = si[bonds[i][0]], q = si[bonds[i][1]];
-        add([lerp(p[0], q[0], t), lerp(p[1], q[1], t), lerp(p[2], q[2], t)], 0, 0, 1, 0.5, [2, i, t, 0, 0]);
+        const i = Math.floor(rand() * oxA.length), c = oxA[i].p, p = onSphere(0.08 * Math.cbrt(0.4 + 0.6 * rand()));
+        add([c[0] + p[0], c[1] + p[1], c[2] + p[2]], 0.3 + rand() * 0.08, 1, 1, 1, [1, i, p[0], p[1], p[2]]);
       }
     }, 5);
     let shockAt = -99;
@@ -418,19 +414,9 @@
       const A = shape.aux;
       for (let k = 0; k < N; k++) {
         const o = k * 5, kind = A[o], i = A[o + 1];
-        if (kind === 2) {
-          const a = siA[bonds[i][0]].c, b = siA[bonds[i][1]].c, m = oxA[i].c, u = A[o + 2];
-          // Si–O–Si: the bond bends through the (moving) oxygen
-          const w0 = (1 - u) * (1 - u), w1 = 2 * u * (1 - u), w2 = u * u;
-          P[k * 3]     = w0 * a[0] + w1 * (2 * m[0] - (a[0] + b[0]) / 2) + w2 * b[0];
-          P[k * 3 + 1] = w0 * a[1] + w1 * (2 * m[1] - (a[1] + b[1]) / 2) + w2 * b[1];
-          P[k * 3 + 2] = w0 * a[2] + w1 * (2 * m[2] - (a[2] + b[2]) / 2) + w2 * b[2];
-          F[k * 4 + 3] = 0.35 + 0.4 * oxA[i].e;
-        } else {
-          const at = kind === 0 ? siA[i] : oxA[i], c = at.c;
-          P[k * 3] = c[0] + A[o + 2]; P[k * 3 + 1] = c[1] + A[o + 3]; P[k * 3 + 2] = c[2] + A[o + 4];
-          F[k * 4] = kind === 0 ? 0.72 + 0.26 * at.e : 0.22 + 0.3 * at.e;
-        }
+        const at = kind === 0 ? siA[i] : oxA[i], c = at.c;
+        P[k * 3] = c[0] + A[o + 2]; P[k * 3 + 1] = c[1] + A[o + 3]; P[k * 3 + 2] = c[2] + A[o + 4];
+        F[k * 4] = kind === 0 ? 0.72 + 0.26 * at.e : 0.22 + 0.3 * at.e;
       }
     };
     shape.poke = (t) => { shockAt = t; };
@@ -710,68 +696,98 @@
     return shape;
   }
 
-  // 8) Galaxy: two-armed log spiral with a warm bulge and red star-forming
-  //    knots. Stars orbit on a flat rotation curve while the arms turn as a
-  //    slower density wave: stars drift through the arms, bunching up and
-  //    brightening inside them. Now and then a supernova goes off (click = one more).
-  //    aux: [kind (0 bulge, 1 disc), r, theta0, y, heat0]
+  // 8) Galaxy: a face-on, many-armed (flocculent) spiral, filled from the
+  //    core to the edge. A pale warm bulge, an exponential disc of blue-white
+  //    stars, pink-red star-forming knots and bright blue clusters strung
+  //    along the arms, and a faint outer halo. Stars orbit on a flat rotation
+  //    curve while the arms turn as slower density waves: stars drift through
+  //    them, bunching up and brightening inside. Supernovae go off now and
+  //    then (click = one more).
+  //    aux: [kind (0 bulge, 1 disc, 2 knot/cluster), r, theta0, y, heat0, tint0, alpha0]
   function shapeGalaxy() {
-    const RMAX = 2.25, WIND = 1.5;
-    const shape = makeShape(0.62, (add, left) => {
-      while (left() > 0) {
-        const roll = rand();
-        if (roll < 0.2) {
-          const p = [gauss() * 0.24, gauss() * 0.09, gauss() * 0.24];
-          add(p, 0.58 + rand() * 0.12, 0.8, 1, 1, [0, Math.hypot(p[0], p[2]), Math.atan2(p[2], p[0]), p[1], 0.6]);
-          continue;
-        }
-        const r = 0.35 + Math.pow(rand(), 0.75) * (RMAX - 0.35) + gauss() * 0.05;
-        const th = rand() * TAU, y = gauss() * 0.04 * (1.3 - r / RMAX);
-        const h = roll < 0.235 ? 0.93 + rand() * 0.07 : roll < 0.55 ? 0.18 + rand() * 0.12 : 0;
-        add([Math.cos(th) * r, y, Math.sin(th) * r], h, h ? 0.8 : 0, 1, 0.7, [1, r, th, y, h]);
+    const RMAX = 2.35, WIND = 1.7;
+    const shape = makeShape(1.12, (add, left) => {
+      const total = left();
+      const put = (kind, r, th, y, h, tint, al) =>
+        add([Math.cos(th) * r, y, Math.sin(th) * r], h, tint, 1, al, [kind, r, th, y, h, tint, al]);
+      // bulge: dense, pale and warm
+      for (let k = 0; k < total * 0.09; k++) {
+        const r = Math.abs(gauss()) * 0.17, th = rand() * TAU;
+        put(0, r, th, gauss() * 0.07 * Math.exp(-r * 3), 0.56 + rand() * 0.1, 0.25 + 0.35 * Math.min(1, r * 4), 1);
       }
-    }, 5);
+      // star-forming knots (red) and young clusters (blue), in clumps
+      const clumps = [];
+      for (let c = 0; c < 150; c++) {
+        const r = 0.3 + Math.pow(rand(), 0.8) * (RMAX - 0.45);
+        clumps.push({ r, th: rand() * TAU, red: rand() < 0.5, s: 0.015 + rand() * 0.035 });
+      }
+      for (let k = 0; k < total * 0.12; k++) {
+        const c = clumps[k % clumps.length];
+        const x = Math.cos(c.th) * c.r + gauss() * c.s, z = Math.sin(c.th) * c.r + gauss() * c.s;
+        put(2, Math.hypot(x, z), Math.atan2(z, x), gauss() * 0.012, c.red ? 0.93 + rand() * 0.07 : 0.2 + rand() * 0.1, 1, 1);
+      }
+      // faint outer halo
+      for (let k = 0; k < total * 0.04; k++) {
+        const r = RMAX * (0.9 + rand() * 0.45);
+        put(1, r, rand() * TAU, gauss() * 0.05, 0.2, 0.4, 0.3);
+      }
+      // the disc: exponential in radius, so it is full all the way out
+      while (left() > 0) {
+        let r;
+        do { r = 0.12 - Math.log(1 - rand() * 0.985) * 1.25; } while (r > RMAX);
+        const inner = Math.exp(-r / 0.5);
+        put(1, r, rand() * TAU, gauss() * 0.03 * (1.2 - r / RMAX),
+            lerp(0.2, 0.55, inner) + rand() * 0.06, lerp(0.5 + rand() * 0.3, 0.3, inner), 1.0);
+      }
+    }, 7);
     const novae = [];
     let nextNova = 2;
     const nova = (t) => {
-      const r = 0.5 + rand() * 1.5, a = rand() * TAU;
+      const r = 0.4 + rand() * 1.6, a = rand() * TAU;
       novae.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, t0: t });
       if (novae.length > 3) novae.shift();
     };
     shape.animate = (t, P, F) => {
       if (t > nextNova) { nova(t); nextNova = t + 2.5 + rand() * 4; }
-      const A = shape.aux, pattern = t * 0.1;
+      const A = shape.aux, pattern = t * 0.09, nn = novae.length;
       for (let k = 0; k < N; k++) {
-        const o = k * 5, r = A[o + 1];
+        const o = k * 7, kind = A[o], r = A[o + 1];
         let x, y = A[o + 3], z;
-        if (A[o] === 0) {
-          const a = A[o + 2] + t * 0.9 / (0.25 + r);
+        if (kind === 0) {
+          const a = A[o + 2] + t * 0.8 / (0.25 + r);
           x = Math.cos(a) * r; z = Math.sin(a) * r;
-          y *= 1 + 0.3 * Math.sin(t * 2 + k);
+          F[k * 4] = A[o + 4]; F[k * 4 + 1] = A[o + 5]; F[k * 4 + 3] = A[o + 6];
         } else {
-          const th = A[o + 2] + t * 0.3 / (0.45 + r); // flat rotation curve
-          // phase relative to the two-armed log-spiral pattern
-          const tw = (r - 0.35) / (RMAX - 0.35) * WIND * Math.PI;
+          const th = A[o + 2] + t * 0.28 / (0.45 + r); // flat rotation curve
+          const tw = Math.log(1 + r * 2.2) * WIND * 2.1;  // log-spiral winding
+          // two grand arms + a five-armed, kinked overtone = flocculent arms
           const psi = 2 * (th - tw - pattern);
-          const inArm = 0.5 + 0.5 * Math.cos(psi);
-          const a = th - 0.32 * Math.sin(psi); // stars linger in the arms
-          const rr = r * (1 + 0.035 * Math.cos(psi));
+          const c2 = Math.cos(psi);
+          const c5 = Math.cos(5 * (th - tw * 0.8 - pattern * 1.3) + 2.5 * Math.sin(r * 3.7));
+          const arm = 0.56 * (0.5 + 0.5 * c2) + 0.44 * (0.5 + 0.5 * c5);
+          const a = th - 0.22 * Math.sin(psi); // stars linger in the arms
+          const rr = r * (1 + 0.03 * c2);
           x = Math.cos(a) * rr; z = Math.sin(a) * rr;
-          const arm = inArm * inArm * inArm;
-          F[k * 4 + 3] = 0.05 + 1.1 * arm;
-          F[k * 4] = A[o + 4] ? A[o + 4] : 0.2;
-          F[k * 4 + 1] = A[o + 4] ? 0.9 : 0.35 * arm;
+          const a2 = arm * arm;
+          if (kind === 1) {
+            F[k * 4] = A[o + 4]; F[k * 4 + 1] = A[o + 5];
+            F[k * 4 + 3] = A[o + 6] * (0.4 + 1.1 * a2);
+          } else { // knots and clusters only light up inside the arms
+            F[k * 4] = A[o + 4]; F[k * 4 + 1] = 1;
+            F[k * 4 + 3] = 0.2 + 1.6 * a2 * arm;
+          }
         }
-        for (let n = 0; n < novae.length; n++) {
+        for (let n = 0; n < nn; n++) {
           const nv = novae[n], age = t - nv.t0;
           if (age > 3) continue;
           const dx = x - nv.x, dz = z - nv.z, d = Math.hypot(dx, dz) + 1e-4;
+          if (d > 1.3) continue;
           const ring = Math.exp(-Math.pow(d - age * 0.35, 2) / 0.004) * Math.exp(-age * 1.1);
           const core = Math.exp(-d * d / 0.003) * Math.exp(-age * 2.5);
           const b = ring + core * 2;
           if (b > 0.01) {
             x += dx / d * ring * 0.08; z += dz / d * ring * 0.08; y += core * 0.1 * Math.sin(k);
-            F[k * 4] = Math.min(1, F[k * 4] + b); F[k * 4 + 1] = Math.min(1, F[k * 4 + 1] + b); F[k * 4 + 3] = Math.min(1.4, F[k * 4 + 3] + b);
+            F[k * 4] = Math.min(1, F[k * 4] + b); F[k * 4 + 1] = Math.min(1, F[k * 4 + 1] + b); F[k * 4 + 3] = Math.min(1.6, F[k * 4 + 3] + b);
           }
         }
         P[k * 3] = x; P[k * 3 + 1] = y; P[k * 3 + 2] = z;
@@ -871,7 +887,7 @@
     uYaw:      { value: 0 },
     uPitch:    { value: 0 },
     uChaos:    { value: 0 },
-    uSize:     { value: isMobile ? 2.1 : 1.9 },
+    uSize:     { value: isMobile ? 1.9 : 1.55 },
     uPR:       { value: PR },
     uOpacity:  { value: 1 },
     uMouse:    { value: new THREE.Vector2(9, 9) },
@@ -1578,6 +1594,7 @@
   }
 
   function tick() {
+    const frameT0 = performance.now();
     const dt = Math.min(clock.getDelta(), 1 / 30);
     const t = clock.elapsedTime;
 
@@ -1630,7 +1647,7 @@
 
     // On wide screens the copy sits in a left column, so the cloud moves to
     // the right half; the hero and the outro stay centred.
-    const shift = wide() ? 0.2 * smooth(0.5, 1.2, story) * (1 - smooth(sections.length - 2.6, sections.length - 2, story)) : 0;
+    const shift = wide() ? 0.2 * smooth(0.5, 1.2, story) * (1 - smooth(sections.length - 1.75, sections.length - 1.2, story)) : 0;
     viewShift = shift;
     camera.setViewOffset(W, H, -W * shift, 0, W, H);
 
@@ -1652,6 +1669,7 @@
     camera.rotation.z += Math.sin(t * 0.13) * 0.012;
 
     renderer.render(scene, camera);
+    window.__proFrameMs = performance.now() - frameT0;
     if (firstFrame) {
       firstFrame = false;
       canvas.classList.add("is-ready");
