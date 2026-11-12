@@ -1112,6 +1112,36 @@ html.lenis, html.lenis body { height: auto; }
   .home-scroll-cue::after { animation: none; transform: none; }
 }
 
+/* Note shown when the animation cannot run, saying why */
+.home-fallback-note {
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 60;
+  width: min(92vw, 560px);
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  background: rgba(3, 6, 13, 0.92);
+  color: var(--home-muted);
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: center;
+}
+.home-fallback-note button {
+  display: inline-block;
+  margin: 8px 0 0 8px;
+  padding: 5px 12px;
+  border: 1px solid var(--home-accent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--home-fg);
+  font: inherit;
+  cursor: pointer;
+}
+
 /* Show static images inline if WebGL isn't running (JS sets this class on body) */
 .home-fallback #home-canvas { display: none; }
 .home-fallback .home-scene { min-height: auto; padding: 60px 32px; }

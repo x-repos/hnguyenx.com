@@ -9,8 +9,39 @@
 (function () {
   "use strict";
 
-  if (!window.THREE || !window.gsap || !window.ScrollTrigger) {
+  // When the animation cannot run, fall back to the plain page and say why
+  // in a small note, so a blank-looking page is never a mystery.
+  function fallback(reason) {
     document.body.classList.add("home-fallback");
+    const TEXT = {
+      "reduced-motion": ["The animation is off because Reduce Motion is turned on in this device's settings.",
+                         "Hoạt ảnh đang tắt vì thiết bị này đang bật Giảm chuyển động."],
+      "webgl": ["The animation needs WebGL, which this browser has turned off or does not support.",
+                "Hoạt ảnh cần WebGL, nhưng trình duyệt này đã tắt hoặc không hỗ trợ."],
+      "libs": ["The animation could not load its libraries. Check the connection or a content blocker, then reload.",
+               "Không tải được thư viện cho hoạt ảnh. Hãy kiểm tra kết nối hoặc trình chặn nội dung rồi tải lại."],
+    }[reason];
+    if (!TEXT) return;
+    const note = document.createElement("div");
+    note.className = "home-fallback-note";
+    note.innerHTML = '<span lang="en"></span><span lang="vi"></span>';
+    note.children[0].textContent = TEXT[0];
+    note.children[1].textContent = TEXT[1];
+    if (reason === "reduced-motion") {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.innerHTML = '<span lang="en">Play it anyway</span><span lang="vi">Vẫn phát</span>';
+      btn.addEventListener("click", () => {
+        try { localStorage.setItem("pro-motion", "1"); } catch (e) {}
+        location.reload();
+      });
+      note.appendChild(btn);
+    }
+    document.body.appendChild(note);
+  }
+
+  if (!window.THREE || !window.gsap || !window.ScrollTrigger) {
+    fallback("libs");
     return;
   }
   gsap.registerPlugin(ScrollTrigger);
@@ -24,9 +55,13 @@
     ScrollTrigger.config({ ignoreMobileResize: true });
   }
 
+  // Reduce Motion is respected, unless the visitor has asked to see the
+  // animation anyway (the button in the note above).
   const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (prefersReduced) {
-    document.body.classList.add("home-fallback");
+  let forceMotion = false;
+  try { forceMotion = localStorage.getItem("pro-motion") === "1"; } catch (e) {}
+  if (prefersReduced && !forceMotion) {
+    fallback("reduced-motion");
     return;
   }
 
@@ -44,12 +79,18 @@
   }
 
   // ----- Renderer / scene / camera -----
-  const renderer = new THREE.WebGLRenderer({
-    canvas,
-    antialias: false,
-    alpha: true,
-    powerPreference: "high-performance",
-  });
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: false,
+      alpha: true,
+      powerPreference: "high-performance",
+    });
+  } catch (e) {
+    fallback("webgl");
+    return;
+  }
   const PR = isMobile ? 1 : Math.min(window.devicePixelRatio, 2);
   renderer.setPixelRatio(PR);
   renderer.setClearColor(0x000000, 0);
