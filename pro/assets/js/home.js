@@ -1109,7 +1109,8 @@
   //   gas        atomic scenes: a jittering, Brownian gas
   //   embers     mantle: sparks rising off the hot interior
   //   galaxies   galaxy scene: distant spirals and ellipticals, turning
-  //   streaks    comets and meteors in space; fast particle tracks below
+  //   streaks    meteors in space; fast particle tracks below
+  //   comets     space: a glowing head that sheds a tail streaming behind it
   // Each layer fades with the scene weights in `sceneW`.
   // ====================================================
   const SCENE_KEYS = sections.map((s) => s.dataset.scene);
@@ -1364,14 +1365,17 @@
     spGeo.attributes.position.needsUpdate = spGeo.attributes.aDir.needsUpdate = spGeo.attributes.aBirth.needsUpdate = true;
   }
 
-  // Streaks: comets and meteors in space, fast particle tracks at small scales.
-  const STREAKS = isMobile ? 5 : 9, TAIL = 64;
+  // Streaks: meteors in space, fast particle tracks at small scales.
+  const STREAKS = isMobile ? 5 : 9, TAIL = isMobile ? 96 : 160;
+  // where each dot sits along a streak, 0 at the head and 1 at the tip: packed closer near the bright head
+  const tailU = Float32Array.from({ length: TAIL }, (_, j) => Math.pow(j / (TAIL - 1), 1.35));
   const stPos = new Float32Array(STREAKS * TAIL * 3), stCol = new Float32Array(STREAKS * TAIL * 4), stSize = new Float32Array(STREAKS * TAIL);
   const stGeo = new THREE.BufferGeometry();
   stGeo.setAttribute("position", new THREE.BufferAttribute(stPos, 3).setUsage(THREE.DynamicDrawUsage));
   stGeo.setAttribute("aCol", new THREE.BufferAttribute(stCol, 4).setUsage(THREE.DynamicDrawUsage));
   stGeo.setAttribute("aSize", new THREE.BufferAttribute(stSize, 1).setUsage(THREE.DynamicDrawUsage));
   stGeo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 200);
+  let streakMat = null;          // soft additive dots; the comets below draw with it too
   {
     const m = new THREE.ShaderMaterial({
       uniforms: { uPR: { value: PR } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
@@ -1397,6 +1401,7 @@
         }
       `,
     });
+    streakMat = m;
     const pts = new THREE.Points(stGeo, m);
     pts.frustumCulled = false;
     pts.renderOrder = 2;
@@ -1409,24 +1414,23 @@
     const st = streaks.find((x) => x.life <= 0);
     if (!st) return;
     const z = -9 + rand() * 6, hw = 12 * (1 - z / 14), hh = 7 * (1 - z / 14);
-    const comet = space > micro ? rand() < 0.45 : false;
     const fromLeft = rand() < 0.5;
     st.x = (fromLeft ? -1 : 1) * hw * (0.5 + rand() * 0.6);
     st.y = hh * (0.2 + rand() * 0.9) * (micro > space && rand() < 0.4 ? -1 : 1);
     st.z = z;
-    const speed = micro > space ? 22 + rand() * 18 : comet ? 2.2 + rand() * 2 : 9 + rand() * 10;
+    const speed = micro > space ? 22 + rand() * 18 : 9 + rand() * 10;
     const ang = (fromLeft ? 0 : Math.PI) + (fromLeft ? -1 : 1) * (0.25 + rand() * 0.5) * (st.y > 0 ? 1 : -1);
     st.vx = Math.cos(ang) * speed; st.vy = Math.sin(ang) * speed;
-    st.len = micro > space ? 1.6 + rand() * 2 : comet ? 2.6 + rand() * 2.5 : 1.2 + rand() * 1.6;
-    st.width = comet ? 0.16 : 0.015;
-    st.head = comet ? 7 : 3.2;
+    st.len = micro > space ? 1.6 + rand() * 2 : 1.2 + rand() * 1.6;
+    st.width = 0.015;
+    st.head = 3.2;
     st.dur = (2 * hw + 6) / speed;
     st.life = st.dur;
-    st.col = micro > space ? (rand() < 0.5 ? [0.45, 0.85, 1] : [0.8, 0.6, 1]) : comet ? [0.65, 0.9, 1] : [1, 0.93, 0.8];
+    st.col = micro > space ? (rand() < 0.5 ? [0.45, 0.85, 1] : [0.8, 0.6, 1]) : [1, 0.93, 0.8];
     st.curve = micro > space ? (rand() - 0.5) * 9 : 0; // charged tracks bend in a field
   }
   function updateStreaks(dt, space, micro) {
-    streakTimer -= dt * (0.35 + 1.5 * space + 1.1 * micro);
+    streakTimer -= dt * (0.35 + 0.85 * space + 1.1 * micro);
     if (streakTimer <= 0) { spawnStreak(space, micro); streakTimer = 0.5 + rand() * 1.1; }
     for (let q = 0; q < STREAKS; q++) {
       const st = streaks[q], o = q * TAIL;
@@ -1436,8 +1440,11 @@
       st.x += st.vx * dt; st.y += st.vy * dt;
       const sp = Math.hypot(st.vx, st.vy), dx = st.vx / sp, dy = st.vy / sp;
       const fade = Math.min(1, st.life / 0.4, (st.dur - st.life) / 0.25);
+      // screen pixels per world unit at this depth, so each dot can be made wide enough to
+      // overlap the next one: the streak then reads as one line of light, not a row of dots
+      const ppu = H / (2 * Math.tan(camera.fov * Math.PI / 360) * (camera.position.z - st.z));
       for (let j = 0; j < TAIL; j++) {
-        const u = j / (TAIL - 1), w = st.width * u * 2;
+        const u = tailU[j], w = st.width * u * 2;
         const i3 = (o + j) * 3, i4 = (o + j) * 4;
         stPos[i3] = st.x - dx * u * st.len - dy * st.jit[j * 2] * w;
         stPos[i3 + 1] = st.y - dy * u * st.len + dx * st.jit[j * 2] * w + st.jit[j * 2 + 1] * w * 0.5;
@@ -1445,10 +1452,147 @@
         const a = (1 - u) * (1 - u) * fade;
         stCol[i4] = lerp(1, st.col[0], Math.min(1, u * 3)); stCol[i4 + 1] = lerp(1, st.col[1], Math.min(1, u * 3)); stCol[i4 + 2] = lerp(1, st.col[2], Math.min(1, u * 3));
         stCol[i4 + 3] = a;
-        stSize[o + j] = j === 0 ? st.head : 1.2 + 2.2 * (1 - u);
+        const gap = (tailU[Math.min(TAIL - 1, j + 1)] - tailU[Math.max(0, j - 1)]) * 0.5 * st.len * ppu;
+        stSize[o + j] = j === 0 ? st.head : Math.max(1.2 + 2.2 * (1 - u), gap * 1.9);
       }
     }
     stGeo.attributes.position.needsUpdate = stGeo.attributes.aCol.needsUpdate = stGeo.attributes.aSize.needsUpdate = true;
+  }
+
+  // Comets: a glowing head that sheds its tail. Every tail particle is left
+  // where the head was and then drifts on its own, so the tail streams out
+  // behind, spreads as it ages and bends with the comet's curved path.
+  // Three kinds of particle: a thin bright core stream, a wide pale plume
+  // of dust, and a few sparks that twinkle as they fall away.
+  const COMETS = isMobile ? 1 : 2, CM_N = isMobile ? 500 : 760, CM_HEAD = 3;
+  // particles shed per second and how long they live, for [core, dust, sparks].
+  // Rate times longest life must fit in CM_N, or the oldest particles would be cut off early.
+  const CM_RATE = isMobile ? [110, 80, 12] : [170, 120, 16], CM_SPAN = [[1.8, 0.2], [1.8, 1.2], [0.6, 1.0]];
+  const cmPos = new Float32Array(COMETS * CM_N * 3), cmCol = new Float32Array(COMETS * CM_N * 4), cmSize = new Float32Array(COMETS * CM_N);
+  const cmGeo = new THREE.BufferGeometry();
+  cmGeo.setAttribute("position", new THREE.BufferAttribute(cmPos, 3).setUsage(THREE.DynamicDrawUsage));
+  cmGeo.setAttribute("aCol", new THREE.BufferAttribute(cmCol, 4).setUsage(THREE.DynamicDrawUsage));
+  cmGeo.setAttribute("aSize", new THREE.BufferAttribute(cmSize, 1).setUsage(THREE.DynamicDrawUsage));
+  cmGeo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 200);
+  {
+    const pts = new THREE.Points(cmGeo, streakMat);
+    pts.frustumCulled = false;
+    pts.renderOrder = 2;
+    scene.add(pts);
+  }
+  const comets = [];
+  for (let q = 0; q < COMETS; q++) comets.push({
+    on: false, shedding: false, x: 0, y: 0, z: 0, vx: 0, vy: 0, turn: 0, age: 0, dur: 1, acc: [0, 0, 0], next: 0, scale: 1, seed: 0, wx: 0, wy: 0,
+    pvx: new Float32Array(CM_N), pvy: new Float32Array(CM_N), life: new Float32Array(CM_N), span: new Float32Array(CM_N),
+    kind: new Uint8Array(CM_N), tw: new Float32Array(CM_N),
+  });
+  let cometWait = 1.2;
+  function spawnComet() {
+    const c = comets.find((x) => !x.on);
+    if (!c) return false;
+    const z = -8 + rand() * 5;
+    const halfH = Math.tan(camera.fov * Math.PI / 360) * (camera.position.z - z), halfW = halfH * camera.aspect;
+    const side = rand() < 0.5 ? 1 : -1, pad = 1.2;
+    let x1, y1;
+    if (camera.aspect >= 1) {
+      // wide screen: in from one side, out of the other, on a shallow slope
+      c.x = -side * (halfW + pad); c.y = halfH * (rand() * 0.95 - 0.1);
+      x1 = side * (halfW + pad); y1 = halfH * (rand() * 1.2 - 0.7);
+    } else {
+      // upright phone: in from the top, down across the screen
+      c.x = -side * halfW * (0.3 + rand() * 0.9); c.y = halfH + pad;
+      x1 = side * halfW * (0.5 + rand() * 0.8); y1 = -(halfH + pad);
+    }
+    const dist = Math.hypot(x1 - c.x, y1 - c.y), speed = (2.6 + rand() * 1.8) * (isMobile ? 0.8 : 1);
+    c.vx = (x1 - c.x) / dist * speed; c.vy = (y1 - c.y) / dist * speed;
+    c.z = z;
+    c.turn = (rand() - 0.5) * 0.06;                    // a slow bend, so the path is an arc
+    c.scale = 14.5 / (camera.position.z - z);          // nearer comets are drawn larger
+    c.dur = dist / speed + 0.6; c.age = 0; c.acc[0] = c.acc[1] = c.acc[2] = 0; c.seed = rand() * TAU;
+    // a faint steady push across the path, so the dust fans away from the core to one side
+    const push = (rand() < 0.5 ? 1 : -1) * (0.1 + rand() * 0.12);
+    c.wx = -c.vy / speed * push; c.wy = c.vx / speed * push;
+    c.life.fill(0);
+    c.on = c.shedding = true;
+    return true;
+  }
+  function updateComets(dt, t, space) {
+    cometWait -= dt * space;
+    if (cometWait <= 0) cometWait = space > 0.5 && spawnComet() ? 5 + rand() * 7 : 1;
+    const vis = Math.min(1, space * 1.6);
+    let drawn = false;
+    for (let q = 0; q < COMETS; q++) {
+      const c = comets[q], o = q * CM_N;
+      if (!c.on) continue;
+      drawn = true;
+      if (c.shedding) {
+        const cs = Math.cos(c.turn * dt), sn = Math.sin(c.turn * dt), vx = c.vx;
+        c.vx = cs * vx - sn * c.vy; c.vy = sn * vx + cs * c.vy;
+        const x0 = c.x, y0 = c.y;
+        c.x += c.vx * dt; c.y += c.vy * dt; c.age += dt;
+        if (c.age >= c.dur) c.shedding = false;
+        // shed new particles at an even spacing along the stretch covered this frame.
+        // Even spacing matters: at random spacing the tail breaks up into lumps.
+        const sp = Math.hypot(c.vx, c.vy), dx = c.vx / sp, dy = c.vy / sp;
+        for (let kind = 0; kind < 3; kind++) {
+          const r = CM_RATE[kind] * dt, a = c.acc[kind];
+          let n = 0;
+          for (let f = (1 - a) / r; f <= 1; f += 1 / r) {
+            n++;
+            const j = CM_HEAD + c.next, i3 = (o + j) * 3, at = kind === 2 ? rand() : f;
+            c.next = (c.next + 1) % (CM_N - CM_HEAD);
+            // the core particles all drift alike, which keeps them evenly spaced and the core a smooth line
+            const back = sp * (kind === 0 ? 0.07 + rand() * 0.02 : kind === 1 ? 0.04 + rand() * 0.08 : 0.1 + rand() * 0.45);
+            const across = gauss() * (kind === 0 ? 0.018 : kind === 1 ? 0.2 : 0.42);
+            c.pvx[j] = -dx * back - dy * across; c.pvy[j] = -dy * back + dx * across;
+            c.kind[j] = kind;
+            c.life[j] = c.span[j] = CM_SPAN[kind][0] + rand() * CM_SPAN[kind][1];
+            c.tw[j] = rand() * TAU;
+            cmPos[i3] = lerp(x0, c.x, at); cmPos[i3 + 1] = lerp(y0, c.y, at); cmPos[i3 + 2] = c.z;
+          }
+          c.acc[kind] = Math.max(0, a + r - n);
+        }
+      }
+      // the head: a wide halo, an inner glow and a bright core
+      const hv = c.shedding ? vis : 0, pulse = 1 + 0.06 * Math.sin(t * 6.3 + c.seed);
+      for (let h = 0; h < CM_HEAD; h++) {
+        const i3 = (o + h) * 3, i4 = (o + h) * 4;
+        cmPos[i3] = c.x; cmPos[i3 + 1] = c.y; cmPos[i3 + 2] = c.z;
+        cmCol[i4] = h === 0 ? 0.5 : h === 1 ? 0.8 : 1; cmCol[i4 + 1] = h === 0 ? 0.78 : h === 1 ? 0.93 : 1; cmCol[i4 + 2] = 1;
+        cmCol[i4 + 3] = (h === 0 ? 0.36 : h === 1 ? 0.85 : 1) * hv;
+        cmSize[o + h] = (h === 0 ? 58 * pulse : h === 1 ? 21 : 8) * c.scale;
+      }
+      // the tail
+      let alive = 0;
+      for (let j = CM_HEAD; j < CM_N; j++) {
+        const i4 = (o + j) * 4;
+        if (c.life[j] <= 0) continue;
+        c.life[j] -= dt;
+        if (c.life[j] <= 0) { cmCol[i4 + 3] = 0; continue; }
+        alive++;
+        const i3 = (o + j) * 3, kind = c.kind[j], u = 1 - c.life[j] / c.span[j];
+        cmPos[i3] += c.pvx[j] * dt; cmPos[i3 + 1] += c.pvy[j] * dt;
+        const out = (1 - u) * (1 - u), into = Math.min(1, u * (kind === 0 ? 70 : 24));
+        if (kind === 0) {            // core stream: white at the head, cooling to blue
+          const m = Math.min(1, u * 2.2);
+          cmCol[i4] = lerp(0.92, 0.38, m); cmCol[i4 + 1] = lerp(0.97, 0.66, m); cmCol[i4 + 2] = 1;
+          cmCol[i4 + 3] = 0.3 * out * into * vis;
+          cmSize[o + j] = (7 + 3 * u) * c.scale;
+        } else if (kind === 1) {     // dust plume: soft, widening, turning warm
+          const m = Math.min(1, u * 2);
+          cmCol[i4] = 1; cmCol[i4 + 1] = lerp(0.97, 0.84, m); cmCol[i4 + 2] = lerp(0.95, 0.62, m);
+          c.pvx[j] += c.wx * dt; c.pvy[j] += c.wy * dt;
+          cmCol[i4 + 3] = 0.11 * out * into * vis;
+          cmSize[o + j] = (10 + 16 * u) * c.scale;
+        } else {                     // sparks: small, bright, twinkling
+          cmCol[i4] = 1; cmCol[i4 + 1] = 0.95; cmCol[i4 + 2] = 0.84;
+          cmCol[i4 + 3] = 0.9 * (1 - u) * (0.5 + 0.5 * Math.sin(t * (8 + (j % 7)) + c.tw[j])) * vis;
+          cmSize[o + j] = (2.8 - 1.2 * u) * c.scale;
+        }
+      }
+      if (!c.shedding && !alive) c.on = false;
+    }
+    if (drawn) cmGeo.attributes.position.needsUpdate = cmGeo.attributes.aCol.needsUpdate = cmGeo.attributes.aSize.needsUpdate = true;
   }
 
   // Upload the pair of shapes the cloud is travelling between.
@@ -1832,7 +1976,8 @@
   // PORTRAIT ORBIT — one electron circling the hero photo on a tilted
   // orbit. It is in front of the photo for half its orbit and behind
   // it for the other half: the near half is drawn on a canvas above the
-  // photo, the far half on a canvas beneath it.
+  // photo, the far half on a canvas beneath it. Its light swells as it
+  // comes to the front and fades as it goes round the back.
   // ====================================================
   let drawOrbits = null;
   (function buildOrbits() {
@@ -1857,6 +2002,9 @@
       if (w && w !== size) { size = w; back.width = back.height = front.width = front.height = w; }
     }
     const SEG = 46, TAIL = 2.3; // tail length in radians
+    // how bright the orbit is at an angle: 1 at the point nearest the viewer, falling smoothly
+    // to almost nothing at the far point, so the electron swells and fades instead of switching
+    const glow = (phi) => { const s = 0.5 + 0.5 * Math.sin(phi); return 0.08 + 0.92 * s * s * (3 - 2 * s); };
     drawOrbits = (t) => {
       fit();
       if (!size) return;
@@ -1867,12 +2015,15 @@
         const ct = Math.cos(o.tilt), st = Math.sin(o.tilt);
         const at = (phi) => { const x = a * Math.cos(phi), y = b * Math.sin(phi); return [c + x * ct - y * st, c + x * st + y * ct]; };
         const rgb = o.col.join(",");
-        // faint orbit line: the half with sin(phi) > 0 is the near side
-        for (const [g, from] of [[gf, 0], [gb, Math.PI]]) {
-          g.beginPath();
-          for (let k = 0; k <= 32; k++) { const p = at(from + k / 32 * Math.PI); k ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }
-          g.strokeStyle = "rgba(" + rgb + "," + (g === gf ? 0.2 : 0.1) + ")";
+        // faint orbit line, in short pieces so its brightness can follow the depth.
+        // The half with sin(phi) > 0 is the near side and goes on the front canvas.
+        for (let k = 0; k < 64; k++) {
+          const mid = (k + 0.5) / 64 * TAU, g = Math.sin(mid) > 0 ? gf : gb;
+          const p = at(k / 64 * TAU), q = at((k + 1) / 64 * TAU);
+          g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]);
+          g.strokeStyle = "rgba(" + rgb + "," + (0.05 + 0.17 * glow(mid)).toFixed(3) + ")";
           g.lineWidth = size / 300;
+          g.lineCap = "round";
           g.stroke();
         }
         // the electron and its fading tail
@@ -1881,17 +2032,17 @@
           const u = k / SEG, phi = phi0 + dir * u * TAIL;
           const near = Math.sin(phi) > 0, g = near ? gf : gb;
           const p = at(phi), q = at(phi0 + dir * Math.min(1, u + 1 / SEG) * TAIL);
-          const depth = 0.75 + 0.25 * Math.sin(phi);     // nearer = larger, brighter
+          const depth = 0.75 + 0.25 * Math.sin(phi), lit = glow(phi);     // nearer = larger, brighter
           g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]);
-          g.strokeStyle = "rgba(" + rgb + "," + ((1 - u) * (1 - u) * (near ? 0.95 : 0.5)).toFixed(3) + ")";
+          g.strokeStyle = "rgba(" + rgb + "," + ((1 - u) * (1 - u) * 0.95 * lit).toFixed(3) + ")";
           g.lineWidth = size / 95 * (1 - u * 0.8) * depth;
           g.lineCap = "round";
           g.stroke();
           if (k === 0) {
             const r = size / 52 * depth;
             const gr = g.createRadialGradient(p[0], p[1], 0, p[0], p[1], r * 3.2);
-            gr.addColorStop(0, "rgba(255,255,255," + (near ? 1 : 0.6) + ")");
-            gr.addColorStop(0.3, "rgba(" + rgb + "," + (near ? 0.9 : 0.45) + ")");
+            gr.addColorStop(0, "rgba(255,255,255," + lit.toFixed(3) + ")");
+            gr.addColorStop(0.3, "rgba(" + rgb + "," + (0.9 * lit).toFixed(3) + ")");
             gr.addColorStop(1, "rgba(" + rgb + ",0)");
             g.fillStyle = gr;
             g.beginPath(); g.arc(p[0], p[1], r * 3.2, 0, TAU); g.fill();
@@ -1967,6 +2118,7 @@
     galUniforms.uTime.value = t;
     galUniforms.uW.value = weightOf("galaxy") + 0.35 * weightOf("solar", "outro");
     updateStreaks(dt, space, micro);
+    updateComets(dt, t, space);
 
     // On wide screens the copy sits in a left column, so the cloud moves to
     // the right half; the hero and the outro stay centred.
