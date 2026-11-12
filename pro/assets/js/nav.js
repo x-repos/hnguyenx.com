@@ -312,13 +312,13 @@
         </h2>
         <p class="omni-body">
           <span lang="en">
-            “Ben” comes from the Cartoon Network show <em>Ben 10</em> —
-            <em>Ben Tennyson</em> and his <em>Omnitrix</em>, a watch that lets him
+            “Ben” comes from the Cartoon Network show Ben 10. Its hero,
+            Ben Tennyson, wears the Omnitrix, a watch that lets him
             transform into ten different aliens. I watched a lot of it. It stuck.
           </span>
           <span lang="vi">
-            “Ben” đến từ bộ phim hoạt hình <em>Ben 10</em> của Cartoon Network —
-            <em>Ben Tennyson</em> và chiếc <em>Omnitrix</em>, đồng hồ giúp cậu ấy
+            “Ben” đến từ bộ phim hoạt hình Ben 10 của Cartoon Network. Nhân vật chính,
+            Ben Tennyson, đeo chiếc Omnitrix, đồng hồ giúp cậu ấy
             biến thành mười người ngoài hành tinh khác nhau. Tôi xem nhiều lắm.
             Nó dính lại với tôi.
           </span>
@@ -468,7 +468,7 @@
           <span class="egg-quote__mark">“</span>What I cannot create,
           I do not understand.<span class="egg-quote__mark">”</span>
         </p>
-        <p class="egg-attrib">— Richard Feynman</p>
+        <p class="egg-attrib">Richard Feynman</p>
         <p class="egg-mini">π · you found it.</p>
       </div>
       <p class="egg-hint">click anywhere to dismiss</p>
