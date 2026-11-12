@@ -160,7 +160,8 @@
     const SP = 0.56;
     const COLS = isMobile ? 9 : 21, ROWS = isMobile ? 17 : 13;
     const FX = isMobile ? 2.3 : 5.3, FY = isMobile ? 4.4 : 3.2;
-    const fadeAt = (x, y) => 1 - smooth(0.42, 1, Math.hypot(x / FX, y / FY));
+    // starts fading close to the centre and falls off slowly all the way out
+    const fadeAt = (x, y) => 1 - smooth(0.1, 1, Math.hypot(x / FX, y / FY));
     const sites = [];
     for (let r = 0; r < ROWS; r++)
       for (let c = 0; c < COLS; c++) {
@@ -226,12 +227,12 @@
           const c = Math.cos(s.ang), sn = Math.sin(s.ang), dot = ux * vx + uy * vy + uz * vz;
           const cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx;
           // far qubits swell slightly, like something out of focus
-          const sc = (1 + 0.35 * s.g + 0.12 * Math.sin(t * 4 + s.ph)) * (1 + 0.9 * (1 - s.fade));
+          const sc = (1 + 0.35 * s.g + 0.12 * Math.sin(t * 4 + s.ph)) * (1 + 0.7 * (1 - s.fade));
           P[k * 3]     = s.x + sc * (vx * c + cx * sn + ux * dot * (1 - c));
           P[k * 3 + 1] = s.y + sc * (vy * c + cy * sn + uy * dot * (1 - c));
           P[k * 3 + 2] = s.z + sc * (vz * c + cz * sn + uz * dot * (1 - c));
           F[k * 4] = s.heat;
-          F[k * 4 + 3] = (0.85 + 0.15 * s.g) * s.fade * s.fade;
+          F[k * 4 + 3] = (0.85 + 0.15 * s.g) * s.fade;
         } else {
           const e = edges[idx], a = sites[e[0]], b = sites[e[1]];
           // current streams along the coupler, direction alternating
@@ -245,7 +246,7 @@
           F[k * 4] = 0.75 + 0.25 * g;
           F[k * 4 + 1] = g;
           const fd = Math.min(a.fade, b.fade);
-          F[k * 4 + 3] = (0.45 + 0.55 * g) * fd * fd;
+          F[k * 4 + 3] = (0.45 + 0.55 * g) * fd;
         }
       }
       return 3;
