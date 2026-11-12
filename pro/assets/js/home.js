@@ -766,16 +766,18 @@
     return shape;
   }
 
-  // 9) π — the site's mark, as a thin slab of particles.
+  // 9) π — the site's own mark (the same outline as the home page and the
+  //    favicon), as a thin slab of particles.
+  const PI_MARK = "M 0 79 L 0 158 90.585 158 L 181.171 158 180.702 323.750 C 180.189 505.585, 179.893 515.439, 173.921 550 C 167.099 589.473, 148.234 639.092, 125.705 676.819 C 119.026 688.003, 103.645 708.849, 85.085 731.871 C 78.713 739.775, 67.103 754.175, 59.284 763.871 C 51.465 773.567, 44.265 783.006, 43.284 784.846 L 41.500 788.192 46 792.162 C 67.779 811.375, 160.219 887, 161.926 887 C 164.406 887, 203.422 839.570, 235.136 798 C 280.230 738.893, 313.314 663.477, 329.454 583 C 337.392 543.422, 337.821 531.897, 338.991 327 C 339.513 235.425, 339.954 160.160, 339.971 159.744 C 339.987 159.329, 378.362 159.104, 425.250 159.244 L 510.500 159.500 510.587 390.500 C 510.673 618.837, 511.198 683.440, 513.103 700 C 523.207 787.861, 582.955 856.593, 668.225 878.447 C 696.545 885.706, 733.582 885.714, 766.500 878.469 C 820.969 866.481, 874.399 823.906, 900.740 771.500 C 914.994 743.143, 918.458 728.600, 928.003 657.046 C 933.820 613.443, 933.694 615.388, 930.750 614.663 C 922.311 612.583, 789.603 595, 782.351 595 L 777.142 595 776.074 600.250 C 775.486 603.138, 772.547 622.825, 769.543 644 C 762.332 694.830, 759.720 703.795, 749.503 712.788 C 743.401 718.160, 731.401 723.939, 723.565 725.282 C 705.044 728.454, 684.513 716.921, 675 698.001 L 671 690.044 671 424.522 L 671 159 708.835 159 C 729.645 159, 770.370 158.701, 799.335 158.336 L 852 157.673 852 78.836 L 852 0 426 0 L 0 0 0 79";
   function shapePi() {
     const c = document.createElement("canvas");
     c.width = c.height = 240;
     const g = c.getContext("2d", { willReadFrequently: true });
     g.fillStyle = "#fff";
-    g.textAlign = "center";
-    g.textBaseline = "middle";
-    g.font = 'italic 600 220px "Source Serif 4", Georgia, serif';
-    g.fillText("π", 120, 113);
+    // the mark's viewBox is -141.9 -165.1 1150 1150; fit it a little larger
+    const k = 240 / 1150 * 1.12;
+    g.translate(120, 120); g.scale(k, k); g.translate(-(-141.9 + 575), -(-165.1 + 575));
+    g.fill(new Path2D(PI_MARK), "evenodd");
     const img = g.getImageData(0, 0, 240, 240).data;
     const ink = [];
     for (let y = 0; y < 240; y++) for (let x = 0; x < 240; x++)
@@ -826,17 +828,6 @@
     if (k >= shapes.length) return;
     idle(() => { getShape(k); buildNext(k + 1); });
   })(2);
-  // π needs the display font; rebuild it once fonts are in.
-  const piIndex = sections.findIndex((s) => s.dataset.scene === "outro");
-  if (piIndex >= 0 && document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(() => {
-      idle(() => {
-        shapes[piIndex] = shapePi();
-        loadedPair = -1; // force a re-upload
-      });
-    });
-  }
-
   // ====================================================
   // PARTICLE CLOUD
   // ====================================================
@@ -1340,14 +1331,13 @@
   }
 
   // ----- Pointer -----
-  // Moving the cursor pushes and swirls the particles, leans the camera, and
-  // a fast swipe spins the whole cloud (it coasts, then settles back).
+  // Moving the cursor pushes and swirls the particles near it; it does not
+  // rotate the shapes.
   // Clicking / tapping empty space sends a shockwave through the cloud and
   // triggers the current scene's own event (a gate pulse, a π pulse, a
   // shock, a surge of convection, an earthquake, a flare, a supernova…).
   const pointer = { x: 9, y: 9, active: 0, px: 0, py: 0, speed: 0 };
   const lean = { x: 0, y: 0 };
-  const spin = { yaw: 0, pitch: 0, vyaw: 0, vpitch: 0 };
   let chaosKick = 0;
   let shockSlot = 0;
   const clock = new THREE.Clock();
@@ -1357,7 +1347,6 @@
       const y = -((e.clientY / window.innerHeight) * 2 - 1);
       if (pointer.active) {
         const dx = x - pointer.x, dy = y - pointer.y;
-        spin.vyaw += dx * 2.2; spin.vpitch += -dy * 1.4;
         pointer.speed = Math.min(3, pointer.speed + Math.hypot(dx, dy) * 6);
       }
       pointer.x = x; pointer.y = y;
@@ -1446,15 +1435,6 @@
     uniforms.uMouseStr.value += ((pointer.active ? 1 : 0) - uniforms.uMouseStr.value) * Math.min(1, dt * 3);
     for (const v of uniforms.uShock.value) v.z += dt;
 
-    // Swipe-to-spin with inertia; it springs back so every shape returns
-    // to its composed view.
-    spin.vyaw *= Math.exp(-dt * 2.4); spin.vpitch *= Math.exp(-dt * 2.4);
-    spin.yaw += spin.vyaw * dt * 4; spin.pitch += spin.vpitch * dt * 4;
-    spin.yaw *= Math.exp(-dt * 0.9); spin.pitch *= Math.exp(-dt * 1.6);
-    spin.pitch = Math.max(-1.1, Math.min(1.1, spin.pitch));
-    uniforms.uYaw.value = spin.yaw;
-    uniforms.uPitch.value = spin.pitch;
-
     // Background layers follow the scene.
     for (let k = 0; k < SCENE_KEYS.length; k++) sceneW[SCENE_KEYS[k]] = Math.max(0, 1 - Math.abs(story - k));
     const space = weightOf("planet", "solar", "galaxy", "outro"), micro = weightOf("qubits", "quantum", "dft", "md");
@@ -1481,8 +1461,8 @@
     // Scrolling fast punches the camera back; it also never sits quite still.
     const zBase = Math.max(6.5, 3.4 / (0.828 * camera.aspect));
     camera.position.z = zBase * (1 + 0.1 * Math.min(1.5, uniforms.uChaos.value)) + Math.sin(t * 0.31) * 0.12;
-    camera.position.x = lean.x * 0.7 + Math.sin(t * 0.23) * 0.14;
-    camera.position.y = lean.y * 0.45 + Math.cos(t * 0.19) * 0.1;
+    camera.position.x = lean.x * 0.25 + Math.sin(t * 0.23) * 0.14;
+    camera.position.y = lean.y * 0.15 + Math.cos(t * 0.19) * 0.1;
     camera.lookAt(0, 0, 0);
     camera.rotation.z += Math.sin(t * 0.13) * 0.012;
 

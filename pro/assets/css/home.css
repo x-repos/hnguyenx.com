@@ -99,26 +99,26 @@ html.home-immersive a { color: var(--home-accent); }
 
 /* π logo mark — used in top-left of every page */
 .brand-pi {
-  font-family: var(--home-display, "Source Serif 4", Georgia, serif);
-  font-style: italic;
-  font-weight: 600;
+  /* The site's own π mark (same shape as the home page and favicon),
+     filled with the Pro Mode gradient. The "π" character stays in the
+     markup for screen readers but is not drawn. */
+  display: inline-block;
+  width: 0.82em;
+  height: 0.82em;
   font-size: 42px;
   line-height: 1;
-  background: linear-gradient(135deg, #8fd6ff 0%, #c9a8ff 60%, #ffc28a 100%);
-  -webkit-background-clip: text;
-          background-clip: text;
-  -webkit-text-fill-color: transparent;
+  overflow: hidden;
+  text-indent: -9em;
   color: transparent;
-  /* Source Serif italic π sits visually ~7% above its box center;
-     nudge down so it middle-aligns with the upright Inter name. */
-  transform: translateY(0.03em);
+  background: linear-gradient(135deg, #8fd6ff 0%, #c9a8ff 60%, #ffc28a 100%);
+  -webkit-mask: url("../../../pi/downloads/pi-mark.svg") center / 112% no-repeat;
+          mask: url("../../../pi/downloads/pi-mark.svg") center / 112% no-repeat;
   transition: transform 0.25s ease, filter 0.25s ease;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
 }
 .home-topnav__brand:hover .brand-pi,
 .site-nav__brand:hover   .brand-pi {
-  transform: translateY(0.03em) scale(1.08) rotate(-3deg);
-  filter: drop-shadow(0 2px 6px rgba(143, 214, 255, 0.5));
+  transform: scale(1.08) rotate(-3deg);
+  filter: brightness(1.2);
 }
 /* Primary inline links: Scholar, CV, Blog — pushed to the right edge */
 .home-topnav__primary {
