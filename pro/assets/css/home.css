@@ -813,6 +813,15 @@ html.is-scrubbing, html.is-scrubbing * { cursor: grabbing !important; user-selec
   color: var(--home-muted);
 }
 .home-outro__contact a { color: var(--home-fg); text-decoration: none; border-bottom: 1px solid var(--home-accent); padding-bottom: 2px; }
+/* the copyright line at the very end of the page, as on the other pages */
+.home-outro__rights {
+  margin: 26px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--home-muted);
+  text-align: center;
+  text-align-last: center;
+}
 
 /* ---------- Flip-card portrait above the hero title ---------- */
 .hero-portrait-flip {
