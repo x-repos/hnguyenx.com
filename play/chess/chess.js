@@ -479,8 +479,35 @@
   function paintOnline(failed) {
     if (screen !== "online") return;
     $("online-text").textContent = failed ? "Could not reach the game server. Check your connection and try again."
-      : netOpen() ? "Waiting for another player. Ask your friend to open this page and press the same button." : "Connecting";
+      : netOpen() ? "Waiting for another player. Copy the link and send it to your friend. The game starts when they open it." : "Connecting";
     $("btn-online-retry").hidden = !failed;
+    $("btn-online-copy").hidden = !!failed;
+  }
+  // the link to send: opening it goes straight to looking for a game, so the two of you are paired
+  function inviteLink() {
+    const q = new URLSearchParams(location.search), keep = new URLSearchParams();
+    keep.set("play", "online");
+    if (q.get("relay")) keep.set("relay", q.get("relay"));           // only present in local tests
+    return location.origin + location.pathname + "?" + keep.toString();
+  }
+  function copyInvite() {
+    const link = inviteLink(), btn = $("btn-online-copy");
+    const done = (ok) => {
+      if (!ok) { $("online-text").textContent = "Copy this link and send it to your friend: " + link; return; }
+      btn.textContent = "Link copied";
+      setTimeout(() => { btn.textContent = "Copy link"; }, 2200);
+    };
+    const oldWay = () => {       // for pages that are not allowed to use the clipboard directly
+      const ta = document.createElement("textarea");
+      ta.value = link; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;left:-999px;top:0;opacity:0";
+      document.body.appendChild(ta); ta.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) {}
+      ta.remove();
+      done(ok);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(() => done(true), oldWay);
+    else oldWay();
   }
   function startOnline(room, color) {
     reqId++; thinking = false; closePromo(); clearTimeout(overTimer);
@@ -636,6 +663,7 @@
   $("btn-over-see").addEventListener("click", () => { $("over").hidden = true; });
   $("btn-online").addEventListener("click", () => { audio(); SFX.pick(); findOnline(); });
   $("btn-online-retry").addEventListener("click", () => { audio(); findOnline(); });
+  $("btn-online-copy").addEventListener("click", () => { audio(); SFX.pick(); copyInvite(); });
   $("btn-online-cancel").addEventListener("click", () => { audio(); abandonOnline(); show("menu"); });
 
   // ====================================================
@@ -714,6 +742,14 @@
   } else { replay([]); save.game = null; }
   buildSquares(); syncPieces(false); if (game) { paintSquares(); paintSides(); paintMoves(); paintStatus(); }
   show("menu");
+  // opened from a friend's link: go straight to looking for a game. The mark is taken out of
+  // the address so that reloading the page later does not start another search.
+  if (new URLSearchParams(location.search).get("play") === "online") {
+    const q = new URLSearchParams(location.search);
+    q.delete("play");
+    try { history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q.toString() : "") + location.hash); } catch (e) {}
+    findOnline();
+  }
 
   // test handle
   window.__chess = {
@@ -724,6 +760,7 @@
     start: startGame, undo, flip, show, resume, findOnline, resign,
     get online() { return { want: net.want, open: netOpen(), peer: net.peer, relay: RELAY }; },
     netDrop: () => { if (net.ws) net.ws.close(); },
+    inviteLink, copyInvite,
     move: (u) => { const m = eng.fromUci(u); if (!m || !game || state.over) return false; commit(m, false); return true; },
     squareAt,
   };
