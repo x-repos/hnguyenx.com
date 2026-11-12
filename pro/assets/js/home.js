@@ -1807,9 +1807,9 @@
     host.appendChild(front);
     const gb = back.getContext("2d"), gf = front.getContext("2d");
     const ORBITS = [
-      { tilt: -0.35, speed: 1.9,  ph: 0.0, col: [143, 214, 255] },
-      { tilt: 0.75,  speed: -1.45, ph: 2.1, col: [255, 170, 120] },
-      { tilt: 1.95,  speed: 1.15, ph: 4.2, col: [201, 168, 255] },
+      { tilt: -0.35, speed: 1.9,  ph: 0.0, col: [255, 255, 255] },
+      { tilt: 0.75,  speed: -1.45, ph: 2.1, col: [255, 255, 255] },
+      { tilt: 1.95,  speed: 1.15, ph: 4.2, col: [255, 255, 255] },
     ];
     let size = 0;
     function fit() {
