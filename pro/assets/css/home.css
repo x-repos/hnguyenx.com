@@ -695,6 +695,7 @@ html.is-scrubbing, html.is-scrubbing * { cursor: grabbing !important; user-selec
   font-size: 18px;
   line-height: 1;
 }
+.home-scale__inf { font-size: 1.55em; line-height: 0.6; font-weight: 400; }
 .home-scale__label sup {
   font-size: 0.62em;
   font-weight: 500;
