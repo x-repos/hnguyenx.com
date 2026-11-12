@@ -143,17 +143,15 @@
   // Ten notes of a pentatonic scale, one per digit: any order of them sounds
   // pleasant, which is what you want from a tune written by π.
   const SCALE = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99, 880.0];
-  const BASS = [65.41, 98.0, 87.31, 73.42];             // C, G, F, D under the tune
   const sfx = {
     flap() { osc("sine", 420, 640, 0.09, 0.1); osc("sine", 150, 75, 0.1, 0.22); },
     gate(digit, n) {
       const f = SCALE[digit];
       osc("triangle", f, f, 0.5, 0.2); osc("sine", f * 2, f * 2, 0.3, 0.07);
-      if (n % 2 === 0) { const b = BASS[(n >> 2) % BASS.length]; osc("sine", b, b, 0.7, 0.4, 0, 0.02); osc("triangle", b * 2, b * 2, 0.4, 0.1); }
     },
     circle() { osc("sine", 1568, 2093, 0.12, 0.09); },
     crash() { thud(0.5, 0.7, 1800, 90); osc("sine", 150, 34, 0.7, 0.8); osc("triangle", 392, 98, 0.6, 0.2, 0.05); },
-    best() { [523.25, 659.25, 783.99, 1046.5].forEach((f, k) => osc("triangle", f, f, 0.35, 0.18, 0.25 + k * 0.12)); osc("sine", 65.41, 65.41, 1.0, 0.4, 0.25); },
+    best() { [523.25, 659.25, 783.99, 1046.5].forEach((f, k) => osc("triangle", f, f, 0.35, 0.18, 0.25 + k * 0.12)); },
   };
 
   // ====================================================

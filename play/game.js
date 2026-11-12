@@ -50,18 +50,20 @@
   const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} };
 
   // ====================================================
-  // AUDIO: a small synthesiser, created on the first tap or key.
-  // Every sound is built from two voices, an oscillator with a pitch sweep
-  // and filtered noise, sent through one of three paths:
-  //   crunch  soft clipping, which adds the mid-range harmonics that make an
-  //           explosion audible on a phone speaker (it cannot play deep bass)
-  //   echo    a filtered feedback delay, for the tail of big explosions
-  //   soft    a low-pass filter that takes the edge off beeps and lasers
-  // Bass: every impact also has a clean sine "sub" layer that drops to
-  // 30 to 45 Hz, and the output has a low shelf. A compressor on the output
-  // keeps the loud layered booms from clipping.
+  // AUDIO: synthesised, aiming for real weapon and explosion sounds rather
+  // than arcade bleeps. Guns and blasts are made the way they sound in life:
+  //   a crack      a few milliseconds of bright noise (the muzzle or the shock)
+  //   a body       filtered noise that falls in tone as it fades (the report)
+  //   a thump      a short sine dropping to 30 to 50 Hz (the pressure wave)
+  //   a rumble     brown noise for the roll of a large explosion
+  //   debris       scattered clicks after a big blast
+  // and they are placed in a space: a generated impulse response gives every
+  // shot a tail, which is most of what makes a bang sound real.
+  // Paths: `crunch` (soft clipping, so blasts saturate like an overloaded
+  // microphone and stay audible on a phone speaker), `room` (the reverb),
+  // `soft` (a low-pass for the few tonal sounds: alarms, pickups, fanfares).
   // ====================================================
-  let ac = null, master = null, crunch = null, echo = null, soft = null, noiseBuf = null;
+  let ac = null, master = null, crunch = null, guns = null, room = null, soft = null, white = null, brown = null;
   const VOL = 0.8;
   function audioInit() {
     if (ac) { if (ac.state !== "running") ac.resume(); return; }
@@ -69,43 +71,72 @@
       // iOS: use the media channel, so the ring/silent switch does not mute the game
       if (navigator.audioSession) { try { navigator.audioSession.type = "playback"; } catch (e) {} }
       ac = new (window.AudioContext || window.webkitAudioContext)();
+      const sr = ac.sampleRate;
       const comp = ac.createDynamicsCompressor();
       comp.threshold.value = -10; comp.knee.value = 8; comp.ratio.value = 4;
       comp.attack.value = 0.002; comp.release.value = 0.2;
+      const shelf = ac.createBiquadFilter();              // weight under 150 Hz
+      shelf.type = "lowshelf"; shelf.frequency.value = 150; shelf.gain.value = 5;
       master = ac.createGain();
       master.gain.value = save.mute ? 0 : VOL;
-      // a low shelf lifts everything under about 150 Hz: the weight of the mix
-      const bass = ac.createBiquadFilter();
-      bass.type = "lowshelf"; bass.frequency.value = 150; bass.gain.value = 7;
-      master.connect(bass); bass.connect(comp); comp.connect(ac.destination);
+      const limiter = ac.createWaveShaper();              // nothing leaves above full scale
+      const lim = new Float32Array(1024);
+      for (let k = 0; k < 1024; k++) lim[k] = Math.tanh((k / 511.5 - 1) * 1.4) / Math.tanh(1.4) * 0.97;
+      limiter.curve = lim;
+      master.connect(shelf); shelf.connect(comp); comp.connect(limiter); limiter.connect(ac.destination);
 
-      crunch = ac.createWaveShaper();
       const curve = new Float32Array(1024);
-      for (let k = 0; k < 1024; k++) curve[k] = Math.tanh((k / 511.5 - 1) * 3.2);
+      for (let k = 0; k < 1024; k++) curve[k] = Math.tanh((k / 511.5 - 1) * 2.2);
+      crunch = ac.createWaveShaper();
       crunch.curve = curve; crunch.oversample = "2x";
       crunch.connect(master);
+      // guns saturate the same way but sit lower in the mix than explosions,
+      // because they fire many times a second
+      guns = ac.createWaveShaper();
+      guns.curve = curve; guns.oversample = "2x";
+      const gunLevel = ac.createGain(); gunLevel.gain.value = 0.5;
+      guns.connect(gunLevel); gunLevel.connect(master);
 
-      echo = ac.createGain(); echo.gain.value = 0.55;
-      const delay = ac.createDelay(1), fb = ac.createGain(), lp = ac.createBiquadFilter();
-      delay.delayTime.value = 0.21; fb.gain.value = 0.42;
-      lp.type = "lowpass"; lp.frequency.value = 1500;
-      echo.connect(delay); delay.connect(lp); lp.connect(fb); fb.connect(delay); lp.connect(master);
+      // the space: 2.2 s of noise that decays and dulls, used as a reverb
+      const len = Math.floor(sr * 2.2), ir = ac.createBuffer(2, len, sr);
+      for (let ch = 0; ch < 2; ch++) {
+        const d = ir.getChannelData(ch);
+        let lp = 0;
+        for (let k = 0; k < len; k++) {
+          const t = k / len;
+          lp += ((Math.random() * 2 - 1) - lp) * (0.55 - 0.45 * t);
+          d[k] = lp * Math.pow(1 - t, 2.6);
+        }
+      }
+      const conv = ac.createConvolver(); conv.buffer = ir;
+      const wet = ac.createGain(); wet.gain.value = 0.55;
+      room = ac.createGain();
+      room.connect(conv); conv.connect(wet); wet.connect(master);
 
       soft = ac.createBiquadFilter(); soft.type = "lowpass"; soft.frequency.value = 2400;
       soft.connect(master);
 
-      noiseBuf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
-      const nd = noiseBuf.getChannelData(0);
-      for (let k = 0; k < nd.length; k++) nd[k] = Math.random() * 2 - 1;
+      white = ac.createBuffer(1, sr * 2, sr);
+      brown = ac.createBuffer(1, sr * 2, sr);
+      const w = white.getChannelData(0), b = brown.getChannelData(0);
+      let acc = 0;
+      for (let k = 0; k < w.length; k++) {
+        w[k] = Math.random() * 2 - 1;
+        acc = (acc + 0.02 * w[k]) / 1.02; b[k] = acc * 3.5;
+      }
     } catch (e) { ac = null; }
   }
   const audible = () => ac && !save.mute;
   // volume envelope: a fast attack then an exponential fade, or (swell) a
-  // build-up that cuts off, for charge-ups and sirens
+  // build-up that cuts off, for charge-ups and launches
   function envelope(gain, t, dur, vol, attack, swell) {
     gain.setValueAtTime(0.0001, t);
     if (swell) { gain.exponentialRampToValueAtTime(vol, t + dur * 0.92); gain.exponentialRampToValueAtTime(0.0001, t + dur); }
     else { gain.linearRampToValueAtTime(vol, t + attack); gain.exponentialRampToValueAtTime(0.0001, t + dur); }
+  }
+  function route(v, o) {
+    v.connect(o.dest || master);
+    if (o.room) { const send = ac.createGain(); send.gain.value = o.room; v.connect(send); send.connect(room); }
   }
   function osc(type, f0, f1, dur, vol, o) {
     if (!audible()) return;
@@ -115,26 +146,25 @@
     src.frequency.setValueAtTime(f0, t);
     if (f1 && f1 !== f0) src.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
     envelope(v.gain, t, dur, vol, o.attack || 0.004, o.swell);
-    src.connect(v); v.connect(o.dest || master);
-    if (o.echo) v.connect(echo);
+    src.connect(v); route(v, o);
     src.start(t); src.stop(t + dur + 0.03);
   }
+  // noise through a filter whose cutoff can sweep; `brown: true` for rumble
   function nz(dur, vol, o) {
     if (!audible()) return;
     o = o || {};
     const t = ac.currentTime + (o.at || 0), src = ac.createBufferSource(), f = ac.createBiquadFilter(), v = ac.createGain();
-    src.buffer = noiseBuf; src.loop = true;
+    src.buffer = o.brown ? brown : white; src.loop = true;
     f.type = o.type || "lowpass"; f.Q.value = o.q || 0.7;
     f.frequency.setValueAtTime(o.f0 || 2000, t);
     if (o.f1) f.frequency.exponentialRampToValueAtTime(Math.max(30, o.f1), t + dur);
-    envelope(v.gain, t, dur, vol, o.attack || 0.003, o.swell);
-    src.connect(f); f.connect(v); v.connect(o.dest || master);
-    if (o.echo) v.connect(echo);
+    envelope(v.gain, t, dur, vol, o.attack || 0.002, o.swell);
+    src.connect(f); f.connect(v); route(v, o);
     src.start(t, Math.random() * 1.5); src.stop(t + dur + 0.03);
   }
-  // a clean low thump: a sine that falls from f0 to f1
-  function sub(f0, f1, dur, vol, at) { osc("sine", f0, f1, dur, vol, { at: at || 0, attack: 0.008 }); }
-  // a clean musical note, and a run of them
+  // the pressure thump: a clean sine falling from f0 to f1
+  function sub(f0, f1, dur, vol, at) { osc("sine", f0, f1, dur, vol, { at: at || 0, attack: 0.006 }); }
+  // a clean musical note, and a run of them (pickups and fanfares only)
   function note(freq, at, dur, vol) {
     osc("triangle", freq, freq, dur, vol, { at, dest: soft });
     osc("sine", freq * 2, freq * 2, dur * 0.7, vol * 0.35, { at });
@@ -144,84 +174,110 @@
   const gate = {};
   function limit(name, ms) { const n = performance.now(); if (n - (gate[name] || 0) < ms) return false; gate[name] = n; return true; }
   const jit = (a) => 1 + (Math.random() * 2 - 1) * a;
-  // An explosion of a given size (0 a small pod … 1 a capital ship): a sharp
-  // crack, a band of noise falling in pitch, a pitched body, and for big ones
-  // a second low sweep and a rumbling tail with echo.
+
+  // A gunshot. kind 0 autocannon, 1 shotgun, 2 rotary gun.
+  // Most of the sound is noise between 300 Hz and 5 kHz (the report), which
+  // is what a phone speaker can play; the sine thump is the weight under it.
+  function gun(kind) {
+    const p = jit(0.07);
+    if (kind === 1) {            // shotgun: a wide, slower blast
+      nz(0.05, 0.8, { type: "highpass", f0: 1500, dest: guns });
+      nz(0.26, 0.9, { f0: 3200 * p, f1: 380, dest: guns, room: 0.25 });
+      nz(0.2, 0.7, { type: "bandpass", f0: 800 * p, f1: 240, q: 0.6, dest: guns });
+      sub(120 * p, 42, 0.18, 0.12);
+    } else if (kind === 2) {     // rotary gun: short, dry, fast
+      nz(0.022, 0.7, { type: "highpass", f0: 2400 * p, dest: guns });
+      nz(0.07, 0.75, { type: "bandpass", f0: 1700 * p, f1: 650, q: 0.9, dest: guns, room: 0.1 });
+      sub(190 * p, 80, 0.06, 0.1);
+    } else {                     // autocannon: a hard crack and a short bark
+      nz(0.035, 0.8, { type: "highpass", f0: 1800 * p, dest: guns });
+      nz(0.15, 0.9, { type: "bandpass", f0: 1400 * p, f1: 340, q: 0.7, dest: guns, room: 0.2 });
+      nz(0.1, 0.6, { f0: 700, f1: 200, dest: guns });
+      sub(150 * p, 50, 0.11, 0.16);
+    }
+  }
+  // Bits of wreckage: scattered clicks over `dur` seconds.
+  function debris(at, dur, n) {
+    for (let k = 0; k < n; k++) nz(0.02 + Math.random() * 0.03, 0.2 + Math.random() * 0.3, { at: at + Math.random() * dur, type: "highpass", f0: 1800 + Math.random() * 3000, dest: crunch, room: 0.3 });
+  }
+  // An explosion of a given size (0 a small pod … 1 a capital ship).
   function boom(size, at) {
     at = at || 0;
-    const p = jit(0.14) * (1.25 - size * 0.5), d = 0.28 + size * 0.5;
-    nz(0.07, 0.3 + size * 0.2, { at, type: "highpass", f0: 3500 });
-    nz(d, 0.55 + size * 0.35, { at, type: "bandpass", f0: 1700 * p, f1: 160, q: 0.6, dest: crunch, echo: size > 0.4 });
-    osc("triangle", 300 * p, 55, d * 0.8, 0.5 + size * 0.3, { at, dest: crunch });
-    sub(130 * p, 38, d * 1.2 + 0.1, 0.55 + size * 0.45, at);
-    if (size > 0.4) {
-      sub(75, 30, d * 2.2, 0.7, at + 0.03);
-      osc("sawtooth", 520 * p, 42, d, 0.4, { at, dest: crunch, echo: true });
-      nz(d * 1.6, 0.35, { at: at + 0.05, f0: 1200, f1: 90 });
+    const p = jit(0.12), d = 0.35 + size * 1.1;
+    nz(0.04 + size * 0.03, 0.8, { at, type: "highpass", f0: 1000, dest: crunch });                                    // the crack
+    nz(d, 0.55 + size * 0.4, { at, f0: (3000 + size * 2500) * p, f1: 180, dest: crunch, room: 0.3 + size * 0.5 });    // the fireball
+    nz(d * 0.8, 0.5 + size * 0.4, { at, type: "bandpass", f0: 900 * p, f1: 220, q: 0.5, dest: crunch, room: 0.3 });   // its body, in the mid range
+    sub((115 - size * 35) * p, 30, 0.25 + size * 0.7, 0.22 + size * 0.3, at);                                         // the thump
+    if (size > 0.35) {
+      nz(d * 1.6, 0.3 + size * 0.4, { at: at + 0.02, brown: true, f0: 520, f1: 70, room: 0.5 });                       // the rolling rumble
+      debris(at + 0.12, 0.5 + size * 0.7, Math.round(3 + size * 7));
     }
+  }
+  // metal being struck: a click and two short ringing partials
+  function clang(f, vol, dur, at) {
+    const p = jit(0.08);
+    osc("sine", f * p, f * p * 0.98, dur, vol, { at, room: 0.5 });
+    osc("sine", f * 1.593 * p, f * 1.56 * p, dur * 0.7, vol * 0.6, { at, room: 0.5 });
+    osc("sine", f * 2.41 * p, f * 2.38 * p, dur * 0.5, vol * 0.35, { at });
   }
   const C5 = 523.25, E5 = 659.25, G5 = 783.99, B5 = 987.77, C6 = 1046.5, E6 = 1318.5, G6 = 1568;
   const sfx = {
-    shoot(w) {
-      if (!limit("shoot", 62)) return;
-      const p = jit(0.035);
-      if (w === 1) { osc("triangle", 620 * p, 200, 0.09, 0.075, { dest: soft }); sub(150, 60, 0.09, 0.14); }          // spread: a soft thump
-      else if (w === 2) { osc("sawtooth", 1900 * p, 800, 0.055, 0.035, { dest: soft }); sub(220, 110, 0.05, 0.08); }  // laser: a zip with a low hum
-      else { osc("triangle", 1100 * p, 330, 0.075, 0.075, { dest: soft }); sub(170, 65, 0.08, 0.13); }               // blaster: a pew with a kick
-    },
+    shoot(w) { if (limit("shoot", 62)) gun(w); },
     hit(big) {
-      if (!limit("hit", 50)) return;
-      if (big) { osc("triangle", 420 * jit(0.08), 180, 0.06, 0.12, { dest: crunch }); sub(140, 70, 0.07, 0.2); }
-      else { nz(0.035, 0.09, { type: "bandpass", f0: 1900, q: 1.2 }); sub(200, 90, 0.05, 0.1); }
+      if (!limit("hit", 55)) return;
+      nz(0.03, big ? 0.3 : 0.22, { type: "highpass", f0: 3000, dest: guns });
+      if (big) { clang(610, 0.09, 0.14, 0); sub(130, 70, 0.07, 0.1); }       // armour plate
+      else clang(1850, 0.05, 0.07, 0);                                       // a small hull
     },
-    boom(big) { if (limit("boom", 45)) boom(big ? 0.75 : 0.15); },
-    // a boss breaking up: rolling blasts under a rising whine, then one huge layered explosion
-    bossRumble() { boom(0.3 + Math.random() * 0.35); },
+    boom(big) { if (limit("boom", 45)) boom(big ? 0.7 : 0.18); },
+    // a boss breaking up: rolling blasts under a rising reactor whine, then
+    // one long explosion in several stages
+    bossRumble() { boom(0.35 + Math.random() * 0.35); },
     bossOverload(dur) {
-      osc("sawtooth", 90, 760, dur, 0.2, { swell: true, dest: soft });
-      osc("square", 45, 380, dur, 0.1, { swell: true, dest: soft });
-      osc("sine", 38, 75, dur, 0.5, { swell: true });
+      osc("sawtooth", 90, 760, dur, 0.16, { swell: true, dest: soft });
+      nz(dur, 0.3, { brown: true, f0: 200, f1: 900, swell: true, room: 0.5 });
     },
     bossBoom() {
-      nz(0.1, 0.9, { type: "highpass", f0: 2800 });
-      osc("square", 1100, 70, 0.4, 0.5, { dest: crunch });
-      osc("sawtooth", 640, 36, 1.5, 0.9, { dest: crunch, echo: true });
-      sub(190, 40, 1.4, 0.9);
-      sub(95, 28, 2.6, 1.0, 0.02);                      // the long floor-shaking drop
-      osc("triangle", 130, 34, 1.8, 0.6, { dest: crunch, echo: true });
-      nz(1.7, 1.0, { f0: 4200, f1: 90, dest: crunch, echo: true });
-      nz(2.8, 0.5, { at: 0.15, f0: 1700, f1: 70, echo: true });
-      boom(0.9, 0.14); boom(0.7, 0.32); boom(1, 0.55); boom(0.6, 0.85);
+      nz(0.07, 1.0, { type: "highpass", f0: 900, dest: crunch });
+      nz(2.4, 1.0, { f0: 5200, f1: 140, dest: crunch, room: 0.9 });
+      nz(1.9, 0.9, { type: "bandpass", f0: 800, f1: 200, q: 0.5, dest: crunch, room: 0.6 });
+      nz(3.8, 0.6, { at: 0.03, brown: true, f0: 600, f1: 60, room: 0.7 });
+      sub(120, 28, 1.6, 0.5); sub(70, 24, 3.0, 0.4, 0.05);
+      boom(0.9, 0.16); boom(0.7, 0.36); boom(1, 0.6); boom(0.6, 0.95); boom(0.5, 1.4);
+      debris(0.2, 2.4, 16);
     },
     pickup(kind) {
       if (kind === "gem") { if (limit("gem", 60)) note(1760 * jit(0.03), 0, 0.09, 0.06); return; }
-      if (kind === "power") { sub(165, 82, 0.25, 0.25); return seq([E5, G5, B5, E6], 0.055, 0.14, 0.16); }
-      if (kind === "weapon") { osc("sawtooth", 300, 1200, 0.18, 0.09, { dest: soft }); return seq([C5, G5], 0.09, 0.2, 0.16, 0.08); }
-      if (kind === "bomb") return seq([392, C5, 392], 0.07, 0.14, 0.18);
-      sub(131, 65, 0.5, 0.3);
-      seq([C5, E5, G5, C6, E6, G6], 0.07, 0.22, 0.18);                                     // an extra ship
+      if (kind === "power") return seq([E5, G5, B5, E6], 0.055, 0.14, 0.16);
+      if (kind === "weapon") {            // a weapon being racked
+        nz(0.05, 0.12, { type: "bandpass", f0: 1800, q: 2, dest: crunch }); clang(900, 0.07, 0.1, 0.0);
+        nz(0.06, 0.14, { at: 0.11, type: "bandpass", f0: 1200, q: 2, dest: crunch }); clang(700, 0.08, 0.12, 0.11);
+        return;
+      }
+      if (kind === "bomb") { clang(520, 0.09, 0.2, 0); return seq([392, C5], 0.08, 0.14, 0.14, 0.05); }
+      seq([C5, E5, G5, C6, E6, G6], 0.07, 0.22, 0.18);                       // an extra ship
     },
-    hurt() {
-      nz(0.55, 0.9, { f0: 2600, f1: 160, dest: crunch, echo: true });
-      osc("sawtooth", 520, 60, 0.5, 0.6, { dest: crunch });
-      sub(150, 36, 0.7, 0.9);
-      osc("square", 880, 880, 0.09, 0.13, { at: 0.3, dest: soft });
-      osc("square", 880, 880, 0.09, 0.13, { at: 0.46, dest: soft });
+    hurt() {            // the hull takes a hit: a blast, torn metal, then the alarm
+      boom(0.6);
+      clang(523, 0.12, 0.5, 0.02); clang(811, 0.08, 0.4, 0.05);
+      osc("square", 880, 880, 0.09, 0.13, { at: 0.34, dest: soft });
+      osc("square", 880, 880, 0.09, 0.13, { at: 0.5, dest: soft });
     },
-    bomb() {
-      nz(0.14, 0.4, { type: "bandpass", f0: 400, f1: 3600, q: 2.5, swell: true });
-      nz(0.1, 0.9, { at: 0.1, type: "highpass", f0: 2500 });
-      osc("sawtooth", 600, 38, 1.2, 0.9, { at: 0.1, dest: crunch, echo: true });
-      sub(170, 40, 1.1, 0.9, 0.1);
-      sub(90, 28, 2.2, 0.9, 0.12);
-      nz(1.5, 1.0, { at: 0.1, f0: 4000, f1: 90, dest: crunch, echo: true });
-      nz(2.2, 0.35, { at: 0.3, f0: 1500, f1: 70, echo: true });
+    bomb() {            // the missile leaves with a whoosh and the sky goes off
+      nz(0.16, 0.3, { type: "bandpass", f0: 500, f1: 4200, q: 2, swell: true, room: 0.4 });
+      const k = 0.12;
+      nz(0.07, 1.0, { at: k, type: "highpass", f0: 900, dest: crunch });
+      nz(2.0, 1.0, { at: k, f0: 5000, f1: 140, dest: crunch, room: 0.9 });
+      nz(1.6, 0.9, { at: k, type: "bandpass", f0: 800, f1: 200, q: 0.5, dest: crunch, room: 0.6 });
+      nz(3.0, 0.5, { at: k + 0.03, brown: true, f0: 600, f1: 60, room: 0.7 });
+      sub(115, 28, 1.4, 0.5, k); sub(70, 24, 2.4, 0.4, k + 0.05);
+      boom(0.8, k + 0.2); boom(0.6, k + 0.45);
+      debris(k + 0.2, 1.6, 10);
     },
-    warn() {     // a two-tone klaxon, three times, over a rising hiss
+    warn() {            // a two-tone klaxon, three times, over a rising hiss
       for (let k = 0; k < 3; k++) {
-        osc("sawtooth", 620, 620, 0.26, 0.2, { at: k * 0.62, dest: soft });
-        osc("sawtooth", 465, 465, 0.3, 0.2, { at: k * 0.62 + 0.28, dest: soft });
-        osc("square", 77.5, 77.5, 0.56, 0.22, { at: k * 0.62, dest: soft });      // a growl two octaves under
+        osc("sawtooth", 620, 620, 0.26, 0.2, { at: k * 0.62, dest: soft, room: 0.3 });
+        osc("sawtooth", 465, 465, 0.3, 0.2, { at: k * 0.62 + 0.28, dest: soft, room: 0.3 });
       }
       nz(2.0, 0.1, { type: "bandpass", f0: 300, f1: 1200, q: 1.5, swell: true });
     },
@@ -230,10 +286,9 @@
       at = at || 0;
       seq([C5, E5, G5, C6, E6], 0.11, 0.24, 0.2, at);
       for (const f of [C6, E6, G6]) note(f, at + 0.62, 0.9, 0.14);
-      sub(130.8, 130.8, 0.5, 0.3, at); sub(65.4, 65.4, 1.0, 0.4, at + 0.62);    // bass under the fanfare
     },
-    over() { seq([392, 329.63, 261.63, 196], 0.22, 0.5, 0.2); nz(1.4, 0.3, { f0: 900, f1: 80, echo: true }); sub(98, 49, 1.6, 0.5, 0.66); },
-    ui() { osc("sine", 520, 700, 0.06, 0.1); sub(130, 90, 0.07, 0.18); },
+    over() { seq([392, 329.63, 261.63, 196], 0.22, 0.5, 0.2); nz(1.6, 0.4, { brown: true, f0: 500, f1: 60, room: 0.6 }); },
+    ui() { nz(0.02, 0.08, { type: "highpass", f0: 2500 }); osc("sine", 520, 700, 0.05, 0.08); },
   };
 
   // ====================================================
@@ -1126,5 +1181,6 @@
   // a small handle for automated tests
   window.__starship = { get state() { return state; }, get stage() { return stage; }, get score() { return score; },
     get counts() { return { enemies: enemies.length, shots: shots.length, eshots: eshots.length, boss: !!boss, lives: player ? player.lives : null }; },
-    skip() { enemies.length = 0; spawnQueue.length = 0; if (boss) { boss.hp = 1; } }, god() { if (player) player.inv = 1e9; } };
+    skip() { enemies.length = 0; spawnQueue.length = 0; if (boss) { boss.hp = 1; } }, god() { if (player) player.inv = 1e9; },
+    audio: { init: audioInit, sfx, get ctx() { return ac; } } };
 })();
