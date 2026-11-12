@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="no-js">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -10,24 +10,47 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="hub.css?v=7">
+  <link rel="stylesheet" href="topnav.css?v=1">
+  <link rel="stylesheet" href="hub.css?v=8">
 </head>
 <body>
-  <!-- The same bar as Pro Mode; only the first link differs (Pro here, Games there) -->
-  <nav class="topnav" aria-label="Primary">
-    <a class="topnav__brand" href="../" aria-label="Home, Hoang Anh Nguyen">
-      <span class="brand-pi" aria-hidden="true">π</span>
+  <!-- The same bar as Pro Mode (copied from pro/index.html); only the first link differs -->
+  <nav class="home-topnav" aria-label="Primary">
+    <a class="home-topnav__brand" href="../" aria-label="Home, Hoang Anh Nguyen">
+      <span class="brand-pi">π</span>
       <span class="brand-name">Hoang Anh (Benjamin) Nguyen</span>
     </a>
-    <ul class="topnav__links">
+    <ul class="home-topnav__primary">
       <li><a href="../pro/">Pro</a></li>
       <li><a href="../blog/">Blog</a></li>
     </ul>
+    <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false">
+      <span class="nav-toggle__bar"></span>
+      <span class="nav-toggle__bar"></span>
+      <span class="nav-toggle__bar"></span>
+    </button>
+    <div class="home-topnav__dropdown">
+      <a class="nav-social-link" href="https://www.facebook.com/sipkaro" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook">
+        <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+          <path d="M22.675 0H1.325C.593 0 0 .593 0 1.325v21.351C0 23.407.593 24 1.325 24H12.82V14.706h-3.13v-3.622h3.13V8.413c0-3.1 1.894-4.788 4.66-4.788 1.325 0 2.464.099 2.794.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622H17.56V24h5.115c.732 0 1.325-.593 1.325-1.324V1.325C24 .593 23.407 0 22.675 0z"/>
+        </svg>
+      </a>
+      <a class="nav-social-link" href="https://www.linkedin.com/in/sipkaro/" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn">
+        <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+          <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.36V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.61 0 4.28 2.38 4.28 5.47v6.27zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z"/>
+        </svg>
+      </a>
+      <span class="lang-switch__divider" aria-hidden="true"></span>
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" class="lang-switch__btn" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" class="lang-switch__btn" data-lang="vi" aria-pressed="false">VI</button>
+      </div>
+    </div>
   </nav>
 
   <main class="hub">
-    <h1>Play</h1>
-    <p class="hub__sub">Pick a game.</p>
+    <h1><span lang="en">Play</span><span lang="vi">Chơi</span></h1>
+    <p class="hub__sub"><span lang="en">Pick a game.</span><span lang="vi">Chọn một trò chơi.</span></p>
 
     <div class="hub__cards">
       <a class="card card--pi" href="pi/">
@@ -53,9 +76,9 @@
         </svg>
         <div class="card__body">
           <h2>Pi Flight</h2>
-          <p>Fly π through its own digits. One button. How many decimal places can you reach?</p>
+          <p><span lang="en">Fly π through its own digits. One button. How many decimal places can you reach?</span><span lang="vi">Lái π bay qua chính các chữ số của nó. Chỉ một nút bấm. Bạn đi được bao nhiêu chữ số thập phân?</span></p>
           <p class="card__best" id="best-pi"></p>
-          <span class="card__go">Play</span>
+          <span class="card__go"><span lang="en">Play</span><span lang="vi">Chơi</span></span>
         </div>
       </a>
 
@@ -84,21 +107,27 @@
         </svg>
         <div class="card__body">
           <h2>Starship</h2>
-          <p>A space shooter with alien craft, jets and bosses. 8 sectors, 48 waves.</p>
+          <p><span lang="en">A space shooter with alien craft, jets and bosses. 8 sectors, 48 waves.</span><span lang="vi">Bắn phi thuyền ngoài hành tinh, máy bay phản lực và trùm. 8 khu vực, 48 màn.</span></p>
           <p class="card__best" id="best-starship"></p>
-          <span class="card__go">Play</span>
+          <span class="card__go"><span lang="en">Play</span><span lang="vi">Chơi</span></span>
         </div>
       </a>
     </div>
   </main>
 
+  <script src="../pro/assets/js/nav.js?v=6"></script>
   <script>
   // show each game's best result, saved on this device by the games themselves
   (function () {
     function read(key) { try { return JSON.parse(localStorage.getItem(key) || "{}"); } catch (e) { return {}; } }
     var s = read("starship-save-v1"), p = read("pi-flight-v1");
-    if (s.best) document.getElementById("best-starship").textContent = "Your best: " + Number(s.best).toLocaleString() + (s.sector ? ", reached sector " + (s.sector + 1) : "");
-    if (p.best) document.getElementById("best-pi").textContent = "Your best: " + p.best + " decimal places";
+    function show() {
+      var vi = document.documentElement.getAttribute("lang") === "vi";
+      if (s.best) document.getElementById("best-starship").textContent = (vi ? "Kỷ lục của bạn: " : "Your best: ") + Number(s.best).toLocaleString() + (s.sector ? (vi ? ", đến khu vực " : ", reached sector ") + (s.sector + 1) : "");
+      if (p.best) document.getElementById("best-pi").textContent = (vi ? "Kỷ lục của bạn: " : "Your best: ") + p.best + (vi ? " chữ số thập phân" : " decimal places");
+    }
+    show();
+    document.addEventListener("site:langchange", show);
   })();
   </script>
 </body>

@@ -1,0 +1,268 @@
+/* The site top bar, copied from Pro Mode (pro/assets/css/home.css, the
+   "Top nav" to "Fixed WebGL canvas" section) so the two bars are identical.
+   If you change the bar there, copy the change here. */
+:root {
+  --home-fg: #ffffff;
+  --home-muted: #d3d8e3;
+  --home-accent: #8fd6ff;
+  --home-ui: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --home-display: "Space Grotesk", "IBM Plex Sans", -apple-system, "Segoe UI", system-ui, sans-serif;
+}
+.home-topnav a { color: var(--home-accent); }
+
+/* ---------- Top nav (replaces masthead) ---------- */
+.home-topnav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 50;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 14px 28px;
+  gap: 8px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.88), rgba(0,0,0,0.35));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  font-family: var(--home-ui);
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+/* Push primary nav + hamburger to the right edge */
+/* (margin-left:auto is set inside .home-topnav__primary itself below) */
+.home-topnav .nav-toggle { margin-left: 16px; }
+.home-topnav__brand {
+  color: var(--home-fg) !important;
+  font-weight: 600;
+  text-decoration: none;
+  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  line-height: 1;
+}
+.brand-name {
+  font-family: var(--home-ui);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--home-fg);
+  /* divider between π and name */
+  padding-left: 14px;
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
+}
+@media (max-width: 720px) {
+  /* Keep "π · Name" visible on small screens; just trim sizes so they fit. */
+  .brand-pi   { font-size: 30px; }
+  .brand-name { font-size: 13px; padding-left: 10px; }
+  .home-topnav__brand { gap: 10px; }
+}
+
+/* π logo mark — used in top-left of every page */
+.brand-pi {
+  /* The site's own π mark (same shape as the home page and favicon),
+     filled with the Pro Mode gradient. The "π" character stays in the
+     markup for screen readers but is not drawn. */
+  display: inline-block;
+  width: 0.82em;
+  height: 0.82em;
+  font-size: 42px;
+  line-height: 1;
+  overflow: hidden;
+  text-indent: -9em;
+  color: transparent;
+  background: linear-gradient(135deg, #8fd6ff 0%, #c9a8ff 60%, #ffc28a 100%);
+  -webkit-mask: url("../pi/downloads/pi-mark.svg") center / 112% no-repeat;
+          mask: url("../pi/downloads/pi-mark.svg") center / 112% no-repeat;
+  transition: transform 0.25s ease, filter 0.25s ease;
+}
+.home-topnav__brand:hover .brand-pi,
+.site-nav__brand:hover   .brand-pi {
+  transform: scale(1.08) rotate(-3deg);
+  filter: brightness(1.2);
+}
+/* Primary inline links: Scholar, CV, Blog — pushed to the right edge */
+.home-topnav__primary {
+  display: flex;
+  gap: 22px;
+  margin: 0 0 0 auto;   /* margin-left: auto pushes to the right */
+  padding: 0;
+  list-style: none;
+}
+.home-topnav__primary a {
+  color: var(--home-muted) !important;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.home-topnav__primary a:hover { color: var(--home-fg) !important; }
+
+/* Social-icon dropdown panel */
+.home-topnav__dropdown {
+  position: absolute;
+  top: calc(100% - 4px);
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  background: rgba(3, 6, 13, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.home-topnav.is-open .home-topnav__dropdown {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.nav-social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--home-muted);
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+.nav-social-link:hover {
+  color: var(--home-fg) !important;
+  transform: translateY(-1px);
+}
+.nav-icon { display: block; }
+
+/* ---------- Language toggle ---------- */
+/* Hide whichever language doesn't match the <html lang> attribute */
+html[lang="en"] [lang="vi"],
+html[lang="vi"] [lang="en"] { display: none !important; }
+
+.lang-switch__divider {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.18);
+  display: inline-block;
+}
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--home-ui);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.lang-switch__btn {
+  background: transparent;
+  border: 0;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: var(--home-muted);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: inherit;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+.lang-switch__btn:hover { color: var(--home-fg); }
+.lang-switch__btn[aria-pressed="true"] {
+  color: var(--home-fg);
+  background: rgba(143, 214, 255, 0.15);
+}
+/* Hamburger button (≡ → ✕) — visible at all widths */
+.nav-toggle {
+  display: flex;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  width: 40px; height: 36px;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: stretch;
+  transition: border-color 0.2s ease;
+}
+.nav-toggle:hover { border-color: var(--home-accent); }
+.nav-toggle__bar {
+  display: block;
+  width: 100%; height: 2px;
+  background: var(--home-fg);
+  border-radius: 1px;
+  transition: transform 0.25s ease, opacity 0.2s ease;
+}
+.home-topnav.is-open .nav-toggle__bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.home-topnav.is-open .nav-toggle__bar:nth-child(2) { opacity: 0; }
+.home-topnav.is-open .nav-toggle__bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ---------- Mobile (≤720px) ---------- */
+@media (max-width: 720px) {
+  /* row-gap 0: the collapsed link rows below the logo are zero-height flex
+     lines, and a row gap for each of them used to add 16px of empty space
+     under the logo, so the bar was not centred on it. */
+  .home-topnav {
+    padding: 10px 16px;
+    gap: 0 8px;
+    transition: transform 0.28s ease;
+    will-change: transform;
+  }
+  /* Scrolling down hides the bar; scrolling up brings it back (set by nav.js). */
+  .home-topnav.is-hidden { transform: translateY(-105%); }
+
+  /* Hamburger sits at the far-right on mobile (primary collapses below
+     so margin-left:auto on primary no longer pushes the toggle over) */
+  .home-topnav .nav-toggle { margin-left: auto; }
+
+  /* Collapse the inline primary links into the dropdown stack */
+  .home-topnav__primary {
+    order: 3;
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    font-size: 14px;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    padding: 0 4px;
+    transition: max-height 0.35s ease, opacity 0.2s ease, padding 0.3s ease;
+  }
+  .home-topnav.is-open .home-topnav__primary {
+    max-height: 60vh;
+    opacity: 1;
+    padding: 12px 4px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  }
+
+  /* Dropdown card becomes a full-width row at the bottom on mobile */
+  .home-topnav__dropdown {
+    order: 4;
+    position: static;
+    width: 100%;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    padding: 0 4px;
+    transform: none;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transition: max-height 0.35s ease, opacity 0.2s ease, padding 0.3s ease;
+    gap: 20px;
+  }
+  .home-topnav.is-open .home-topnav__dropdown {
+    opacity: 1;
+    pointer-events: auto;
+    max-height: 60px;
+    padding: 10px 4px;
+  }
+}
+
+/* phones: a flat scrim instead of a live blur, as in Pro Mode */
+@media (max-width: 720px) {
+  .home-topnav, .home-topnav__dropdown { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  .home-topnav { background: rgba(3, 6, 13, 0.95); }
+  .home-topnav__dropdown { background: rgba(3, 6, 13, 0.96); }
+}
