@@ -16,7 +16,7 @@ reused, redistributed or used commercially without written permission. See
 - `style.css` — all styling (Crimson Pro, self-hosted in `assets/fonts/`)
 - `pro/` — animated "Pro Mode" homepage (three.js/GSAP, ported from the old site)
 - `blog/` — blog index and posts
-- `play/` — games: a chooser page and one folder per game (`pi/` Pi Flight, `chess/` Chess, `caro/` Caro, `qubit/` Qubit Flip, `blocks/` Lattice, `orbit/` Orbit Sling, `run/` Pi Run, `link/` Pair Path); no assets, no build step
+- `play/` — games: a chooser page and one folder per game (`pi/` Pi Flight, `chess/` Chess, `caro/` Caro, `qubit/` Qubit, `blocks/` Lattice, `orbit/` Orbit Sling, `run/` Pi Run, `link/` Pair Path); no assets, no build step
 - `files/` — public PDFs (CV, etc.)
 - `assets/` — photo, CV, favicon, fonts
 - `counter-worker/` — Cloudflare Worker that tallies visits by country (KV-backed)

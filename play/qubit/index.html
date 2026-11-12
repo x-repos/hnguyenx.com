@@ -3,18 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Qubit Flip</title>
-  <meta name="description" content="Qubit Flip: a puzzle about quantum gates with no equations. Reach the target state in as few gates as you can.">
-  <meta name="theme-color" content="#03040a">
-  <link rel="icon" type="image/svg+xml" href="../../pro/images/favicon-pro.svg?v=2">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="qubit.css?v=2">
+  <title>Qubit</title>
+  <meta name="description" content="Qubit: a puzzle about quantum gates. Start with no equations, then go on to Bell states, measurement, superdense coding and teleportation.">
+  <meta name="theme-color" content="#fffdf8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#14110c" media="(prefers-color-scheme: dark)">
+  <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg?v=3">
+  <link rel="icon" type="image/png" sizes="32x32" href="../../assets/favicon-32.png?v=3">
+  <link rel="apple-touch-icon" sizes="180x180" href="../../assets/apple-touch-icon.png?v=3">
+  <link rel="stylesheet" href="qubit.css?v=5">
 </head>
 <body class="in-menu">
-  <div class="bg" aria-hidden="true"></div>
-
   <main class="stage" id="stage" hidden>
     <div class="stage__in">
       <header class="top">
@@ -38,8 +36,10 @@
 
       <section class="states" id="states" aria-label="Your state and the target state">
         <div class="state" id="st-yours"><h2>Yours</h2><div class="tiles" id="tiles-yours"></div></div>
-        <div class="state" id="st-target"><h2>Target</h2><div class="tiles" id="tiles-target"></div></div>
+        <div class="state" id="st-target"><h2 id="target-head">Target</h2><div class="tiles" id="tiles-target"></div></div>
       </section>
+
+      <p class="kets" id="kets" hidden></p>
 
       <div class="match" id="match">
         <div class="match__bar"><i id="match-fill"></i></div>
@@ -61,6 +61,7 @@
         <div class="win" id="win" hidden>
           <div class="win__stars" id="win-stars"></div>
           <p class="win__text" id="win-text"></p>
+          <p class="win__note" id="win-note" hidden></p>
           <div class="win__buttons">
             <button type="button" id="btn-again">Again</button>
             <button type="button" id="btn-next" class="is-main">Next level</button>
@@ -73,21 +74,24 @@
   </main>
 
   <div class="panel" id="menu">
-    <h1>Qubit Flip</h1>
-    <p class="panel__sub">30 puzzles about quantum gates. No equations.</p>
+    <h1>Qubit</h1>
+    <p class="panel__sub">Puzzles about quantum gates. Start with no equations, then go further.</p>
     <div class="panel__buttons">
       <button type="button" id="btn-play">Play</button>
-      <button type="button" id="btn-open-levels">Levels</button>
+      <button type="button" id="btn-adv" class="is-plain">Advanced</button>
+      <button type="button" id="btn-open-levels" class="is-plain">Levels</button>
     </div>
     <p class="panel__best" id="best"></p>
     <ul class="panel__help">
       <li>Turn your state into the target state with as few gates as you can.</li>
       <li>Each tile is one answer you could read out. A bigger disc means a bigger chance.</li>
       <li>The colour and the little hand show the phase.</li>
-      <li>Tap a gate, then tap the qubit it should act on.</li>
-      <li>On a keyboard, press the key shown in the corner of a gate and then 1, 2 or 3. U is undo, R is reset, M is sound.</li>
+      <li>Not every gate on a level is needed. Choosing the right ones is part of the puzzle.</li>
+      <li>Drag a gate onto the qubit it should act on. For a gate on two qubits, drop it on the first one; with three qubits, then tap the second.</li>
+      <li>Advanced adds Bell states, measurement, superdense coding and teleportation, and writes each state out as kets. It is open from the start.</li>
+      <li class="keys">On a keyboard, press the key shown in the corner of a gate and then 1, 2 or 3. U is undo, R is reset, M is sound.</li>
     </ul>
-    <p class="panel__back"><a href="../">All games</a> · <a href="../../pro/">Back to the site</a></p>
+    <p class="panel__back"><a href="../">All games</a><a href="../../">Home</a></p>
   </div>
 
   <div class="panel panel--wide" id="levels" hidden>
@@ -100,6 +104,6 @@
     <p class="panel__back"><a href="../">All games</a></p>
   </div>
 
-  <script src="qubit.js?v=2"></script>
+  <script src="qubit.js?v=5"></script>
 </body>
 </html>

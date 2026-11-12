@@ -1,4 +1,4 @@
-/* Lattice: lock atoms into a crystal. A block placement puzzle, nothing falls. */
+/* Lattice: a block placement puzzle. Fit the pieces onto the board; nothing falls. */
 (() => {
   "use strict";
 
@@ -48,11 +48,8 @@
           seen.add(sig);
           const v = {
             id: VARIANTS.length, base: bi, cells: cur, col: bi,
-            h: Math.max(...cur.map((p) => p[0])) + 1, w: Math.max(...cur.map((p) => p[1])) + 1, bonds: [],
+            h: Math.max(...cur.map((p) => p[0])) + 1, w: Math.max(...cur.map((p) => p[1])) + 1,
           };
-          for (let i = 0; i < cur.length; i++) for (let j = i + 1; j < cur.length; j++) {
-            if (Math.abs(cur[i][0] - cur[j][0]) + Math.abs(cur[i][1] - cur[j][1]) === 1) v.bonds.push([i, j]);
-          }
           VARIANTS.push(v);
           b.variants.push(v);
         }
@@ -421,8 +418,8 @@
   // ------------------------------------------------------------ drawing
   let dirtyUntil = 0, dealT = -1e9;
   const kick = (ms) => { dirtyUntil = Math.max(dirtyUntil, performance.now() + (ms || 0) + 34); };
-  const pops = {};           // board index -> time the atom landed
-  const clearFx = [];        // atoms flashing out
+  const pops = {};           // board index -> time the block landed
+  const clearFx = [];        // blocks flashing out
   const bands = [];          // row and column flashes
   const particles = [];
   const floaters = [];
@@ -433,50 +430,49 @@
   const rgb = (c, a) => "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + (a === undefined ? 1 : a) + ")";
   const mix = (c, to, t) => [0, 1, 2].map((k) => Math.round(c[k] + (to[k] - c[k]) * t));
 
-  function atomSprite(colIdx, size) {
+  // one block: a square tile with a lighter face and a soft edge, drawn once per colour and size
+  function blockSprite(colIdx, size) {
     const s = Math.max(4, Math.round(size * dpr));
     const key = colIdx + ":" + s;
     let cv = sprites.get(key);
     if (cv) return cv;
     cv = document.createElement("canvas");
-    const m = Math.ceil(s * 0.3);               // margin for the glow
+    const m = Math.ceil(s * 0.12);              // margin, so a block can swell a little when it lands
     cv.width = cv.height = s + m * 2;
     cv.margin = m / dpr; cv.span = (s + m * 2) / dpr;
     const g = cv.getContext("2d");
-    const col = BASES[colIdx].col, cx = m + s / 2, cy = m + s / 2, r = s * 0.42;
-    const glow = g.createRadialGradient(cx, cy, r * 0.7, cx, cy, r + m * 0.95);
-    glow.addColorStop(0, rgb(col, 0.42)); glow.addColorStop(1, rgb(col, 0));
-    g.fillStyle = glow; g.fillRect(0, 0, cv.width, cv.height);
-    const body = g.createRadialGradient(cx - r * 0.32, cy - r * 0.38, r * 0.05, cx, cy, r);
-    body.addColorStop(0, rgb(mix(col, [255, 255, 255], 0.6)));
-    body.addColorStop(0.3, rgb(col));
-    body.addColorStop(1, rgb(mix(col, [8, 10, 24], 0.62)));
-    g.fillStyle = body; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
-    g.strokeStyle = rgb(mix(col, [255, 255, 255], 0.5), 0.55); g.lineWidth = Math.max(1, s * 0.03);
-    g.beginPath(); g.arc(cx, cy, r - g.lineWidth / 2, 0, Math.PI * 2); g.stroke();
-    g.fillStyle = "rgba(255,255,255,0.6)";
-    g.beginPath(); g.ellipse(cx - r * 0.36, cy - r * 0.42, r * 0.2, r * 0.12, -0.6, 0, Math.PI * 2); g.fill();
+    const col = BASES[colIdx].col, gap = s * 0.045, x = m + gap, w = s - gap * 2, r = s * 0.2;
+    const box = (bx, by, bw, bh, br) => {
+      g.beginPath();
+      g.moveTo(bx + br, by); g.arcTo(bx + bw, by, bx + bw, by + bh, br); g.arcTo(bx + bw, by + bh, bx, by + bh, br);
+      g.arcTo(bx, by + bh, bx, by, br); g.arcTo(bx, by, bx + bw, by, br); g.closePath();
+    };
+    // the body, a little darker towards the bottom
+    const body = g.createLinearGradient(0, x, 0, x + w);
+    body.addColorStop(0, rgb(mix(col, [255, 255, 255], 0.1)));
+    body.addColorStop(1, rgb(mix(col, [8, 10, 24], 0.34)));
+    box(x, x, w, w, r); g.fillStyle = body; g.fill();
+    // the raised face
+    const inset = s * 0.11, face = g.createLinearGradient(0, x + inset, 0, x + w - inset);
+    face.addColorStop(0, rgb(mix(col, [255, 255, 255], 0.42)));
+    face.addColorStop(1, rgb(mix(col, [255, 255, 255], 0.08)));
+    box(x + inset, x + inset, w - inset * 2, w - inset * 2, r * 0.6); g.fillStyle = face; g.fill();
+    // a thin dark edge so neighbouring blocks stay separate
+    box(x, x, w, w, r); g.strokeStyle = rgb(mix(col, [8, 10, 24], 0.55), 0.9); g.lineWidth = Math.max(1, s * 0.03); g.stroke();
     sprites.set(key, cv);
     return cv;
   }
-  function drawAtom(colIdx, cx, cy, size, scale, alpha) {
+  function drawBlock(colIdx, cx, cy, size, scale, alpha) {
     const base = size === L.tcell ? L.tcell : L.cell;
-    const sp = atomSprite(colIdx, base);
+    const sp = blockSprite(colIdx, base);
     const span = sp.span * (size / base) * (scale || 1);
     if (alpha !== undefined && alpha < 1) ctx.globalAlpha = Math.max(0, alpha);
     ctx.drawImage(sp, cx - span / 2, cy - span / 2, span, span);
     ctx.globalAlpha = 1;
   }
-  function bond(x1, y1, x2, y2, colIdx, size, alpha) {
-    ctx.strokeStyle = rgb(mix(BASES[colIdx].col, [8, 10, 24], 0.35), alpha === undefined ? 0.95 : alpha);
-    ctx.lineWidth = size * 0.2; ctx.lineCap = "round";
-    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-  }
   function drawPiece(v, cx, cy, cs, alpha) {
     const x0 = cx - v.w * cs / 2, y0 = cy - v.h * cs / 2;
-    const at = (k) => [x0 + (v.cells[k][1] + 0.5) * cs, y0 + (v.cells[k][0] + 0.5) * cs];
-    for (const [a, b] of v.bonds) { const p = at(a), q = at(b); bond(p[0], p[1], q[0], q[1], v.col, cs, alpha); }
-    for (let k = 0; k < v.cells.length; k++) { const p = at(k); drawAtom(v.col, p[0], p[1], cs, 1, alpha); }
+    for (const p of v.cells) drawBlock(v.col, x0 + (p[1] + 0.5) * cs, y0 + (p[0] + 0.5) * cs, cs, 1, alpha);
   }
   function rr(x, y, w, h, r) {
     ctx.beginPath();
@@ -492,11 +488,11 @@
       ctx.fillStyle = "rgba(255,255,255,0.13)";
       for (const row of ln.rows) { rr(L.bx + 2, L.by + row * cs + 2, L.bw - 4, cs - 4, cs * 0.24); ctx.fill(); }
       for (const col of ln.cols) { rr(L.bx + col * cs + 2, L.by + 2, cs - 4, L.bw - 4, cs * 0.24); ctx.fill(); }
-      // atoms already on a line that is about to clear get a bright ring
+      // blocks already on a line that is about to clear get a bright outline
       ctx.strokeStyle = "rgba(255,255,255,0.95)"; ctx.lineWidth = Math.max(1.5, cs * 0.06);
       const ring = (idx) => {
         if (!G.cells[idx]) return;
-        ctx.beginPath(); ctx.arc(L.bx + (idx % N + 0.5) * cs, L.by + (Math.floor(idx / N) + 0.5) * cs, cs * 0.43, 0, Math.PI * 2); ctx.stroke();
+        rr(L.bx + (idx % N) * cs + cs * 0.07, L.by + Math.floor(idx / N) * cs + cs * 0.07, cs * 0.86, cs * 0.86, cs * 0.2); ctx.stroke();
       };
       for (const row of ln.rows) for (let cc = 0; cc < N; cc++) ring(row * N + cc);
       for (const col of ln.cols) for (let r2 = 0; r2 < N; r2++) ring(r2 * N + col);
@@ -506,7 +502,7 @@
         ctx.fillStyle = rgb(BASES[v.col].col, willClear ? 0.5 : 0.3);
         ctx.strokeStyle = willClear ? "rgba(255,255,255,0.95)" : rgb(BASES[v.col].col, 0.95);
         ctx.lineWidth = Math.max(1.5, cs * 0.05);
-        ctx.beginPath(); ctx.arc(x, y, cs * 0.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        rr(x - cs * 0.43, y - cs * 0.43, cs * 0.86, cs * 0.86, cs * 0.2); ctx.fill(); ctx.stroke();
       }
     } else {
       for (const p of v.cells) {
@@ -515,7 +511,7 @@
         const x = L.bx + (cc + 0.5) * cs, y = L.by + (rr2 + 0.5) * cs;
         ctx.fillStyle = "rgba(255,110,120,0.16)"; ctx.strokeStyle = "rgba(255,110,120,0.8)";
         ctx.lineWidth = Math.max(1.5, cs * 0.04);
-        ctx.beginPath(); ctx.arc(x, y, cs * 0.36, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        rr(x - cs * 0.4, y - cs * 0.4, cs * 0.8, cs * 0.8, cs * 0.18); ctx.fill(); ctx.stroke();
       }
     }
   }
@@ -526,34 +522,17 @@
     if (!G || !L.cell) return;
     const cs = L.cell;
 
-    // the lattice
+    // the board: a tray of empty squares
     rr(L.bx - 6, L.by - 6, L.bw + 12, L.bw + 12, cs * 0.34);
     ctx.fillStyle = "rgba(10,14,28,0.78)"; ctx.fill();
     ctx.strokeStyle = "rgba(143,214,255,0.22)"; ctx.lineWidth = 1; ctx.stroke();
-    ctx.strokeStyle = "rgba(143,214,255,0.07)"; ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let k = 0; k < N; k++) {
-      ctx.moveTo(L.bx + cs * 0.5, L.by + (k + 0.5) * cs); ctx.lineTo(L.bx + L.bw - cs * 0.5, L.by + (k + 0.5) * cs);
-      ctx.moveTo(L.bx + (k + 0.5) * cs, L.by + cs * 0.5); ctx.lineTo(L.bx + (k + 0.5) * cs, L.by + L.bw - cs * 0.5);
-    }
-    ctx.stroke();
     for (let i = 0; i < N * N; i++) {
       const x = L.bx + (i % N) * cs, y = L.by + Math.floor(i / N) * cs;
-      rr(x + 2, y + 2, cs - 4, cs - 4, cs * 0.24);
-      ctx.fillStyle = "rgba(255,255,255,0.035)"; ctx.fill();
-      if (!G.cells[i]) {
-        ctx.fillStyle = "rgba(185,194,214,0.22)";
-        ctx.beginPath(); ctx.arc(x + cs / 2, y + cs / 2, Math.max(1.2, cs * 0.045), 0, Math.PI * 2); ctx.fill();
-      }
+      rr(x + cs * 0.045, y + cs * 0.045, cs * 0.91, cs * 0.91, cs * 0.2);
+      ctx.fillStyle = "rgba(255,255,255,0.05)"; ctx.fill();
     }
     const dim = G.over ? 0.55 : 1;
-    // bonds, then atoms
-    for (let i = 0; i < N * N; i++) {
-      if (!G.cells[i]) continue;
-      const x = L.bx + (i % N + 0.5) * cs, y = L.by + (Math.floor(i / N) + 0.5) * cs;
-      if (i % N < N - 1 && G.pid[i + 1] === G.pid[i] && G.cells[i + 1]) bond(x, y, x + cs, y, G.cells[i] - 1, cs, 0.95 * dim);
-      if (i + N < N * N && G.pid[i + N] === G.pid[i] && G.cells[i + N]) bond(x, y, x, y + cs, G.cells[i] - 1, cs, 0.95 * dim);
-    }
+    // the blocks on the board
     for (let i = 0; i < N * N; i++) {
       if (!G.cells[i]) continue;
       const x = L.bx + (i % N + 0.5) * cs, y = L.by + (Math.floor(i / N) + 0.5) * cs;
@@ -562,10 +541,10 @@
         const t = (now - pops[i]) / 260;
         if (t >= 1) delete pops[i]; else sc = 1 + 0.22 * Math.sin(Math.PI * Math.max(0, t)) * (1 - t);
       }
-      drawAtom(G.cells[i] - 1, x, y, cs, sc, dim);
+      drawBlock(G.cells[i] - 1, x, y, cs, sc, dim);
     }
 
-    // line flashes and atoms flashing out
+    // line flashes and blocks flashing out
     for (let k = bands.length - 1; k >= 0; k--) {
       const b = bands[k], t = (now - b.t0) / 420;
       if (t >= 1) { bands.splice(k, 1); continue; }
@@ -579,9 +558,10 @@
       const f = clearFx[k], t = (now - f.t0) / 340;
       if (t >= 1) { clearFx.splice(k, 1); continue; }
       const x = L.bx + (f.idx % N + 0.5) * cs, y = L.by + (Math.floor(f.idx / N) + 0.5) * cs;
-      drawAtom(f.col, x, y, cs, 1 + 0.35 * t, 1 - t);
+      drawBlock(f.col, x, y, cs, 1 + 0.35 * t, 1 - t);
       ctx.fillStyle = "rgba(255,255,255," + (0.8 * (1 - t) * (1 - t)).toFixed(3) + ")";
-      ctx.beginPath(); ctx.arc(x, y, cs * 0.4 * (1 + 0.35 * t), 0, Math.PI * 2); ctx.fill();
+      const half = cs * 0.43 * (1 + 0.35 * t);
+      rr(x - half, y - half, half * 2, half * 2, cs * 0.2); ctx.fill();
     }
 
     // ghost
@@ -683,7 +663,7 @@
     if (L.side) return { x: -(v.w * L.cell / 2 + 40), y: 0 };
     return { x: 0, y: -(v.h * L.cell / 2 + 40) };
   }
-  // where the pointer has to be so that piece v lands with its top left atom on r, c
+  // where the pointer has to be so that piece v lands with its top left block on r, c
   function aimPoint(i, r, c, touch) {
     const v = trayVariant(i); if (!v) return null;
     const lift = liftFor(v, touch);

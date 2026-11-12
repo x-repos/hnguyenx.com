@@ -1,20 +1,35 @@
-/* Qubit Flip: a gate puzzle. The state is simulated exactly with complex
-   amplitudes. Qubit 0 is the top wire and the left digit of every label. */
+/* Qubit: a gate puzzle. States are simulated exactly with complex amplitudes.
+   Qubit 0 is the top wire and the left digit of every label.
+
+   Two sets of levels: Basics (no equations) and Advanced (Bell states, phase
+   kickback, measurement, superdense coding, teleportation), which also shows
+   each state in ket notation.
+
+   Measurement splits the state into outcomes. The game keeps every outcome
+   (a "world" is the list of them, each with its chance) and a level is only
+   solved when the goal holds in all of them, so a protocol has to work
+   whatever the measurements read.
+
+   Layout of this file:
+     quantum states and gates · worlds and measurement · goals · solver
+     levels · save · sound · drawing the states · game flow · screens · input */
 (() => {
   "use strict";
   const SAVE_KEY = "qubit-flip-v1";
   const R2 = Math.SQRT1_2;
   const EPS = 1e-7;
+  const MAX_OUTCOMES = 4;
   const $ = (id) => document.getElementById(id);
 
-  // ---------- quantum state ----------
+  // ---------- quantum states and gates ----------
   function zero(n) {
     const N = 1 << n, s = { n, re: new Float64Array(N), im: new Float64Array(N) };
     s.re[0] = 1; return s;
   }
-  // a move is a token such as "X0", "H1", "CX01" (control 0, target 1), "CZ01", "SW02"
+  const copy = (s) => ({ n: s.n, re: s.re.slice(), im: s.im.slice() });
+  // a move is a token such as "X0", "H1", "CX01" (control 0, target 1), "CZ01", "SW02", "M0" (measure)
   function parse(tok) {
-    const m = /^(X|H|Z|S|CX|CZ|SW)(\d)(\d)?$/.exec(tok);
+    const m = /^(X|H|Z|S|T|M|CX|CZ|SW)(\d)(\d)?$/.exec(tok);
     if (!m) throw new Error("bad gate " + tok);
     return { t: m[1], a: +m[2], b: m[3] === undefined ? -1 : +m[3] };
   }
@@ -23,7 +38,7 @@
     const ma = 1 << (n - 1 - g.a), mb = g.b >= 0 ? 1 << (n - 1 - g.b) : 0;
     if (g.a >= n || g.b >= n || g.a === g.b) throw new Error("bad qubit in " + tok);
     const two = g.t === "CX" || g.t === "CZ" || g.t === "SW";
-    if (two !== (g.b >= 0)) throw new Error("bad gate " + tok);
+    if (two !== (g.b >= 0) || g.t === "M") throw new Error("bad gate " + tok);
     let t;
     for (let i = 0; i < N; i++) {
       switch (g.t) {
@@ -34,16 +49,12 @@
         } break;
         case "Z": if (i & ma) { re[i] = -re[i]; im[i] = -im[i]; } break;
         case "S": if (i & ma) { t = re[i]; re[i] = -im[i]; im[i] = t; } break;
+        case "T": if (i & ma) { t = re[i]; re[i] = (t - im[i]) * R2; im[i] = (t + im[i]) * R2; } break;
         case "CX": if ((i & ma) && !(i & mb)) { const j = i | mb; t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } break;
         case "CZ": if ((i & ma) && (i & mb)) { re[i] = -re[i]; im[i] = -im[i]; } break;
         case "SW": if ((i & ma) && !(i & mb)) { const j = i ^ ma ^ mb; t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } break;
       }
     }
-    return s;
-  }
-  function build(n, circuit) {
-    const s = zero(n);
-    for (const tok of circuit.split(" ")) if (tok) apply(s, tok);
     return s;
   }
   // remove the global phase: the first tile that is not empty gets phase zero
@@ -68,12 +79,98 @@
     }
     return r * r + i * i;
   }
-  const same = (a, b) => fidelity(a, b) > 1 - 1e-6;
   function key(s) {
     const c = canon(s); let k = "";
     for (let i = 0; i < c.re.length; i++) k += Math.round(c.re[i] * 1e4) + "," + Math.round(c.im[i] * 1e4) + ";";
     return k;
   }
+
+  // ---------- worlds and measurement ----------
+  // a world is a list of outcomes { p, s }: one outcome until something is measured
+  const chanceOfZero = (s, q) => { const m = 1 << (s.n - 1 - q); let p = 0; for (let i = 0; i < s.re.length; i++) if (!(i & m)) p += s.re[i] * s.re[i] + s.im[i] * s.im[i]; return p; };
+  // 0 or 1 if this qubit is sure to read that, otherwise -1
+  const sureBit = (s, q) => { const p0 = chanceOfZero(s, q); return p0 > 1 - 1e-9 ? 0 : p0 < 1e-9 ? 1 : -1; };
+  function measure(world, q) {
+    const out = [];
+    for (const b of world) {
+      const m = 1 << (b.s.n - 1 - q), p0 = chanceOfZero(b.s, q);
+      for (let bit = 0; bit < 2; bit++) {
+        const pr = bit ? 1 - p0 : p0;
+        if (pr < 1e-9) continue;
+        const s = copy(b.s), k = 1 / Math.sqrt(pr);
+        for (let i = 0; i < s.re.length; i++) { if (!!(i & m) === !!bit) { s.re[i] *= k; s.im[i] *= k; } else { s.re[i] = 0; s.im[i] = 0; } }
+        out.push({ p: b.p * pr, s });
+      }
+    }
+    return out;
+  }
+  function run(world, tok) {
+    const g = parse(tok);
+    if (g.t === "M") { if (g.a >= world[0].s.n) throw new Error("bad qubit in " + tok); return measure(world, g.a); }
+    for (const b of world) apply(b.s, tok);
+    return world;
+  }
+  function build(n, circuit) {
+    let w = [{ p: 1, s: zero(n) }];
+    for (const tok of (circuit || "").split(" ")) if (tok) w = run(w, tok);
+    return w;
+  }
+  const worldKey = (w) => w.map((b) => Math.round(b.p * 1e4) + ":" + key(b.s)).sort().join("|");
+
+  // ---------- goals ----------
+  //   state   every outcome is the target state                            (the usual kind)
+  //   world   the outcomes and their chances are the target's
+  //   qubit   in every outcome, qubit lv.q alone is in the state lv.want
+  // lv.measured lists qubits that must also have been measured and read a sure 0 or 1.
+  // Returns how far along the player is, from 0 to 1, and whether the level is solved.
+  function judge(lv, world, moves) {
+    let f = 0;
+    if (lv.goal === "world") {
+      const want = lv.targetWorld, used = new Set();
+      for (const t of want) {
+        let best = 0, pick = -1;
+        world.forEach((b, i) => { if (used.has(i)) return; const v = Math.min(t.p, b.p) * fidelity(t.s, b.s); if (v > best) { best = v; pick = i; } });
+        if (pick >= 0) used.add(pick);
+        f += best;
+      }
+      if (world.length !== want.length) f = Math.min(f, 0.99);
+    } else if (lv.goal === "qubit") {
+      const w = lv.wantState, m = 1 << (lv.n - 1 - lv.q);
+      for (const b of world) {
+        let ov = 0;
+        for (let i = 0; i < b.s.re.length; i++) if (!(i & m)) {
+          const j = i | m;      // <want| applied to this qubit: conj(w0) a_i + conj(w1) a_j
+          const cr = w.re[0] * b.s.re[i] + w.im[0] * b.s.im[i] + w.re[1] * b.s.re[j] + w.im[1] * b.s.im[j];
+          const ci = w.re[0] * b.s.im[i] - w.im[0] * b.s.re[i] + w.re[1] * b.s.im[j] - w.im[1] * b.s.re[j];
+          ov += cr * cr + ci * ci;
+        }
+        f += b.p * ov;
+      }
+    } else {
+      for (const b of world) f += b.p * fidelity(b.s, lv.targetWorld[0].s);
+    }
+    let read = true;
+    for (const q of lv.measured || []) {
+      if (!moves.includes("M" + q)) read = false;
+      for (const b of world) if (sureBit(b.s, q) < 0) read = false;
+    }
+    f = Math.max(0, Math.min(1, f));
+    return { f: read ? f : Math.min(f, 0.99), solved: read && f > 1 - 1e-6 };
+  }
+
+  // On some levels one qubit (lv.far) is far away from the others. A two-qubit gate may touch it only
+  // when the other qubit has been measured and reads a sure 0 or 1: then the gate is just a message
+  // of one plain bit, "flip if I read 1". Returns true if this move is allowed.
+  function reachable(lv, world, moves, tok) {
+    if (lv.far === undefined) return true;
+    const g = parse(tok);
+    if (g.b < 0 || (g.a !== lv.far && g.b !== lv.far)) return true;
+    const other = g.a === lv.far ? g.b : g.a;
+    if (g.t === "SW" || (g.t === "CX" && g.a !== other)) return false;        // the far qubit cannot be the control, or be traded
+    return moves.includes("M" + other) && world.every((b) => sureBit(b.s, other) >= 0);
+  }
+
+  // ---------- solver: breadth-first over gate sequences, shortest solution or null ----------
   function allMoves(n, gates) {
     const out = [];
     for (const t of gates) {
@@ -83,27 +180,31 @@
     }
     return out;
   }
-  // breadth-first search over gate sequences: the shortest solution, or null
-  function solve(lv) {
-    const start = build(lv.n, lv.start), goal = key(build(lv.n, lv.target));
-    const moves = allMoves(lv.n, lv.gates);
-    const seen = new Map([[key(start), null]]);
-    if (key(start) === goal) return [];
-    let frontier = [start];
-    while (frontier.length) {
+  const cloneWorld = (w) => w.map((b) => ({ p: b.p, s: copy(b.s) }));
+  // opt.gates searches with another set of gates. opt.must only accepts a solution that uses one of
+  // those gates: that is how the spare gates on each level are checked to be of no use.
+  function solve(lv, maxDepth, maxNodes, opt) {
+    const start = build(lv.n, lv.start), moves = allMoves(lv.n, (opt && opt.gates) || lv.gates), must = (opt && opt.must) || null;
+    // which qubits have been measured matters for some goals, so it is part of what makes two positions the same
+    const tag = (w, done, used) => worldKey(w) + "#" + done + (used ? "!" : "");
+    if (!must && judge(lv, start, []).solved) return [];
+    const seen = new Set([tag(start, "", false)]);
+    let frontier = [{ w: start, path: [], done: "", used: false }], nodes = 0;
+    for (let depth = 1; depth <= (maxDepth || 12) && frontier.length; depth++) {
       const next = [];
-      for (const s of frontier) {
-        const ks = key(s);
+      for (const node of frontier) {
         for (const mv of moves) {
-          const t = apply({ n: s.n, re: s.re.slice(), im: s.im.slice() }, mv), kt = key(t);
-          if (seen.has(kt)) continue;
-          seen.set(kt, [ks, mv]);
-          if (kt === goal) {
-            const path = []; let k = kt;
-            while (seen.get(k)) { const [p, m] = seen.get(k); path.unshift(m); k = p; }
-            return path;
-          }
-          next.push(t);
+          if (!reachable(lv, node.w, node.path, mv)) continue;
+          let w = run(cloneWorld(node.w), mv);
+          if (w.length > MAX_OUTCOMES) continue;
+          const g = parse(mv), done = g.t === "M" && !node.done.includes(String(g.a)) ? (node.done + g.a).split("").sort().join("") : node.done;
+          const used = node.used || (!!must && must.includes(g.t)), k = tag(w, done, used);
+          if (seen.has(k)) continue;
+          seen.add(k);
+          const path = node.path.concat(mv);
+          if ((!must || used) && judge(lv, w, path).solved) return path;
+          if (++nodes > (maxNodes || 400000)) return undefined;      // gave up: too many positions
+          next.push({ w, path, done, used });
         }
       }
       frontier = next;
@@ -115,46 +216,97 @@
   const GATE = {
     X: { name: "X", sub: "flip", key: "x" }, H: { name: "H", sub: "split", key: "h" },
     Z: { name: "Z", sub: "half turn", key: "z" }, S: { name: "S", sub: "quarter turn", key: "s" },
+    T: { name: "T", sub: "eighth turn", key: "t" }, M: { name: "M", sub: "measure", key: "d" },
     CX: { name: "CNOT", sub: "linked flip", key: "c" }, CZ: { name: "CZ", sub: "linked turn", key: "v" },
     SW: { name: "SWAP", sub: "trade", key: "w" },
   };
-  const CHAPTERS = [
-    { title: "Flip", from: 0 }, { title: "Superposition", from: 3 }, { title: "Phase", from: 7 },
-    { title: "Entanglement", from: 12 }, { title: "New gates", from: 19 }, { title: "Three qubits", from: 25 },
-  ];
-  const L = (name, n, start, target, gates, par, hint) => ({ name, n, start, target, gates: gates.split(" "), par, hint });
-  const LEVELS = [
-    L("First flip", 1, "", "X0", "X", 1, "X flips a qubit. Tap X to move the disc from 0 to 1."),
-    L("Pick a qubit", 2, "", "X1", "X", 1, "With two qubits, tap X and then tap the qubit to flip. Each tile is one answer you could read out."),
+  // Most levels offer more gates than they need, so that choosing is part of the puzzle. The spare
+  // gates are ones already taught, and were checked by search: no solution within par uses any of them.
+  // o: { goal, q, want, measured, after } for the levels that need more than "reach this state"
+  const L = (name, n, start, target, gates, par, hint, o) => Object.assign({ name, n, start, target, gates: gates.split(" "), par, hint, goal: "state" }, o || {});
+  const BASIC = [
+    L("First flip", 1, "", "X0", "X", 1, "X flips a qubit. Drag X onto the qubit to move the disc from 0 to 1."),
+    L("Pick a qubit", 2, "", "X1", "X", 1, "With two qubits, drag X onto the one you want to flip. Each tile is one answer you could read out."),
     L("Trade places", 2, "X0", "X1", "X", 2, "The left digit is the top qubit q1. The right digit is the bottom qubit q2."),
     L("Half and half", 1, "", "H0", "X H", 1, "H splits a qubit into 0 and 1 at once. The size of a disc is the chance of reading that answer."),
     L("Back again", 1, "H0", "", "X H", 1, "H undoes itself. Use it again to bring the two halves back together."),
     L("Everywhere", 2, "", "H0 H1", "X H", 2, "Put H on both qubits to spread the state over all four tiles."),
     L("Half the board", 2, "", "X0 H1", "X H", 2, "Mix your gates. One qubit gets flipped and the other gets split."),
     L("Turn the hand", 1, "H0", "H0 Z0", "X H Z", 1, "Z turns the hand on the 1 tile half way round. That is phase. The discs keep their size, so the chances stay the same."),
-    L("Hidden phase", 1, "H0 Z0", "X0", "H Z", 1, "Phase stays hidden until H reveals it. Tap H and watch the turned hand become a flip."),
+    L("Hidden phase", 1, "H0 Z0", "X0", "X H Z", 1, "Phase stays hidden until H reveals it. Use H and watch the turned hand become a flip."),
     L("Flip without X", 1, "", "X0", "H Z", 3, "There is no X here. Put a Z between two H gates to build your own flip."),
     L("Plus and minus", 2, "", "H0 H1 Z1", "X H Z", 3, "Split both qubits, then turn the hand on just one of them."),
     L("Double reveal", 2, "H0 H1", "X0 X1", "H Z", 4, "Turn the hands first. Then let H reveal them."),
-    L("Control", 2, "X0", "X0 X1", "CX", 1, "CNOT flips the target qubit only when the control qubit is 1. Tap CNOT, then the control, then the target."),
-    L("Other way round", 2, "X1", "X0 X1", "CX", 1, "Either qubit can be the control. Pick the one that is 1."),
-    L("Bell pair", 2, "", "H0 CX01", "H CX", 2, "Split one qubit, then use it as the control. Now the two qubits always agree. That is entanglement."),
-    L("Opposites", 2, "", "H0 CX01 X1", "X H CX", 3, "Make a pair that always disagrees."),
+    L("Control", 2, "X0", "X0 X1", "H Z CX", 1, "CNOT flips the target qubit only when the control qubit is 1. Drop CNOT on the control qubit. The other qubit is the target."),
+    L("Other way round", 2, "X1", "X0 X1", "H Z CX", 1, "Either qubit can be the control. Pick the one that is 1."),
+    L("Bell pair", 2, "", "H0 CX01", "X H Z CX", 2, "Split one qubit, then use it as the control. Now the two qubits always agree. That is entanglement."),
+    L("Opposites", 2, "", "H0 CX01 X1", "X H Z CX", 3, "Make a pair that always disagrees."),
     L("Twisted opposites", 2, "", "H0 CX01 X1 Z0", "X H Z CX", 4, "An entangled pair can carry a phase too. Watch the hands."),
-    L("Untangle", 2, "H0 CX01", "", "H CX", 2, "Every gate can be undone. Run the Bell pair recipe backwards."),
+    L("Untangle", 2, "H0 CX01", "", "X H Z CX", 2, "Every gate can be undone. Run the Bell pair recipe backwards."),
     L("Three links", 2, "H0 S0 X1", "X0 H1 S1", "CX", 3, "Three CNOTs that take turns as the control will trade two qubits."),
-    L("Swap", 2, "X0 H1", "H0 X1", "SW", 1, "SWAP trades two qubits in one move."),
-    L("Corner hand", 2, "H0 H1", "H0 H1 CZ01", "H CZ", 1, "CZ turns the hand on the 11 tile only. Both qubits play the same part, so the order of your taps does not matter."),
-    L("Bell without CNOT", 2, "", "H0 CX01", "H CZ", 4, "A CZ with an H before and after it on one qubit works just like a CNOT."),
-    L("Quarter turn", 1, "H0", "H0 S0", "H S", 1, "S turns the hand a quarter turn. Two of them make a Z."),
+    L("Swap", 2, "X0 H1", "H0 X1", "X H Z SW", 1, "SWAP trades two qubits in one move."),
+    L("Corner hand", 2, "H0 H1", "H0 H1 CZ01", "X H Z CZ", 1, "CZ turns the hand on the 11 tile only. Both qubits play the same part, so it does not matter which one you drop it on."),
+    L("Bell without CNOT", 2, "", "H0 CX01", "X H Z CZ", 4, "A CZ with an H before and after it on one qubit works just like a CNOT."),
+    L("Quarter turn", 1, "H0", "H0 S0", "X H Z S", 1, "S turns the hand a quarter turn. Two of them make a Z."),
     L("Four step flip", 1, "", "X0", "H S", 4, "Build a flip from H and S alone."),
-    L("Counter turn", 1, "H0", "H0 S0 S0 S0", "H S Z", 2, "A quarter turn the other way is a half turn plus a quarter turn."),
-    L("Eight tiles", 3, "", "X0 X2", "X", 2, "Three qubits have eight answers. The digits read top, middle, bottom."),
-    L("Triple link", 3, "", "H0 CX01 CX02", "H CX", 3, "One H and two CNOTs tie all three qubits together. They always agree."),
-    L("Pass it along", 3, "H0 CX01", "H0 CX02", "CX SW", 1, "Entanglement can be moved. Hand one half of the pair to the third qubit."),
-    L("Odd one out", 3, "", "H0 CX01 CX02 X2", "X H CX", 4, "Tie all three together, but make the bottom qubit disagree with the other two."),
+    L("Counter turn", 1, "H0", "H0 S0 S0 S0", "H Z S", 2, "A quarter turn the other way is a half turn plus a quarter turn."),
+    L("Eight tiles", 3, "", "X0 X2", "X H Z S", 2, "Three qubits have eight answers. The digits read top, middle, bottom."),
+    L("Triple link", 3, "", "H0 CX01 CX02", "X H Z CX", 3, "One H and two CNOTs tie all three qubits together. They always agree."),
+    L("Pass it along", 3, "H0 CX01", "H0 CX02", "X H CX SW", 1, "Entanglement can be moved. Hand one half of the pair to the third qubit."),
+    L("Odd one out", 3, "", "H0 CX01 CX02 X2", "X H Z CX", 4, "Tie all three together, but make the bottom qubit disagree with the other two."),
     L("Grand finale", 3, "H0 H1 H2", "H0 CX01 CX12 Z2", "H Z CX CZ", 5, "Gather the spread state into a triple link, then add a half turn."),
   ];
+  const ADVANCED = [
+    // Bell states
+    L("Phi plus", 2, "", "H0 CX01", "X H Z S CX", 2, "The first Bell state, |Φ+⟩ = (|00⟩ + |11⟩)/√2. H on one qubit, then CNOT with it as the control.",
+      { after: "Neither qubit has a state of its own any more. Only the pair does." }),
+    L("Phi minus", 2, "", "H0 CX01 Z0", "X H Z S CX", 3, "|Φ−⟩ = (|00⟩ − |11⟩)/√2. The same pair with a half turn on the 11 tile.",
+      { after: "A Z on either qubit gives the same state. In an entangled pair a phase belongs to the pair, not to one side." }),
+    L("Psi plus", 2, "", "H0 CX01 X1", "X H Z S CX", 3, "|Ψ+⟩ = (|01⟩ + |10⟩)/√2. The two qubits always disagree.",
+      { after: "Φ+, Φ−, Ψ+ and Ψ− are the four Bell states. Together they form a basis for two qubits." }),
+    L("Psi minus", 2, "", "H0 CX01 X1 Z0", "X H S CX SW", 4, "|Ψ−⟩ = (|01⟩ − |10⟩)/√2, the singlet. There is no Z here: get the minus sign from X and H.",
+      { after: "The singlet looks the same in every basis: whichever way both sides measure, they disagree." }),
+    L("One side only", 2, "H0 CX01", "H0 CX01 X0 Z0", "X H Z S CX", 2, "Alice holds the top qubit of a shared |Φ+⟩. Acting on her qubit alone, turn the pair into |Ψ−⟩.",
+      { after: "With I, X, Z or both on one qubit, Alice can reach all four Bell states. That is two bits of choice carried by one qubit." }),
+    L("Bell measurement", 2, "H0 CX01 X1 Z0", "X0 X1", "X H Z S CX", 2, "Run the Bell recipe backwards on |Ψ−⟩. Each Bell state unwinds to a different pair of plain bits.",
+      { after: "CNOT then H maps Φ+, Ψ+, Φ−, Ψ− to 00, 01, 10, 11. Measuring after it tells the four Bell states apart." }),
+    // Phase
+    L("Eighth turn", 1, "H0", "H0 T0", "X H Z S T", 1, "T turns the hand an eighth of a turn: a phase of e^(iπ/4) on |1⟩.",
+      { after: "T is the gate that takes a computer beyond what can be simulated easily. H, S and CNOT alone are not enough." }),
+    L("S from T", 1, "H0", "H0 S0", "X H Z T", 2, "Two eighth turns make a quarter turn."),
+    L("Kickback", 2, "H0 X1 H1", "H0 Z0 X1 H1", "X H S T CX", 1, "The bottom qubit is in |−⟩ and a CNOT cannot change it. Watch where the phase goes instead.",
+      { after: "The target was left alone and the control got a half turn. This phase kickback is how algorithms read a function without looking at its output." }),
+    L("Deutsch", 2, "X1 H1", "X0 X1 H1", "H S T CX CZ", 3, "The bottom qubit is ready in |−⟩. The CNOT is a box for a balanced function: use it once, with the top qubit as control, so that the top qubit reads 1 for certain.",
+      { after: "With a constant function the top qubit would read 0. One use of the box tells constant from balanced; classically it takes two." }),
+    // Measurement
+    L("Collapse", 1, "H0", "H0 M0", "X H Z S M", 1, "M measures a qubit. A superposition does not survive it: the state splits into the possible readings, each with its chance.",
+      { goal: "world", after: "From here on the game follows every reading. A level is solved only if it works out in all of them." }),
+    L("A different question", 1, "H0 Z0", "X0", "X H Z S M", 2, "This is |−⟩. Measured as it is, it reads 0 or 1 at random. Use H first so that the reading is certain.",
+      { measured: [0], after: "H before M measures in the X basis: it asks plus or minus instead of 0 or 1. A state can be certain for one question and random for the other." }),
+    L("Both at once", 2, "H0 CX01", "H0 CX01 M0", "X H Z S M", 1, "Measure only the top qubit of a Bell pair and watch the bottom one.",
+      { goal: "world", after: "The bottom qubit was never touched, yet it is now certain too. The readings are random, so no message is sent this way." }),
+    L("Three way collapse", 3, "H0 CX01 CX02", "H0 CX01 CX02 M0", "X H Z S M", 1, "This is the GHZ state (|000⟩ + |111⟩)/√2. Measure any one qubit.",
+      { goal: "world", after: "One reading in the 0 or 1 basis leaves nothing entangled. The next level measures the same state another way." }),
+    L("Keep the pair", 3, "H0 CX01 CX02", "H0 CX01 CX02 H0 M0 CZ01", "X H Z CZ M", 3, "Measure the top qubit of the GHZ state so that the other two stay entangled, then use the reading to fix their sign.",
+      { goal: "world", after: "Measured in the X basis, the top qubit leaves a Bell pair behind. A CZ from the measured qubit is a Z applied only when it read 1." }),
+    // Protocols
+    L("Superdense coding", 2, "H0 CX01", "X0 X1", "X H Z CX M", 6, "Alice and Bob share |Φ+⟩. Alice wants to send the bits 11 by sending only her one qubit. Encode on the top qubit, decode with a Bell measurement, and measure both.",
+      { measured: [0, 1], after: "Z then X on Alice's qubit made |Ψ−⟩, which decodes to 11. One qubit carried two bits, because the pair was shared beforehand." }),
+    L("Teleportation", 3, "H0 T0 H1 CX12", "H0 T0 H1 CX12", "X H CX CZ M", 6, "Move the state of q1 onto q3. q2 and q3 already share a Bell pair, and q3 is far away. Do a Bell measurement on q1 and q2, then correct q3 with a CNOT from q2 and a CZ from q1.",
+      { goal: "qubit", q: 2, want: "H0 T0", measured: [0, 1], far: 2, after: "The state now lives on q3 in all four readings, and q1 no longer has it. Only two plain bits travelled, and nothing was copied." }),
+  ];
+  const LEVELS = BASIC.concat(ADVANCED), ADV = BASIC.length;
+  const CHAPTERS = [
+    { title: "Flip", from: 0 }, { title: "Superposition", from: 3 }, { title: "Phase", from: 7 },
+    { title: "Entanglement", from: 12 }, { title: "New gates", from: 19 }, { title: "Three qubits", from: 25 },
+    { title: "Bell states", from: ADV, first: true }, { title: "Phase and kickback", from: ADV + 6 },
+    { title: "Measurement", from: ADV + 10 }, { title: "Protocols", from: ADV + 15 },
+  ];
+  LEVELS.forEach((lv, i) => {
+    lv.adv = i >= ADV;
+    lv.targetWorld = build(lv.n, lv.target);
+    if (lv.goal === "qubit") lv.wantState = build(1, lv.want)[0].s;
+  });
 
   // ---------- save ----------
   const save = { stars: [], best: [], solved: 0, totalStars: 0, last: 0, muted: false };
@@ -169,14 +321,20 @@
       if (st > 0) solved++; total += st;
     }
     save.stars.length = save.best.length = LEVELS.length;
-    save.solved = solved; save.totalStars = total;
+    save.solved = solved; save.totalStars = total; save.levels = LEVELS.length;
     save.last = Math.max(0, Math.min(LEVELS.length - 1, save.last | 0));
   }
   tally();
   const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} };
-  const unlocked = (i) => i < save.solved + 2 || !!save.stars[i] || (i > 0 && !!save.stars[i - 1]);
-  function firstOpen() {
-    for (let i = 0; i < LEVELS.length; i++) if (!save.stars[i]) return i;
+  const solvedIn = (from, to) => { let n = 0; for (let i = from; i < to; i++) if (save.stars[i]) n++; return n; };
+  // each set opens two levels ahead of what has been solved in it; Advanced is open from the start
+  function unlocked(i) {
+    const from = i >= ADV ? ADV : 0, to = i >= ADV ? LEVELS.length : ADV;
+    return i - from < solvedIn(from, to) + 2 || !!save.stars[i] || (i > from && !!save.stars[i - 1]);
+  }
+  function firstOpen(adv) {
+    const from = adv ? ADV : 0, to = adv ? LEVELS.length : ADV;
+    for (let i = from; i < to; i++) if (!save.stars[i]) return i;
     return -1;
   }
 
@@ -206,6 +364,8 @@
     H: () => { tone(523, 523, 0.2, "sine", 0.2); tone(784, 784, 0.22, "sine", 0.16, 0.03); },
     Z: () => tone(660, 330, 0.16, "triangle", 0.26),
     S: () => tone(660, 495, 0.12, "triangle", 0.24),
+    T: () => tone(660, 560, 0.1, "triangle", 0.22),
+    M: () => { tone(880, 220, 0.18, "sine", 0.2); tone(1320, 1320, 0.05, "square", 0.05, 0.16); },
     CX: () => { tone(294, 294, 0.1, "square", 0.1); tone(440, 660, 0.14, "triangle", 0.26, 0.07); },
     CZ: () => { tone(294, 294, 0.1, "square", 0.1); tone(660, 330, 0.16, "triangle", 0.24, 0.07); },
     SW: () => { tone(392, 587, 0.12, "sine", 0.24); tone(587, 392, 0.12, "sine", 0.24, 0.09); },
@@ -224,31 +384,27 @@
     if (!save.muted) tone(660, 880, 0.08, "sine", 0.15);
   }
 
-  // ---------- game state ----------
-  let cur = 0, lv = LEVELS[0], hist = [], state = zero(1), target = zero(1);
-  let armed = null, pick = -1, solved = false, screen = "menu", lastStars = 0, winTimer = 0;
-
-  const PH = [[143, 214, 255], [201, 168, 255], [255, 194, 138], [126, 232, 181]];
+  // ---------- drawing the states ----------
+  // the colour of a disc follows its phase, a quarter of the wheel per colour
+  const PH = [[47, 111, 181], [124, 77, 196], [200, 112, 28], [42, 150, 100]];
   function phaseColor(deg) {
     const t = ((deg % 360) + 360) % 360 / 90, i = Math.floor(t) % 4, f = t - Math.floor(t);
     const a = PH[i], b = PH[(i + 1) % 4];
     return "rgb(" + [0, 1, 2].map((k) => Math.round(a[k] + (b[k] - a[k]) * f)).join(",") + ")";
   }
-  function label(i, n) {
+  // tiles for the qubits listed in `show` (indexes into the level's qubits)
+  function tilesHtml(show) {
     let h = "";
-    for (let q = 0; q < n; q++) h += '<span class="q' + q + '">' + ((i >> (n - 1 - q)) & 1) + "</span>";
+    for (let i = 0; i < 1 << show.length; i++) {
+      let lab = "";
+      show.forEach((q, k) => { lab += '<span class="q' + q + '">' + ((i >> (show.length - 1 - k)) & 1) + "</span>"; });
+      h += '<div class="tile is-empty"><div class="tile__disc"><svg viewBox="-50 -50 100 100" aria-hidden="true">' +
+        '<circle class="ring" r="44"/><circle class="disc" r="44"/><line class="hand hand--edge" x1="0" y1="0" x2="0" y2="-40"/><line class="hand" x1="0" y1="0" x2="0" y2="-40"/><circle class="hub" r="4"/>' +
+        '</svg></div><div class="tile__label">' + lab + "</div></div>";
+    }
     return h;
   }
-  function makeTiles(host, n) {
-    let h = "";
-    for (let i = 0; i < 1 << n; i++) {
-      h += '<div class="tile is-empty"><div class="tile__disc"><svg viewBox="-50 -50 100 100" aria-hidden="true">' +
-        '<circle class="ring" r="44"/><circle class="disc" r="44"/><line class="hand" x1="0" y1="0" x2="0" y2="-40"/><circle class="hub" r="4"/>' +
-        '</svg></div><div class="tile__label">' + label(i, n) + "</div></div>";
-    }
-    host.innerHTML = h;
-    return [...host.children].map((el) => ({ el, disc: el.querySelector(".disc"), hand: el.querySelector(".hand"), ang: 0 }));
-  }
+  const grab = (host) => [...host.querySelectorAll(".tile")].map((el) => ({ el, disc: el.querySelector(".disc"), hands: [...el.querySelectorAll(".hand")], ang: 0 }));
   function paintTiles(tiles, s) {
     const c = canon(s);
     tiles.forEach((t, i) => {
@@ -260,26 +416,126 @@
         const deg = Math.atan2(c.im[i], c.re[i]) * 180 / Math.PI;
         const d = ((deg - t.ang) % 360 + 540) % 360 - 180;   // shortest way round
         t.ang += d;
-        t.hand.style.transform = "rotate(" + t.ang.toFixed(2) + "deg)";
+        for (const h of t.hands) h.style.transform = "rotate(" + t.ang.toFixed(2) + "deg)";
         t.disc.style.fill = phaseColor(deg);
       }
       t.el.setAttribute("aria-label", "chance " + Math.round(mag * mag * 100) + " percent");
     });
     return c;
   }
+  // the state of the qubits in `keep`, once the others are known to be plain bits
+  function reduced(s, keep) {
+    const out = { n: keep.length, re: new Float64Array(1 << keep.length), im: new Float64Array(1 << keep.length) };
+    for (let i = 0; i < s.re.length; i++) {
+      if (Math.abs(s.re[i]) + Math.abs(s.im[i]) < 1e-12) continue;
+      let k = 0;
+      keep.forEach((q) => { k = (k << 1) | ((i >> (s.n - 1 - q)) & 1); });
+      out.re[k] += s.re[i]; out.im[k] += s.im[i];
+    }
+    return out;
+  }
+  const pct = (p) => { const v = p * 100; return (Math.abs(v - Math.round(v)) < 0.05 ? String(Math.round(v)) : v.toFixed(1)) + "%"; };
+  // several outcomes side by side. Qubits that were measured are shown as their reading, the rest as tiles.
+  function outcomesHtml(world, read) {
+    let h = "";
+    for (const b of world) {
+      const bits = read.filter((q) => sureBit(b.s, q) >= 0), keep = [];
+      for (let q = 0; q < b.s.n; q++) if (!bits.includes(q)) keep.push(q);
+      const cap = bits.map((q) => '<span class="q' + q + '">q' + (q + 1) + "=" + sureBit(b.s, q) + "</span>").join(" ");
+      h += '<div class="outcome" data-keep="' + keep.join("") + '"><div class="outcome__cap"><b>' + pct(b.p) + "</b> " + cap + "</div>" +
+        (keep.length ? '<div class="tiles tiles--mini k' + keep.length + '">' + tilesHtml(keep) + "</div>" : '<div class="outcome__done">all read</div>') + "</div>";
+    }
+    return h;
+  }
+  function paintOutcomes(host, world) {
+    [...host.querySelectorAll(".outcome")].forEach((el, i) => {
+      const keep = el.dataset.keep.split("").filter(Boolean).map(Number);
+      if (keep.length) paintTiles(grab(el), reduced(world[i].s, keep));
+    });
+  }
 
-  let yoursTiles = [], targetTiles = [], targetCanon = null;
+  // a state written out, such as (|00⟩ + |11⟩)/√2
+  function ket(s) {
+    const c = canon(s), terms = [];
+    for (let i = 0; i < c.re.length; i++) { const m = Math.hypot(c.re[i], c.im[i]); if (m > 1e-6) terms.push({ i, m, deg: Math.atan2(c.im[i], c.re[i]) * 180 / Math.PI }); }
+    const label = (i) => "|" + i.toString(2).padStart(s.n, "0") + "⟩";
+    const PHASE = { 0: ["+", ""], 45: ["+", "e^(iπ/4)"], 90: ["+", "i"], 135: ["+", "e^(3iπ/4)"], 180: ["−", ""], 225: ["−", "e^(iπ/4)"], 270: ["−", "i"], 315: ["−", "e^(3iπ/4)"] };
+    const phase = (deg) => { const d = Math.round((((deg % 360) + 360) % 360) / 45) * 45 % 360; return Math.abs(((deg - d + 540) % 360) - 180) < 0.5 ? PHASE[d] : null; };
+    const same = terms.every((t) => Math.abs(t.m - terms[0].m) < 1e-6), exact = terms.every((t) => phase(t.deg));
+    if (!same || !exact) {
+      // amplitudes that are not all alike: write each one as a number
+      return terms.map((t, k) => { const p = phase(t.deg); const co = t.m.toFixed(3) + (p ? p[1] : "·e^(i" + Math.round(t.deg) + "°)"); return (k ? (p ? " " + p[0] + " " : " + ") : p && p[0] === "−" ? "−" : "") + co + label(t.i); }).join("");
+    }
+    const body = terms.map((t, k) => { const p = phase(t.deg); return (k ? " " + p[0] + " " : p[0] === "−" ? "−" : "") + p[1] + label(t.i); }).join("");
+    const inv = Math.round(1 / (terms[0].m * terms[0].m));           // 1 over the chance of each term
+    if (inv === 1) return body;
+    const den = { 2: "√2", 4: "2", 8: "2√2", 16: "4" }[inv] || "√" + inv;
+    return "(" + body + ")/" + den;
+  }
+
+  // ---------- game state ----------
+  let cur = 0, lv = LEVELS[0], hist = [], world = [{ p: 1, s: zero(1) }];
+  let armed = null, pick = -1, solved = false, screen = "menu", lastStars = 0, winTimer = 0, match = { f: 0, solved: false };
+  let yoursTiles = [], yoursShape = "", targetCanon = null;
+
+  const readOf = (moves) => [...new Set(moves.filter((m) => m[0] === "M").map((m) => +m[1]))];
+  function recompute() { world = build(lv.n, lv.start); for (const m of hist) world = run(world, m); }
+
+  function paintTarget() {
+    const host = $("tiles-target"), head = $("target-head");
+    host.className = "tiles";
+    if (lv.goal === "qubit") {
+      head.textContent = "q" + (lv.q + 1) + " must be";
+      host.classList.add("k1");
+      host.innerHTML = tilesHtml([lv.q]);
+      requestAnimationFrame(() => paintTiles(grab(host), lv.wantState));
+    } else if (lv.targetWorld.length > 1) {
+      head.textContent = "Target";
+      host.classList.add("is-outcomes");
+      host.innerHTML = outcomesHtml(lv.targetWorld, readOf(lv.target.split(" ")));
+      requestAnimationFrame(() => paintOutcomes(host, lv.targetWorld));
+    } else {
+      head.textContent = "Target";
+      host.innerHTML = tilesHtml([...Array(lv.n).keys()]);
+      const tiles = grab(host);
+      requestAnimationFrame(() => { targetCanon = paintTiles(tiles, lv.targetWorld[0].s); });
+      targetCanon = canon(lv.targetWorld[0].s);
+    }
+  }
+  function paintYours() {
+    const host = $("tiles-yours"), read = readOf(hist);
+    const shape = world.length > 1 ? "o:" + world.map((b) => read.map((q) => sureBit(b.s, q)).join("")).join("|") : "one";
+    if (world.length > 1) {
+      // the picture is rebuilt whenever the set of outcomes changes shape
+      if (shape !== yoursShape) { host.className = "tiles is-outcomes"; host.innerHTML = outcomesHtml(world, read); }
+      paintOutcomes(host, world);
+      yoursTiles = [];
+    } else {
+      if (shape !== yoursShape) { host.className = "tiles"; host.innerHTML = tilesHtml([...Array(lv.n).keys()]); yoursTiles = grab(host); }
+      const c = paintTiles(yoursTiles, world[0].s), single = lv.goal === "state" && targetCanon;
+      yoursTiles.forEach((t, i) => {
+        const eq = single && Math.abs(c.re[i] - targetCanon.re[i]) < 1e-5 && Math.abs(c.im[i] - targetCanon.im[i]) < 1e-5;
+        t.el.classList.toggle("is-same", !!eq && !t.el.classList.contains("is-empty"));
+      });
+    }
+    yoursShape = shape;
+  }
+  function paintKets() {
+    const host = $("kets");
+    host.hidden = !lv.adv;
+    if (!lv.adv) return;
+    const mine = world.length > 1 ? world.length + " outcomes" : ket(world[0].s);
+    const goal = lv.goal === "qubit" ? "q" + (lv.q + 1) + " = " + ket(lv.wantState) : lv.targetWorld.length > 1 ? lv.targetWorld.length + " outcomes" : ket(lv.targetWorld[0].s);
+    host.innerHTML = '<span><b>Yours</b> ' + mine + '</span><span><b>Target</b> ' + goal + "</span>";
+  }
 
   function startLevel(i) {
     clearTimeout(winTimer);
     cur = Math.max(0, Math.min(LEVELS.length - 1, i | 0)); lv = LEVELS[cur];
     save.last = cur; persist();
-    hist = []; armed = null; pick = -1; solved = false;
-    target = build(lv.n, lv.target);
-    $("states").className = "states n" + lv.n;
-    yoursTiles = makeTiles($("tiles-yours"), lv.n);
-    targetTiles = makeTiles($("tiles-target"), lv.n);
-    $("lv-title").textContent = "Level " + (cur + 1) + ". " + lv.name;
+    hist = []; armed = null; pick = -1; solved = false; yoursShape = ""; targetCanon = null;
+    $("states").className = "states n" + lv.n + (lv.adv ? " is-adv" : "");
+    $("lv-title").textContent = (lv.adv ? "Advanced " + (cur - ADV + 1) : "Level " + (cur + 1)) + ". " + lv.name;
     $("hint").textContent = lv.hint;
     // qubit wires
     let h = '<svg aria-hidden="true"></svg>';
@@ -289,11 +545,10 @@
     // gate buttons
     $("gates").innerHTML = lv.gates.map((t) => '<button type="button" class="gate" data-g="' + t + '" aria-label="' + GATE[t].name + ", " + GATE[t].sub + '">' +
       '<span class="gate__name' + (GATE[t].name.length > 2 ? " is-long" : "") + '">' + GATE[t].name + '</span><span class="gate__sub">' + GATE[t].sub + '</span><span class="gate__key" aria-hidden="true">' + GATE[t].key.toUpperCase() + "</span></button>").join("");
+    $("gates").classList.toggle("is-many", lv.gates.length > 4);
     showWin(false);
     show("play");
-    // paint one frame later so the discs grow in
-    requestAnimationFrame(() => { targetCanon = paintTiles(targetTiles, target); refresh(false); });
-    targetCanon = canon(target);
+    paintTarget();
     refresh(false);
   }
 
@@ -301,36 +556,30 @@
     $("win").hidden = !on; $("controls").hidden = on;
     $("stage").classList.toggle("is-won", on);
   }
-  function recompute() { state = build(lv.n, lv.start); for (const m of hist) apply(state, m); }
 
   function refresh(isNew) {
     recompute();
-    const c = paintTiles(yoursTiles, state);
-    const f = Math.max(0, Math.min(1, fidelity(state, target)));
-    const match = same(state, target);
-    if (targetCanon) yoursTiles.forEach((t, i) => {
-      const eq = Math.abs(c.re[i] - targetCanon.re[i]) < 1e-5 && Math.abs(c.im[i] - targetCanon.im[i]) < 1e-5;
-      t.el.classList.toggle("is-same", eq && !t.el.classList.contains("is-empty"));
-    });
-    let pct = Math.round(f * 100); if (!match && pct > 99) pct = 99; if (match) pct = 100;
-    $("match-fill").style.width = pct + "%";
-    $("match-text").textContent = "Match " + pct + "%";
-    $("match").classList.toggle("is-full", match);
-    $("states").classList.toggle("is-match", match);
+    paintYours();
+    match = judge(lv, world, hist);
+    let pc = Math.round(match.f * 100); if (!match.solved && pc > 99) pc = 99; if (match.solved) pc = 100;
+    $("match-fill").style.width = pc + "%";
+    $("match-text").textContent = "Match " + pc + "%";
+    $("match").classList.toggle("is-full", match.solved);
+    $("states").classList.toggle("is-match", match.solved);
     $("lv-count").textContent = "Gates " + hist.length + " · Best possible " + lv.par;
     $("btn-undo").disabled = !hist.length; $("btn-reset").disabled = !hist.length;
-    paintArmed(); drawCircuit(isNew);
-    return match;
+    paintKets(); paintArmed(); drawCircuit(isNew);
+    return match.solved;
   }
 
   function promptText() {
     if (solved) return "Solved.";
-    if (lv.n === 1) return "Tap a gate to use it.";
-    if (!armed) return "Tap a gate, then tap a qubit.";
+    if (lv.n === 1) return "Drag a gate onto the qubit.";
+    if (!armed) return "Drag a gate onto a qubit.";
     const nm = GATE[armed].name;
     if (armed === "CX") return pick < 0 ? "CNOT is ready. Tap the control qubit." : "Control is q" + (pick + 1) + ". Now tap the target qubit.";
     if (armed === "CZ" || armed === "SW") return pick < 0 ? nm + " is ready. Tap the first qubit." : "First is q" + (pick + 1) + ". Now tap the second qubit.";
-    return nm + " is ready. Tap a qubit.";
+    return (armed === "M" ? "Measure" : nm) + " is ready. Tap a qubit.";
   }
   function paintArmed() {
     for (const b of $("gates").children) b.classList.toggle("is-armed", b.dataset.g === armed);
@@ -351,24 +600,25 @@
     if (!svg) return;
     const W = host.clientWidth, H = host.clientHeight;
     if (!W || !H) return;
+    const css = getComputedStyle(document.documentElement), ink = css.getPropertyValue("--fg").trim() || "#3b3226", paper = css.getPropertyValue("--chip").trim() || "#fffdf8";
     const wires = [...host.querySelectorAll(".wire")];
     const ys = wires.map((w) => w.offsetTop + w.offsetHeight / 2);
-    const col = ["#8fd6ff", "#c9a8ff", "#ffc28a"];
+    const col = ["--q0", "--q1", "--q2"].map((v) => css.getPropertyValue(v).trim());
     const x0 = 78, step = 36, maxCols = Math.max(1, Math.floor((W - x0 - 8) / step));
     const shown = hist.slice(-maxCols), off = hist.length - shown.length;
     let h = "";
-    ys.forEach((y, q) => { h += '<line x1="56" y1="' + y + '" x2="' + (W - 10) + '" y2="' + y + '" stroke="' + col[q] + '" stroke-opacity="0.35" stroke-width="2"/>'; });
-    if (off > 0) ys.forEach((y) => { h += '<circle cx="58" cy="' + y + '" r="1.6" fill="#fff"/><circle cx="63" cy="' + y + '" r="1.6" fill="#fff"/>'; });
+    ys.forEach((y, q) => { h += '<line x1="56" y1="' + y + '" x2="' + (W - 10) + '" y2="' + y + '" stroke="' + col[q] + '" stroke-opacity="0.45" stroke-width="2"/>'; });
+    if (off > 0) ys.forEach((y) => { h += '<circle cx="58" cy="' + y + '" r="1.6" fill="' + ink + '"/><circle cx="63" cy="' + y + '" r="1.6" fill="' + ink + '"/>'; });
     shown.forEach((tok, k) => {
       const g = parse(tok), x = x0 + k * step, ya = ys[g.a], yb = g.b >= 0 ? ys[g.b] : 0;
       h += '<g class="cg' + (isNew && k === shown.length - 1 ? " is-new" : "") + '">';
       if (g.b < 0) {
-        h += '<rect x="' + (x - 13) + '" y="' + (ya - 13) + '" width="26" height="26" rx="7" fill="#0a0e1c" stroke="' + col[g.a] + '" stroke-width="2"/><text x="' + x + '" y="' + (ya + 0.5) + '">' + g.t + "</text>";
+        h += '<rect x="' + (x - 13) + '" y="' + (ya - 13) + '" width="26" height="26" rx="7" fill="' + (g.t === "M" ? col[g.a] : paper) + '" stroke="' + col[g.a] + '" stroke-width="2"/><text x="' + x + '" y="' + (ya + 0.5) + '"' + (g.t === "M" ? ' fill="' + paper + '"' : "") + ">" + g.t + "</text>";
       } else {
-        h += '<line x1="' + x + '" y1="' + ya + '" x2="' + x + '" y2="' + yb + '" stroke="#fff" stroke-width="2"/>';
-        const dot = (y) => '<circle cx="' + x + '" cy="' + y + '" r="5.5" fill="#fff"/>';
-        const cross = (y) => '<path d="M' + (x - 6) + " " + (y - 6) + "l12 12m0 -12l-12 12" + '" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>';
-        if (g.t === "CX") h += dot(ya) + '<circle cx="' + x + '" cy="' + yb + '" r="10" fill="#0a0e1c" stroke="#fff" stroke-width="2"/><path d="M' + (x - 10) + " " + yb + "h20M" + x + " " + (yb - 10) + 'v20" stroke="#fff" stroke-width="2"/>';
+        h += '<line x1="' + x + '" y1="' + ya + '" x2="' + x + '" y2="' + yb + '" stroke="' + ink + '" stroke-width="2"/>';
+        const dot = (y) => '<circle cx="' + x + '" cy="' + y + '" r="5.5" fill="' + ink + '"/>';
+        const cross = (y) => '<path d="M' + (x - 6) + " " + (y - 6) + "l12 12m0 -12l-12 12" + '" stroke="' + ink + '" stroke-width="2.4" stroke-linecap="round"/>';
+        if (g.t === "CX") h += dot(ya) + '<circle cx="' + x + '" cy="' + yb + '" r="10" fill="' + paper + '" stroke="' + ink + '" stroke-width="2"/><path d="M' + (x - 10) + " " + yb + "h20M" + x + " " + (yb - 10) + 'v20" stroke="' + ink + '" stroke-width="2"/>';
         else if (g.t === "CZ") h += dot(ya) + dot(yb);
         else h += cross(ya) + cross(yb);
       }
@@ -378,17 +628,28 @@
     svg.innerHTML = h;
   }
 
+  // ---------- game flow ----------
   function play(tok) {
     if (solved || screen !== "play") return false;
-    try { apply(build(lv.n, lv.start), tok); } catch (e) { return false; }
-    if (!lv.gates.includes(parse(tok).t)) return false;
-    recompute();
-    const before = { n: state.n, re: state.re.slice(), im: state.im.slice() };
+    let g, after;
+    try { g = parse(tok); after = run(cloneWorld(world), tok); } catch (e) { return false; }
+    if (!lv.gates.includes(g.t)) return false;
+    if (!reachable(lv, world, hist, tok)) {
+      SFX.nope(); armed = null; pick = -1; paintArmed();
+      $("prompt").textContent = "q" + (lv.far + 1) + " is far away. Only a qubit that has been measured can act on it.";
+      return false;
+    }
+    if (after.length > MAX_OUTCOMES) {
+      SFX.nope(); armed = null; pick = -1; paintArmed();
+      $("prompt").textContent = "That would be too many outcomes to follow. Undo a measurement first.";
+      return false;
+    }
+    const before = worldKey(world), hadRead = hist.includes(tok);
     hist.push(tok);
-    (SFX[parse(tok).t] || SFX.pick)();
+    (SFX[g.t] || SFX.pick)();
     pick = -1;
     if (refresh(true)) win();
-    else if (same(before, state)) $("prompt").textContent = "That gate left this state as it was.";
+    else if (worldKey(world) === before) $("prompt").textContent = g.t === "M" ? (hadRead ? "That qubit was already measured." : "That qubit was already certain. Measuring it changed nothing.") : "That gate left this state as it was.";
     return true;
   }
   function win() {
@@ -399,11 +660,13 @@
     if (!save.best[cur] || n < save.best[cur]) save.best[cur] = n;
     tally(); persist(); paintArmed();
     SFX.win(stars);
-    const last = cur === LEVELS.length - 1, all = save.solved === LEVELS.length;
+    const last = cur === LEVELS.length - 1 || cur === ADV - 1;
     let txt = "Solved in " + n + (n === 1 ? " gate. " : " gates. ");
     txt += stars === 3 ? "That is the best possible." : "The best possible is " + lv.par + ".";
-    if (last && all) txt += " You have solved every level.";
+    if (last && solvedIn(lv.adv ? ADV : 0, lv.adv ? LEVELS.length : ADV) === (lv.adv ? LEVELS.length - ADV : ADV)) txt += lv.adv ? " You have solved every advanced level." : " You have solved every level of the basics.";
     $("win-text").textContent = txt;
+    $("win-note").textContent = lv.after || "";
+    $("win-note").hidden = !lv.after;
     $("win-stars").innerHTML = [1, 2, 3].map((k) => starSvg(k <= stars)).join("");
     $("btn-next").textContent = last ? "Levels" : "Next level";
     clearTimeout(winTimer);
@@ -425,7 +688,7 @@
     if (solved || q >= lv.n) return;
     audio();
     if (lv.n === 1) return;
-    if (!armed) { SFX.nope(); $("prompt").textContent = "Pick a gate first, then tap a qubit."; return; }
+    if (!armed) { SFX.nope(); $("prompt").textContent = "Drag a gate from the row below onto this qubit."; return; }
     if (armed === "CX" || armed === "CZ" || armed === "SW") {
       if (pick < 0) { pick = q; SFX.pick(); paintArmed(); return; }
       if (pick === q) { pick = -1; SFX.pick(); paintArmed(); return; }
@@ -435,6 +698,79 @@
     }
     play(armed + q);
   }
+  // a gate dropped on a qubit. One-qubit gates act there. For a two-qubit gate that qubit is the
+  // control (or the first of the pair): with two qubits the other one is the partner, with three
+  // the partner is tapped next.
+  function dropGate(t, q) {
+    if (solved || !lv.gates.includes(t) || q < 0 || q >= lv.n) return;
+    const two = t === "CX" || t === "CZ" || t === "SW";
+    armed = null; pick = -1;
+    if (!two) { play(t + q); return; }
+    if (lv.n === 2) { const o = 1 - q; play(t === "CX" ? "CX" + q + o : t + Math.min(q, o) + Math.max(q, o)); return; }
+    armed = t; pick = q;
+    SFX.pick(); paintArmed();
+  }
+  let drag = null, lastPointer = 0;
+  // which qubit wire is under this point, or -1
+  function wireAt(x, y) {
+    const box = $("circuit").getBoundingClientRect();
+    if (x < box.left - 24 || x > box.right + 24) return -1;
+    let found = -1;
+    for (const w of $("circuit").querySelectorAll(".wire")) {
+      const r = w.getBoundingClientRect();
+      if (y >= r.top - 5 && y <= r.bottom + 5) found = +w.dataset.q;
+    }
+    return found;
+  }
+  function moveDrag(e) {
+    // on a touch screen the gate rides above the finger, so the finger does not hide where it will land
+    const x = e.clientX, y = e.clientY - (drag.touch ? 44 : 0);
+    drag.ghost.style.transform = "translate(" + (x - 26) + "px," + (y - 26) + "px)";
+    const q = wireAt(x, y);
+    if (q !== drag.over) {
+      drag.over = q;
+      for (const w of $("circuit").querySelectorAll(".wire")) w.classList.toggle("is-drop", +w.dataset.q === q);
+    }
+  }
+  function endDrag(e, cancelled) {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag;
+    drag = null; lastPointer = Date.now();
+    try { $("gates").releasePointerCapture(e.pointerId); } catch (err) {}
+    d.btn.classList.remove("is-lifted");
+    $("circuit").classList.remove("is-dragging");
+    for (const w of $("circuit").querySelectorAll(".wire")) w.classList.remove("is-drop");
+    if (!d.ghost) { if (!cancelled) tapGate(d.t); return; }       // a plain tap still picks the gate up, as before
+    d.ghost.remove();
+    if (cancelled) return;
+    if (d.over >= 0) dropGate(d.t, d.over); else { SFX.nope(); $("prompt").textContent = "Drop the gate on a qubit."; }
+  }
+  $("gates").addEventListener("pointerdown", (e) => {
+    const btn = e.target.closest(".gate");
+    if (!btn || e.button > 0 || solved || screen !== "play") return;
+    audio();
+    drag = { id: e.pointerId, t: btn.dataset.g, btn, x: e.clientX, y: e.clientY, touch: e.pointerType !== "mouse", ghost: null, over: -1 };
+    try { $("gates").setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  $("gates").addEventListener("pointermove", (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (!drag.ghost) {
+      if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 8) return;
+      const g = document.createElement("div");
+      g.className = "drag-gate" + (GATE[drag.t].name.length > 2 ? " is-long" : "");
+      g.textContent = GATE[drag.t].name;
+      document.body.appendChild(g);
+      drag.ghost = g;
+      drag.btn.classList.add("is-lifted");
+      $("circuit").classList.add("is-dragging");
+      armed = null; pick = -1; paintArmed();
+      SFX.pick();
+    }
+    moveDrag(e);
+  });
+  $("gates").addEventListener("pointerup", (e) => endDrag(e, false));
+  $("gates").addEventListener("pointercancel", (e) => endDrag(e, true));
+
   function undo() {
     if (!hist.length || screen !== "play") return;
     clearTimeout(winTimer);
@@ -463,21 +799,23 @@
     if (name === "play") { $("stage").hidden = false; requestAnimationFrame(() => drawCircuit(false)); }
   }
   function paintMenu() {
-    const open = firstOpen();
-    $("btn-play").textContent = save.solved === 0 ? "Play" : open < 0 ? "Play again" : "Continue at level " + (open + 1);
-    $("best").textContent = save.solved ? save.solved + " of " + LEVELS.length + " solved. " + save.totalStars + " of " + LEVELS.length * 3 + " stars." : "";
+    const open = firstOpen(false), openAdv = firstOpen(true), nb = solvedIn(0, ADV), na = solvedIn(ADV, LEVELS.length);
+    $("btn-play").textContent = nb === 0 ? "Play" : open < 0 ? "Play the basics again" : "Continue at level " + (open + 1);
+    $("btn-adv").textContent = na === 0 ? "Advanced" : openAdv < 0 ? "Advanced, again" : "Advanced, level " + (openAdv - ADV + 1);
+    $("best").textContent = save.solved ? "Basics " + nb + " of " + ADV + ". Advanced " + na + " of " + (LEVELS.length - ADV) + ". " + save.totalStars + " of " + LEVELS.length * 3 + " stars." : "";
   }
   function paintLevels() {
-    const open = firstOpen();
+    const open = save.last >= ADV ? firstOpen(true) : firstOpen(false);
     $("levels-sub").textContent = save.totalStars + " of " + LEVELS.length * 3 + " stars. Three stars means the fewest gates possible.";
     let h = "";
     CHAPTERS.forEach((ch, c) => {
       const to = c + 1 < CHAPTERS.length ? CHAPTERS[c + 1].from : LEVELS.length;
+      if (ch.first) h += '<p class="lv__part">Advanced. Bell states, measurement and protocols, with the states written out.</p>';
       h += "<h3>" + ch.title + '</h3><div class="lv__grid">';
       for (let i = ch.from; i < to; i++) {
-        const st = save.stars[i] | 0, ok = unlocked(i);
+        const st = save.stars[i] | 0, ok = unlocked(i), num = i >= ADV ? i - ADV + 1 : i + 1;
         h += '<button type="button" class="lv__btn' + (st ? " is-done" : "") + (i === open ? " is-next" : "") + '" data-i="' + i + '"' + (ok ? "" : " disabled") +
-          ' aria-label="Level ' + (i + 1) + (ok ? ", " + st + " stars" : ", locked") + '"><span class="lv__num">' + (i + 1) + '</span><span class="lv__stars">' +
+          ' aria-label="' + (i >= ADV ? "Advanced level " : "Level ") + num + (ok ? ", " + st + " stars" : ", locked") + '"><span class="lv__num">' + num + '</span><span class="lv__stars">' +
           [1, 2, 3].map((k) => starSvg(k <= st)).join("") + "</span></button>";
       }
       h += "</div>";
@@ -489,15 +827,16 @@
   }
 
   // ---------- input ----------
-  $("gates").addEventListener("click", (e) => { const b = e.target.closest(".gate"); if (b) tapGate(b.dataset.g); });
+  $("gates").addEventListener("click", (e) => { const b = e.target.closest(".gate"); if (b && Date.now() - lastPointer > 500) tapGate(b.dataset.g); });
   $("circuit").addEventListener("click", (e) => { const w = e.target.closest(".wire"); if (w) tapQubit(+w.dataset.q); });
   $("btn-undo").addEventListener("click", undo);
   $("btn-reset").addEventListener("click", reset);
   $("btn-again").addEventListener("click", reset);
-  $("btn-next").addEventListener("click", () => { audio(); if (cur < LEVELS.length - 1) startLevel(cur + 1); else show("levels"); });
+  $("btn-next").addEventListener("click", () => { audio(); if (cur < LEVELS.length - 1 && cur !== ADV - 1) startLevel(cur + 1); else show("levels"); });
   $("btn-levels").addEventListener("click", () => { audio(); SFX.pick(); show("levels"); });
   $("btn-mute").addEventListener("click", () => { audio(); setMuted(!save.muted); });
-  $("btn-play").addEventListener("click", () => { audio(); const o = firstOpen(); startLevel(o < 0 ? 0 : o); });
+  $("btn-play").addEventListener("click", () => { audio(); const o = firstOpen(false); startLevel(o < 0 ? 0 : o); });
+  $("btn-adv").addEventListener("click", () => { audio(); const o = firstOpen(true); startLevel(o < 0 ? ADV : o); });
   $("btn-open-levels").addEventListener("click", () => { audio(); SFX.pick(); show("levels"); });
   $("btn-levels-back").addEventListener("click", () => { audio(); SFX.pick(); show("menu"); });
   $("lv-list").addEventListener("click", (e) => {
@@ -524,6 +863,7 @@
   const onResize = () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => { if (screen === "play") drawCircuit(false); }); };
   window.addEventListener("resize", onResize);
   window.addEventListener("orientationchange", () => setTimeout(onResize, 250));
+  if (window.matchMedia) { try { window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", onResize); } catch (e) {} }
   document.addEventListener("visibilitychange", () => {
     if (!ac) return;
     try { if (document.hidden) ac.suspend().catch(() => {}); else ac.resume().catch(() => {}); } catch (e) {}
@@ -534,14 +874,15 @@
 
   // test handle
   window.__qubit = {
-    levels: LEVELS, save,
+    levels: LEVELS, save, adv: ADV, ket,
     get screen() { return screen; }, get level() { return cur; }, get moves() { return hist.slice(); },
     get solved() { return solved; }, get armed() { return armed; }, get pick() { return pick; }, get lastStars() { return lastStars; },
-    get amps() { recompute(); return { re: [...state.re], im: [...state.im] }; },
-    get fidelity() { recompute(); return fidelity(state, target); },
-    start: startLevel, play, undo, reset, show, unlocked,
-    solve: (i) => solve(LEVELS[i]),
-    check: (i, seq) => { const l = LEVELS[i], s = build(l.n, l.start); for (const m of seq) apply(s, m); return same(s, build(l.n, l.target)); },
+    get world() { recompute(); return world.map((b) => ({ p: b.p, re: [...b.s.re], im: [...b.s.im], ket: ket(b.s) })); },
+    get amps() { recompute(); return { re: [...world[0].s.re], im: [...world[0].s.im] }; },
+    get fidelity() { recompute(); return judge(lv, world, hist).f; },
+    start: startLevel, play, undo, reset, show, unlocked, dropGate,
+    solve: (i, depth, nodes, opt) => solve(LEVELS[i], depth, nodes, opt),
+    check: (i, seq) => { const l = LEVELS[i]; let w = build(l.n, l.start); for (const m of seq) w = run(w, m); return judge(l, w, seq).solved; },
     wipe: () => { save.stars = []; save.best = []; save.last = 0; tally(); persist(); },
   };
 })();
