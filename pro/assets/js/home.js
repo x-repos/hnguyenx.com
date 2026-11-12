@@ -1829,8 +1829,8 @@
   }
 
   // ====================================================
-  // PORTRAIT ORBITS — three electrons circling the hero photo on tilted
-  // orbits. Each one is in front of the photo for half its orbit and behind
+  // PORTRAIT ORBIT — one electron circling the hero photo on a tilted
+  // orbit. It is in front of the photo for half its orbit and behind
   // it for the other half: the near half is drawn on a canvas above the
   // photo, the far half on a canvas beneath it.
   // ====================================================
@@ -1850,8 +1850,6 @@
     const gb = back.getContext("2d"), gf = front.getContext("2d");
     const ORBITS = [
       { tilt: -0.35, speed: 1.9,  ph: 0.0, col: [255, 255, 255] },
-      { tilt: 0.75,  speed: -1.45, ph: 2.1, col: [255, 255, 255] },
-      { tilt: 1.95,  speed: 1.15, ph: 4.2, col: [255, 255, 255] },
     ];
     let size = 0;
     function fit() {

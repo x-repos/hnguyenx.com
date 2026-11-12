@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Chess</title>
+  <meta name="description" content="Chess: play the computer at four levels, or a friend on one screen. Play in the browser.">
+  <meta name="theme-color" content="#fffdf8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#14110c" media="(prefers-color-scheme: dark)">
+  <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg?v=3">
+  <link rel="icon" type="image/png" sizes="32x32" href="../../assets/favicon-32.png?v=3">
+  <link rel="apple-touch-icon" sizes="180x180" href="../../assets/apple-touch-icon.png?v=3">
+  <link rel="stylesheet" href="chess.css?v=1">
+</head>
+<body class="in-menu">
+  <!-- the six pieces, drawn once and reused everywhere. .pb is the body, .pl the fine lines. -->
+  <svg class="defs" width="0" height="0" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="pc-1" viewBox="0 0 100 100">
+        <g class="pb">
+          <path d="M40 46h20c1 12 13 18 14 32H26c1-14 13-20 14-32z"/>
+          <rect x="20" y="76" width="60" height="12" rx="4"/>
+          <rect x="35" y="41" width="30" height="7" rx="3.5"/>
+          <circle cx="50" cy="28" r="13"/>
+        </g>
+      </symbol>
+      <symbol id="pc-2" viewBox="0 0 100 100">
+        <g class="pb">
+          <path d="M32 78c1-12 12-17 14-28-5 3-10 8-18 7-6-1-8-7-5-12 6-10 14-22 28-27l3-10 7 9c12 8 19 24 19 61z"/>
+          <rect x="20" y="76" width="62" height="12" rx="4"/>
+        </g>
+        <g class="pl"><path d="M62 25c7 10 10 26 10 44"/><path d="M27 50l3 1"/></g>
+        <circle class="pe" cx="45" cy="31" r="2.8"/>
+      </symbol>
+      <symbol id="pc-3" viewBox="0 0 100 100">
+        <g class="pb">
+          <path d="M38 62h24c1 8 9 10 12 16H26c3-6 11-8 12-16z"/>
+          <rect x="20" y="76" width="60" height="12" rx="4"/>
+          <path d="M50 18c12 9 19 20 19 30 0 9-7 15-19 15s-19-6-19-15c0-10 7-21 19-30z"/>
+          <rect x="33" y="59" width="34" height="7" rx="3.5"/>
+          <circle cx="50" cy="13" r="5.5"/>
+        </g>
+        <g class="pl"><path d="M50 32v16M43 40h14"/></g>
+      </symbol>
+      <symbol id="pc-4" viewBox="0 0 100 100">
+        <g class="pb">
+          <path d="M34 38h32l3 40H31z"/>
+          <rect x="18" y="76" width="64" height="12" rx="4"/>
+          <path d="M26 16h11v8h7v-8h12v8h7v-8h11v20a4 4 0 0 1-4 4H30a4 4 0 0 1-4-4z"/>
+        </g>
+        <g class="pl"><path d="M33 68h34"/></g>
+      </symbol>
+      <symbol id="pc-5" viewBox="0 0 100 100">
+        <g class="pb">
+          <path d="M33 62h34l7 16H26z"/>
+          <rect x="18" y="76" width="64" height="12" rx="4"/>
+          <path d="M30 64L18 30l14 16 6-22 6 20 6-24 6 24 6-20 6 22 14-16-12 34z"/>
+          <rect x="29" y="60" width="42" height="7" rx="3.5"/>
+          <circle cx="18" cy="27" r="4.5"/><circle cx="38" cy="21" r="4.5"/><circle cx="50" cy="16" r="4.5"/><circle cx="62" cy="21" r="4.5"/><circle cx="82" cy="27" r="4.5"/>
+        </g>
+      </symbol>
+      <symbol id="pc-6" viewBox="0 0 100 100">
+        <g class="pb">
+          <path d="M33 62h34l7 16H26z"/>
+          <rect x="18" y="76" width="64" height="12" rx="4"/>
+          <path d="M46.500 5h7v6h6v7h-6v12h-7V18h-6v-7h6z"/>
+          <path d="M50 30c-9-7-27-3-27 11 0 9 6 15 9 23h36c3-8 9-14 9-23 0-14-18-18-27-11z"/>
+          <rect x="29" y="60" width="42" height="7" rx="3.5"/>
+        </g>
+        <g class="pl"><path d="M50 36v20"/></g>
+      </symbol>
+    </defs>
+  </svg>
+
+  <main class="app" id="app">
+    <header class="top">
+      <button class="round" id="btn-menu" type="button" aria-label="Menu">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="top__mid">
+        <div class="top__title" id="status" aria-live="polite">Chess</div>
+        <div class="top__sub" id="sub"></div>
+      </div>
+      <button class="round" id="btn-mute" type="button" aria-label="Sound on or off">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 9v6h4l6 5V4L7 9H3z"/>
+          <path class="snd-on" d="M16.5 8.5a5 5 0 0 1 0 7M19 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          <path class="snd-off" d="M16.5 9l5.5 6m0-6l-5.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </header>
+
+    <div class="side" id="side-top"><i class="side__dot"></i><span class="side__name"></span><span class="tray"></span></div>
+
+    <div class="board" id="board" aria-label="Chess board">
+      <div class="squares" id="squares"></div>
+      <div class="pieces" id="pieces"></div>
+      <div class="promo" id="promo" hidden>
+        <p>Promote to</p>
+        <div class="promo__row" id="promo-row"></div>
+        <button type="button" class="promo__cancel" id="promo-cancel">Cancel</button>
+      </div>
+    </div>
+
+    <div class="side" id="side-bot"><i class="side__dot"></i><span class="side__name"></span><span class="tray"></span></div>
+
+    <ol class="moves" id="moves" aria-label="Moves"></ol>
+
+    <div class="tools">
+      <button type="button" id="btn-undo">Undo</button>
+      <button type="button" id="btn-flip">Flip</button>
+      <button type="button" id="btn-new">New game</button>
+    </div>
+  </main>
+
+  <div class="panel" id="menu">
+    <h1>Chess</h1>
+    <p class="panel__sub">Play the computer or a friend on one screen.</p>
+    <div class="panel__buttons" id="continue-wrap" hidden>
+      <button type="button" id="btn-continue">Continue game</button>
+    </div>
+    <div class="menu__cols">
+      <div class="menu__col">
+        <h3>Level</h3>
+        <div class="seg" id="seg-level">
+          <button type="button" data-v="0">Beginner</button>
+          <button type="button" data-v="1">Easy</button>
+          <button type="button" data-v="2">Medium</button>
+          <button type="button" data-v="3">Hard</button>
+        </div>
+        <h3>You play</h3>
+        <div class="seg" id="seg-side">
+          <button type="button" data-v="w">White</button>
+          <button type="button" data-v="b">Black</button>
+          <button type="button" data-v="r">Random</button>
+        </div>
+      </div>
+      <div class="menu__col">
+        <div class="panel__buttons">
+          <button type="button" id="btn-start">Play the computer</button>
+          <button type="button" id="btn-two" class="is-plain">Two players, one screen</button>
+        </div>
+      </div>
+    </div>
+    <p class="panel__best" id="best"></p>
+    <p class="panel__links"><a href="../">All games</a><a href="../../">Home</a></p>
+  </div>
+
+  <div class="panel panel--small" id="over" hidden>
+    <h2 id="over-title"></h2>
+    <p class="panel__sub" id="over-text"></p>
+    <div class="panel__buttons">
+      <button type="button" id="btn-over-new">New game</button>
+      <button type="button" id="btn-over-see" class="is-plain">See the board</button>
+    </div>
+  </div>
+
+  <script src="engine.js?v=1"></script>
+  <script src="chess.js?v=1"></script>
+</body>
+</html>

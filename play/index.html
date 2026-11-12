@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Play</title>
-  <meta name="description" content="Small browser games: Pi Flight, Starship, Qubit Flip, Lattice, Orbit Sling, Pi Run and Pair Path.">
+  <meta name="description" content="Small browser games: Pi Flight, Chess, Qubit Flip, Lattice, Orbit Sling, Pi Run and Pair Path.">
   <meta name="theme-color" content="#05060b">
   <link rel="icon" type="image/svg+xml" href="../pro/images/favicon-pro.svg?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -82,33 +82,36 @@
         </div>
       </a>
 
-      <a class="card card--dark card--starship" href="starship/">
+      <a class="card card--pi" href="chess/">
         <svg class="card__art" viewBox="0 0 320 200" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
-          <defs>
-            <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b2233"/><stop offset="0.7" stop-color="#03040a"/></linearGradient>
-            <radialGradient id="neb" cx="0.3" cy="0.35" r="0.6"><stop offset="0" stop-color="#2b9fd6" stop-opacity="0.35"/><stop offset="1" stop-color="#2b9fd6" stop-opacity="0"/></radialGradient>
-            <g id="pod"><path d="M-14-4-8-13 8-13 14-4 12 10 0 15-12 10z" fill="#2f8fc4" stroke="#bfe6ff" stroke-width="1.5"/><circle cx="-5" cy="-2" r="3" fill="#ff5050"/><circle cx="5" cy="-2" r="3" fill="#ff5050"/></g>
-          </defs>
-          <rect width="320" height="200" fill="url(#sky)"/><rect width="320" height="200" fill="url(#neb)"/>
-          <g fill="#fff"><circle cx="22" cy="30" r="1"/><circle cx="70" cy="150" r="1.3"/><circle cx="118" cy="22" r="0.9"/><circle cx="150" cy="96" r="1.1"/><circle cx="201" cy="170" r="1"/><circle cx="244" cy="38" r="1.4"/><circle cx="286" cy="120" r="1"/><circle cx="300" cy="18" r="0.8"/><circle cx="44" cy="92" r="0.8"/><circle cx="262" cy="182" r="0.9"/></g>
-          <!-- three alien pods -->
-          <use href="#pod" transform="translate(96 44)"/><use href="#pod" transform="translate(160 36)"/><use href="#pod" transform="translate(224 44)"/>
-          <use href="#pod" transform="translate(128 78)"/><use href="#pod" transform="translate(192 78)"/>
-          <!-- enemy shots -->
-          <g fill="#ff7a55"><circle cx="128" cy="108" r="4"/><circle cx="205" cy="124" r="4"/></g>
-          <!-- the ship and its fire -->
-          <g fill="#9fe8ff"><ellipse cx="160" cy="128" rx="2.5" ry="7"/><ellipse cx="160" cy="104" rx="2.5" ry="7"/><ellipse cx="172" cy="116" rx="2.5" ry="7"/><ellipse cx="148" cy="116" rx="2.5" ry="7"/></g>
-          <g transform="translate(160 164)">
-            <path d="M-9 16-5 16-7 30zM5 16 9 16 7 30z" fill="#9fe8ff"/>
-            <path d="M0-6-26 16-22 21-6 14 6 14 22 21 26 16z" fill="#4a6fd6" stroke="#cfe0ff" stroke-width="1.5"/>
-            <path d="M0-26 8-4 9 16-9 16-8-4z" fill="#e8eeff" stroke="#fff" stroke-width="1.2"/>
-            <path d="M0-15 4-3 0 4-4-3z" fill="#39c6ff"/>
-          </g>
+          <rect width="320" height="200" fill="#f4e8cc"/>
+          <g fill="#c2a36b"><rect x="0" y="0" width="40" height="40"/><rect x="80" y="0" width="40" height="40"/><rect x="160" y="0" width="40" height="40"/><rect x="240" y="0" width="40" height="40"/><rect x="40" y="40" width="40" height="40"/><rect x="120" y="40" width="40" height="40"/><rect x="200" y="40" width="40" height="40"/><rect x="280" y="40" width="40" height="40"/><rect x="0" y="80" width="40" height="40"/><rect x="80" y="80" width="40" height="40"/><rect x="160" y="80" width="40" height="40"/><rect x="240" y="80" width="40" height="40"/><rect x="40" y="120" width="40" height="40"/><rect x="120" y="120" width="40" height="40"/><rect x="200" y="120" width="40" height="40"/><rect x="280" y="120" width="40" height="40"/><rect x="0" y="160" width="40" height="40"/><rect x="80" y="160" width="40" height="40"/><rect x="160" y="160" width="40" height="40"/><rect x="240" y="160" width="40" height="40"/></g>
+          <rect x="120" y="40" width="40" height="40" fill="#ffcd40" fill-opacity="0.6"/>
+          <g fill="#2e261b" fill-opacity="0.3"><circle cx="100" cy="100" r="6"/><circle cx="220" cy="20" r="6"/></g>
+          <g transform="translate(80 0) scale(0.4)" fill="#3b3226" stroke="#15110a" stroke-width="3.2" stroke-linejoin="round"><g><path d="M38 62h24c1 8 9 10 12 16H26c3-6 11-8 12-16z"/><rect x="20" y="76" width="60" height="12" rx="4"/><path d="M50 18c12 9 19 20 19 30 0 9-7 15-19 15s-19-6-19-15c0-10 7-21 19-30z"/><rect x="33" y="59" width="34" height="7" rx="3.5"/><circle cx="50" cy="13" r="5.5"/></g><g fill="none" stroke="#f4e8cc" stroke-width="3" stroke-linecap="round"><path d="M50 32v16M43 40h14"/></g></g>
+          <g transform="translate(160 0) scale(0.4)" fill="#3b3226" stroke="#15110a" stroke-width="3.2" stroke-linejoin="round"><g><path d="M40 46h20c1 12 13 18 14 32H26c1-14 13-20 14-32z"/><rect x="20" y="76" width="60" height="12" rx="4"/><rect x="35" y="41" width="30" height="7" rx="3.5"/><circle cx="50" cy="28" r="13"/></g></g>
+          <g transform="translate(80 40) scale(0.4)" fill="#fffdf8" stroke="#2e261b" stroke-width="3.2" stroke-linejoin="round"><g><path d="M38 62h24c1 8 9 10 12 16H26c3-6 11-8 12-16z"/><rect x="20" y="76" width="60" height="12" rx="4"/><path d="M50 18c12 9 19 20 19 30 0 9-7 15-19 15s-19-6-19-15c0-10 7-21 19-30z"/><rect x="33" y="59" width="34" height="7" rx="3.5"/><circle cx="50" cy="13" r="5.5"/></g><g fill="none" stroke="#2e261b" stroke-width="3" stroke-linecap="round"><path d="M50 32v16M43 40h14"/></g></g>
+          <g transform="translate(120 40) scale(0.4)" fill="#3b3226" stroke="#15110a" stroke-width="3.2" stroke-linejoin="round"><g><path d="M32 78c1-12 12-17 14-28-5 3-10 8-18 7-6-1-8-7-5-12 6-10 14-22 28-27l3-10 7 9c12 8 19 24 19 61z"/><rect x="20" y="76" width="62" height="12" rx="4"/></g><g fill="none" stroke="#f4e8cc" stroke-width="3" stroke-linecap="round"><path d="M62 25c7 10 10 26 10 44"/><path d="M27 50l3 1"/></g><circle fill="#f4e8cc" stroke="none" cx="45" cy="31" r="2.8"/></g>
+          <g transform="translate(160 40) scale(0.4)" fill="#fffdf8" stroke="#2e261b" stroke-width="3.2" stroke-linejoin="round"><g><path d="M40 46h20c1 12 13 18 14 32H26c1-14 13-20 14-32z"/><rect x="20" y="76" width="60" height="12" rx="4"/><rect x="35" y="41" width="30" height="7" rx="3.5"/><circle cx="50" cy="28" r="13"/></g></g>
+          <g transform="translate(200 80) scale(0.4)" fill="#fffdf8" stroke="#2e261b" stroke-width="3.2" stroke-linejoin="round"><g><path d="M32 78c1-12 12-17 14-28-5 3-10 8-18 7-6-1-8-7-5-12 6-10 14-22 28-27l3-10 7 9c12 8 19 24 19 61z"/><rect x="20" y="76" width="62" height="12" rx="4"/></g><g fill="none" stroke="#2e261b" stroke-width="3" stroke-linecap="round"><path d="M62 25c7 10 10 26 10 44"/><path d="M27 50l3 1"/></g><circle fill="#2e261b" stroke="none" cx="45" cy="31" r="2.8"/></g>
+          <g transform="translate(0 120) scale(0.4)" fill="#fffdf8" stroke="#2e261b" stroke-width="3.2" stroke-linejoin="round"><g><path d="M40 46h20c1 12 13 18 14 32H26c1-14 13-20 14-32z"/><rect x="20" y="76" width="60" height="12" rx="4"/><rect x="35" y="41" width="30" height="7" rx="3.5"/><circle cx="50" cy="28" r="13"/></g></g>
+          <g transform="translate(40 120) scale(0.4)" fill="#fffdf8" stroke="#2e261b" stroke-width="3.2" stroke-linejoin="round"><g><path d="M40 46h20c1 12 13 18 14 32H26c1-14 13-20 14-32z"/><rect x="20" y="76" width="60" height="12" rx="4"/><rect x="35" y="41" width="30" height="7" rx="3.5"/><circle cx="50" cy="28" r="13"/></g></g>
+          <g transform="translate(80 120) scale(0.4)" fill="#fffdf8" stroke="#2e261b" stroke-width="3.2" stroke-linejoin="round"><g><path d="M40 46h20c1 12 13 18 14 32H26c1-14 13-20 14-32z"/><rect x="20" y="76" width="60" height="12" rx="4"/><rect x="35" y="41" width="30" height="7" rx="3.5"/><circle cx="50" cy="28" r="13"/></g></g>
+          <g transform="translate(120 120) scale(0.4)" fill="#fffdf8" stroke="#2e261b" stroke-width="3.2" stroke-linejoin="round"><g><path d="M40 46h20c1 12 13 18 14 32H26c1-14 13-20 14-32z"/><rect x="20" y="76" width="60" height="12" rx="4"/><rect x="35" y="41" width="30" height="7" rx="3.5"/><circle cx="50" cy="28" r="13"/></g></g>
+          <g transform="translate(200 120) scale(0.4)" fill="#fffdf8" stroke="#2e261b" stroke-width="3.2" stroke-linejoin="round"><g><path d="M40 46h20c1 12 13 18 14 32H26c1-14 13-20 14-32z"/><rect x="20" y="76" width="60" height="12" rx="4"/><rect x="35" y="41" width="30" height="7" rx="3.5"/><circle cx="50" cy="28" r="13"/></g></g>
+          <g transform="translate(240 120) scale(0.4)" fill="#fffdf8" stroke="#2e261b" stroke-width="3.2" stroke-linejoin="round"><g><path d="M40 46h20c1 12 13 18 14 32H26c1-14 13-20 14-32z"/><rect x="20" y="76" width="60" height="12" rx="4"/><rect x="35" y="41" width="30" height="7" rx="3.5"/><circle cx="50" cy="28" r="13"/></g></g>
+          <g transform="translate(280 120) scale(0.4)" fill="#fffdf8" stroke="#2e261b" stroke-width="3.2" stroke-linejoin="round"><g><path d="M40 46h20c1 12 13 18 14 32H26c1-14 13-20 14-32z"/><rect x="20" y="76" width="60" height="12" rx="4"/><rect x="35" y="41" width="30" height="7" rx="3.5"/><circle cx="50" cy="28" r="13"/></g></g>
+          <g transform="translate(0 160) scale(0.4)" fill="#fffdf8" stroke="#2e261b" stroke-width="3.2" stroke-linejoin="round"><g><path d="M34 38h32l3 40H31z"/><rect x="18" y="76" width="64" height="12" rx="4"/><path d="M26 16h11v8h7v-8h12v8h7v-8h11v20a4 4 0 0 1-4 4H30a4 4 0 0 1-4-4z"/></g><g fill="none" stroke="#2e261b" stroke-width="3" stroke-linecap="round"><path d="M33 68h34"/></g></g>
+          <g transform="translate(40 160) scale(0.4)" fill="#fffdf8" stroke="#2e261b" stroke-width="3.2" stroke-linejoin="round"><g><path d="M32 78c1-12 12-17 14-28-5 3-10 8-18 7-6-1-8-7-5-12 6-10 14-22 28-27l3-10 7 9c12 8 19 24 19 61z"/><rect x="20" y="76" width="62" height="12" rx="4"/></g><g fill="none" stroke="#2e261b" stroke-width="3" stroke-linecap="round"><path d="M62 25c7 10 10 26 10 44"/><path d="M27 50l3 1"/></g><circle fill="#2e261b" stroke="none" cx="45" cy="31" r="2.8"/></g>
+          <g transform="translate(80 160) scale(0.4)" fill="#fffdf8" stroke="#2e261b" stroke-width="3.2" stroke-linejoin="round"><g><path d="M38 62h24c1 8 9 10 12 16H26c3-6 11-8 12-16z"/><rect x="20" y="76" width="60" height="12" rx="4"/><path d="M50 18c12 9 19 20 19 30 0 9-7 15-19 15s-19-6-19-15c0-10 7-21 19-30z"/><rect x="33" y="59" width="34" height="7" rx="3.5"/><circle cx="50" cy="13" r="5.5"/></g><g fill="none" stroke="#2e261b" stroke-width="3" stroke-linecap="round"><path d="M50 32v16M43 40h14"/></g></g>
+          <g transform="translate(120 160) scale(0.4)" fill="#fffdf8" stroke="#2e261b" stroke-width="3.2" stroke-linejoin="round"><g><path d="M33 62h34l7 16H26z"/><rect x="18" y="76" width="64" height="12" rx="4"/><path d="M30 64L18 30l14 16 6-22 6 20 6-24 6 24 6-20 6 22 14-16-12 34z"/><rect x="29" y="60" width="42" height="7" rx="3.5"/><circle cx="18" cy="27" r="4.5"/><circle cx="38" cy="21" r="4.5"/><circle cx="50" cy="16" r="4.5"/><circle cx="62" cy="21" r="4.5"/><circle cx="82" cy="27" r="4.5"/></g></g>
+          <g transform="translate(200 160) scale(0.4)" fill="#fffdf8" stroke="#2e261b" stroke-width="3.2" stroke-linejoin="round"><g><path d="M34 38h32l3 40H31z"/><rect x="18" y="76" width="64" height="12" rx="4"/><path d="M26 16h11v8h7v-8h12v8h7v-8h11v20a4 4 0 0 1-4 4H30a4 4 0 0 1-4-4z"/></g><g fill="none" stroke="#2e261b" stroke-width="3" stroke-linecap="round"><path d="M33 68h34"/></g></g>
+          <g transform="translate(240 160) scale(0.4)" fill="#fffdf8" stroke="#2e261b" stroke-width="3.2" stroke-linejoin="round"><g><path d="M33 62h34l7 16H26z"/><rect x="18" y="76" width="64" height="12" rx="4"/><path d="M46.500 5h7v6h6v7h-6v12h-7V18h-6v-7h6z"/><path d="M50 30c-9-7-27-3-27 11 0 9 6 15 9 23h36c3-8 9-14 9-23 0-14-18-18-27-11z"/><rect x="29" y="60" width="42" height="7" rx="3.5"/></g><g fill="none" stroke="#2e261b" stroke-width="3" stroke-linecap="round"><path d="M50 36v20"/></g></g>
         </svg>
         <div class="card__body">
-          <h2>Starship</h2>
-          <p><span lang="en">A space shooter with alien craft, jets and bosses. 8 sectors, 48 waves.</span><span lang="vi">Bắn phi thuyền ngoài hành tinh, máy bay phản lực và trùm. 8 khu vực, 48 màn.</span></p>
-          <p class="card__best" id="best-starship"></p>
+          <h2>Chess</h2>
+          <p><span lang="en">Play the computer at four levels, from beginner to hard, or a friend on one screen.</span><span lang="vi">Chơi cờ vua với máy ở bốn cấp độ, từ dễ đến khó, hoặc với bạn bè trên cùng một màn hình.</span></p>
+          <p class="card__best" id="best-chess"></p>
           <span class="card__go"><span lang="en">Play</span><span lang="vi">Chơi</span></span>
         </div>
       </a>
@@ -208,10 +211,9 @@
   // show each game's best result, saved on this device by the games themselves
   (function () {
     function read(key) { try { return JSON.parse(localStorage.getItem(key) || "{}"); } catch (e) { return {}; } }
-    var s = read("starship-save-v1"), p = read("pi-flight-v1");
+    var p = read("pi-flight-v1");
     function show() {
       var vi = document.documentElement.getAttribute("lang") === "vi";
-      if (s.best) document.getElementById("best-starship").textContent = (vi ? "Kỷ lục của bạn: " : "Your best: ") + Number(s.best).toLocaleString() + (s.sector ? (vi ? ", đến khu vực " : ", reached sector ") + (s.sector + 1) : "");
       var q = read("qubit-flip-v1"), l = read("lattice-v1");
       if (q.solved) document.getElementById("best-qubit").textContent = vi ? "Đã giải " + q.solved + " trên 30, " + (q.totalStars || 0) + " sao" : q.solved + " of 30 solved, " + (q.totalStars || 0) + " stars";
       if (l.best) document.getElementById("best-lattice").textContent = (vi ? "Kỷ lục của bạn: " : "Your best: ") + Number(l.best).toLocaleString();
@@ -220,6 +222,8 @@
       if (on) document.getElementById("best-orbit").textContent = vi ? "Đã qua " + on + " trên 24 màn, " + ost + " sao" : on + " of 24 levels, " + ost + " stars";
       if (rn.best) document.getElementById("best-run").textContent = (vi ? "Kỷ lục của bạn: " : "Your best: ") + rn.best + (vi ? " đơn vị" : " units");
       if (pp.cleared) document.getElementById("best-link").textContent = vi ? "Đã qua " + pp.cleared + " trên 12 màn, " + (pp.stars || 0) + " sao" : pp.cleared + " of 12 levels, " + (pp.stars || 0) + " stars";
+      var ch = read("chess-v1"), cw = (Array.isArray(ch.wins) ? ch.wins : []).reduce(function (a, n) { return a + (+n || 0); }, 0);
+      if (cw) document.getElementById("best-chess").textContent = (vi ? "Số ván thắng máy: " : "Games won against the computer: ") + cw;
       if (p.best) document.getElementById("best-pi").textContent = (vi ? "Kỷ lục của bạn: " : "Your best: ") + p.best + (vi ? " chữ số thập phân" : " decimal places");
     }
     show();

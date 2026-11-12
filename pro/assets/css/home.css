@@ -775,8 +775,8 @@ html.is-scrubbing, html.is-scrubbing * { cursor: grabbing !important; user-selec
   text-align: left;
 }
 @media (min-width: 720px) {
-  /* three cards (Starship, Pi Flight, Blog): compact and centred */
-  .home-outro__grid { grid-template-columns: repeat(3, minmax(0, 240px)); justify-content: center; }
+  /* two cards (Pi Flight, Blog): compact and centred */
+  .home-outro__grid { grid-template-columns: repeat(2, minmax(0, 240px)); justify-content: center; }
 }
 .home-outro__card {
   display: block;
@@ -835,8 +835,8 @@ html.is-scrubbing, html.is-scrubbing * { cursor: grabbing !important; user-selec
     hero-portrait-rise 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both,
     hero-portrait-float 5.5s ease-in-out 1.2s infinite;
 }
-/* Three electrons orbit the portrait. They are drawn by home.js on two
-   canvases, one behind the photo and one in front, so each electron really
+/* One electron orbits the portrait. It is drawn by home.js on two
+   canvases, one behind the photo and one in front, so the electron really
    passes in front for half its orbit and behind for the other half. */
 .hero-orbits {
   position: absolute;
