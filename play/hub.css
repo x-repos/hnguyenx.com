@@ -29,7 +29,6 @@ body {
 .topnav__brand {
   display: inline-flex; align-items: center; gap: 14px; line-height: 1;
   min-height: 36px;   /* Pro's bar row is 36px tall (its menu button), so the brand sits 1px lower */
-  color: #fff; text-decoration: none;
 }
 .brand-pi {
   display: inline-block; width: 0.82em; height: 0.82em; font-size: 42px; line-height: 1;
@@ -43,12 +42,23 @@ body {
   font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   font-size: 15px; font-weight: 600; letter-spacing: 0.02em; color: #fff;
   padding-left: 14px; border-left: 1px solid rgba(255, 255, 255, 0.18);
+  text-decoration: none;
 }
-.topnav__brand:hover .brand-pi { transform: scale(1.08) rotate(-3deg); filter: brightness(1.2); }
+.brand-name:hover { color: #8fd6ff; }
+/* links on the right, as in Pro Mode */
+.topnav__links { display: flex; gap: 22px; margin: 0 0 0 auto; padding: 0; list-style: none; }
+.topnav__links a {
+  font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-size: 14px; letter-spacing: 0.02em; color: #d3d8e3; text-decoration: none;
+}
+.topnav__links a:hover, .topnav__links a[aria-current] { color: #fff; }
+.brand-pi:hover { transform: scale(1.08) rotate(-3deg); filter: brightness(1.2); }
 @media (max-width: 720px) {
   .topnav { padding: 10px 16px; padding-top: calc(10px + env(safe-area-inset-top)); }
   .topnav__brand { gap: 10px; }
   .brand-name { font-size: 13px; padding-left: 10px; }
+  .topnav__links { gap: 14px; }
+  .topnav__links a { font-size: 13px; }
 }
 .hub h1 {
   margin: 0; font-size: clamp(2.8rem, 10vw, 4.4rem); line-height: 1; letter-spacing: -0.03em;

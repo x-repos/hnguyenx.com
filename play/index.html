@@ -10,15 +10,19 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="hub.css?v=5">
+  <link rel="stylesheet" href="hub.css?v=6">
 </head>
 <body>
-  <!-- Same brand as Pro Mode's top bar, in the same place; it links to Pro Mode -->
+  <!-- Same bar as Pro Mode: π goes home, the name goes to Pro Mode -->
   <nav class="topnav" aria-label="Primary">
-    <a class="topnav__brand" href="../pro/" aria-label="Hoang Anh (Benjamin) Nguyen, Pro Mode">
-      <span class="brand-pi" aria-hidden="true">π</span>
-      <span class="brand-name">Hoang Anh (Benjamin) Nguyen</span>
-    </a>
+    <div class="topnav__brand">
+      <a class="brand-pi" href="../" aria-label="Home">π</a>
+      <a class="brand-name" href="../pro/">Hoang Anh (Benjamin) Nguyen</a>
+    </div>
+    <ul class="topnav__links">
+      <li><a href="./" aria-current="page">Games</a></li>
+      <li><a href="../blog/">Blog</a></li>
+    </ul>
   </nav>
 
   <main class="hub">
