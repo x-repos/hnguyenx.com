@@ -1,6 +1,6 @@
 # hnguyenx.com
 
-Personal academic site of Hoang Anh (Benjamin) Nguyen — [hnguyenx.com](https://hnguyenx.com).
+Personal academic site of Hoang Anh (Ben) Nguyen — [hnguyenx.com](https://hnguyenx.com).
 
 Hand-written static HTML/CSS, no build step, hosted on GitHub Pages.
 
