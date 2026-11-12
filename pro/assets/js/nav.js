@@ -319,8 +319,8 @@
           <span lang="vi">
             “Ben” đến từ bộ phim hoạt hình Ben 10 của Cartoon Network. Nhân vật chính,
             Ben Tennyson, đeo chiếc Omnitrix, đồng hồ giúp cậu ấy
-            biến thành mười người ngoài hành tinh khác nhau. Tôi xem nhiều lắm.
-            Nó dính lại với tôi.
+            biến thành mười người ngoài hành tinh khác nhau. Tôi xem rất nhiều.
+            Cái tên gắn với tôi từ đó.
           </span>
         </p>
         <p class="omni-real">
