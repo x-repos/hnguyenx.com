@@ -2,130 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Chinese Chess (Cờ tướng)</title>
-  <meta name="description" content="Chinese Chess (Cờ tướng): play the computer at three levels, a friend on one screen, or a friend online.">
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Hoang Anh (Ben) Nguyen">
-  <meta property="og:title" content="Chinese Chess (Cờ tướng): play with me">
-  <meta property="og:description" content="Play a friend online, or the computer at three levels. Right in the browser, nothing to install.">
-  <meta property="og:url" content="https://hnguyenx.com/play/cotuong/">
-  <meta property="og:image" content="https://hnguyenx.com/play/og/cotuong.png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Chinese Chess (Cờ tướng): play a friend online, or the computer.">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Chinese Chess (Cờ tướng): play with me">
-  <meta name="twitter:description" content="Play a friend online, or the computer at three levels. Right in the browser, nothing to install.">
-  <meta name="twitter:image" content="https://hnguyenx.com/play/og/cotuong.png">
-  <meta name="theme-color" content="#fffdf8" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#14110c" media="(prefers-color-scheme: dark)">
-  <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg?v=3">
-  <link rel="icon" type="image/png" sizes="32x32" href="../../assets/favicon-32.png?v=3">
-  <link rel="apple-touch-icon" sizes="180x180" href="../../assets/apple-touch-icon.png?v=3">
-  <link rel="stylesheet" href="cotuong.css?v=1">
-  <script src="../lang.js?v=1"></script>
+  <title>Chinese Chess</title>
+  <!-- The game lives at /play/chinesechess/. This old address sends visitors on, keeping an invite link's ?play=online. -->
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://hnguyenx.com/play/chinesechess/">
+  <meta property="og:url" content="https://hnguyenx.com/play/chinesechess/">
+  <script>location.replace("../chinesechess/" + location.search + location.hash);</script>
+  <meta http-equiv="refresh" content="0; url=../chinesechess/">
 </head>
-<body class="in-menu">
-  <main class="app" id="app">
-    <header class="top">
-      <button class="round" id="btn-menu" type="button" aria-label="Menu">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <div class="top__mid">
-        <div class="top__title" id="status" aria-live="polite"></div>
-        <div class="top__sub" id="sub"></div>
-      </div>
-      <button class="round" id="btn-mute" type="button" aria-label="Sound">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M3 9v6h4l6 5V4L7 9H3z"/>
-          <path class="snd-on" d="M16.5 8.5a5 5 0 0 1 0 7M19 5.5a9 9 0 0 1 0 13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-          <path class="snd-off" d="M16.5 9l5.5 6m0-6l-5.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-        </svg>
-      </button>
-    </header>
-
-    <div class="side" id="side-top"><i class="side__dot"></i><span class="side__name"></span><span class="tray"></span></div>
-
-    <div class="board" id="board" aria-label="Chinese chess board">
-      <svg class="grid" id="grid" viewBox="0 0 90 100" aria-hidden="true"></svg>
-      <div class="pieces" id="pieces"></div>
-      <div class="marks" id="marks"></div>
-    </div>
-
-    <div class="side" id="side-bot"><i class="side__dot"></i><span class="side__name"></span><span class="tray"></span></div>
-
-    <ol class="moves" id="moves" aria-label="Moves"></ol>
-
-    <div class="tools">
-      <button type="button" id="btn-undo"></button>
-      <button type="button" id="btn-flip"><span lang="en">Flip</span><span lang="vi">Lật bàn</span></button>
-      <button type="button" id="btn-new"><span lang="en">New game</span><span lang="vi">Ván mới</span></button>
-    </div>
-  </main>
-
-  <div class="panel" id="menu">
-    <h1><span lang="en">Chinese Chess</span><span lang="vi">Cờ tướng</span></h1>
-    <p class="panel__sub"><span lang="en">Play the computer, or a friend here or online.</span><span lang="vi">Chơi với máy, hoặc với bạn bè tại chỗ hay qua mạng.</span></p>
-    <div class="panel__buttons" id="continue-wrap" hidden>
-      <button type="button" id="btn-continue"><span lang="en">Continue game</span><span lang="vi">Tiếp tục ván</span></button>
-    </div>
-    <div class="menu__cols">
-      <div class="menu__col">
-        <h3><span lang="en">Level</span><span lang="vi">Cấp độ</span></h3>
-        <div class="seg" id="seg-level">
-          <button type="button" data-v="0"><span lang="en">Easy</span><span lang="vi">Dễ</span></button>
-          <button type="button" data-v="1"><span lang="en">Medium</span><span lang="vi">Vừa</span></button>
-          <button type="button" data-v="2"><span lang="en">Hard</span><span lang="vi">Khó</span></button>
-        </div>
-        <h3><span lang="en">You play</span><span lang="vi">Bạn cầm quân</span></h3>
-        <div class="seg" id="seg-side">
-          <button type="button" data-v="r"><span lang="en">Red: first</span><span lang="vi">Đỏ: đi trước</span></button>
-          <button type="button" data-v="b"><span lang="en">Black</span><span lang="vi">Đen</span></button>
-          <button type="button" data-v="x"><span lang="en">Random</span><span lang="vi">Ngẫu nhiên</span></button>
-        </div>
-        <h3><span lang="en">Pieces</span><span lang="vi">Quân cờ</span></h3>
-        <div class="seg" id="seg-style">
-          <button type="button" data-v="han"><span lang="en">Characters 帥</span><span lang="vi">Chữ Hán 帥</span></button>
-          <button type="button" data-v="abc"><span lang="en">Letters K</span><span lang="vi">Chữ cái Tg</span></button>
-        </div>
-      </div>
-      <div class="menu__col">
-        <div class="panel__buttons">
-          <button type="button" id="btn-start"><span lang="en">Play the computer</span><span lang="vi">Chơi với máy</span></button>
-          <button type="button" id="btn-two" class="is-plain"><span lang="en">Two players, one screen</span><span lang="vi">Hai người, một màn hình</span></button>
-          <button type="button" id="btn-online" class="is-plain"><span lang="en">Play a friend online</span><span lang="vi">Chơi với bạn bè qua mạng</span></button>
-        </div>
-      </div>
-    </div>
-    <p class="panel__best" id="best"></p>
-    <p class="panel__links">
-      <a href="../"><span lang="en">All games</span><span lang="vi">Tất cả trò chơi</span></a>
-      <a href="../../"><span lang="en">Home</span><span lang="vi">Trang chủ</span></a>
-      <span data-lang-pick></span>
-    </p>
-  </div>
-
-  <div class="panel panel--small" id="online" hidden>
-    <h2><span lang="en">Play online</span><span lang="vi">Chơi qua mạng</span></h2>
-    <p class="panel__sub" id="online-text" aria-live="polite"></p>
-    <div class="panel__buttons">
-      <button type="button" id="btn-online-retry" hidden><span lang="en">Try again</span><span lang="vi">Thử lại</span></button>
-      <button type="button" id="btn-online-copy"></button>
-      <button type="button" id="btn-online-cancel" class="is-plain"><span lang="en">Cancel</span><span lang="vi">Hủy</span></button>
-    </div>
-  </div>
-
-  <div class="panel panel--small" id="over" hidden>
-    <h2 id="over-title"></h2>
-    <p class="panel__sub" id="over-text"></p>
-    <div class="panel__buttons">
-      <button type="button" id="btn-over-new"><span lang="en">New game</span><span lang="vi">Ván mới</span></button>
-      <button type="button" id="btn-over-see" class="is-plain"><span lang="en">See the board</span><span lang="vi">Xem bàn cờ</span></button>
-    </div>
-  </div>
-
-  <script src="engine.js?v=1"></script>
-  <script src="cotuong.js?v=1"></script>
+<body>
+  <p><a href="../chinesechess/">Chinese Chess is here.</a></p>
 </body>
 </html>
