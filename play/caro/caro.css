@@ -57,6 +57,9 @@ body.in-menu .app { filter: blur(2px); opacity: 0.4; pointer-events: none; }
 .side__name { font-weight: 600; white-space: nowrap; }
 .side.is-turn .side__name { color: var(--gold); }
 .side.is-turn .side__name::after { content: " to move"; font-weight: 400; }
+/* in Vietnamese the words come before the name: "Đến lượt Bạn" */
+html[lang="vi"] .side.is-turn .side__name::after { content: none; }
+html[lang="vi"] .side.is-turn .side__name::before { content: "Đến lượt "; font-weight: 400; }
 
 /* the board: 15 by 15 squares ruled like graph paper */
 .board {
@@ -154,6 +157,8 @@ body.in-menu .app { filter: blur(2px); opacity: 0.4; pointer-events: none; }
 .panel__best:empty { display: none; }
 .panel__links { margin: 6px 0 0; display: flex; justify-content: center; gap: 10px; font-size: 1.05rem; }
 .panel__links a { color: var(--gold); display: inline-block; min-width: 96px; padding: 12px 8px; line-height: 1.25; }
+/* the EN / VI switch under the links */
+.panel__lang { margin: 0 0 2px; color: var(--gold); }
 
 @media (max-height: 620px) {
   .panel { padding: 14px 18px 6px; }

@@ -5,12 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Qubit</title>
   <meta name="description" content="Qubit: a puzzle about quantum gates. Start with no equations, then go on to Bell states, measurement, superdense coding and teleportation.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Hoang Anh (Ben) Nguyen">
+  <meta property="og:title" content="Qubit: puzzles about quantum gates">
+  <meta property="og:description" content="From a first flip to Bell states, measurement and teleportation. Drag gates onto qubits.">
+  <meta property="og:url" content="https://hnguyenx.com/play/qubit/">
+  <meta property="og:image" content="https://hnguyenx.com/play/og/qubit.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Qubit: From a first flip to Bell states, measurement and teleportation. Drag gates onto qubits.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Qubit: puzzles about quantum gates">
+  <meta name="twitter:description" content="From a first flip to Bell states, measurement and teleportation. Drag gates onto qubits.">
+  <meta name="twitter:image" content="https://hnguyenx.com/play/og/qubit.png">
   <meta name="theme-color" content="#fffdf8" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#14110c" media="(prefers-color-scheme: dark)">
   <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg?v=3">
   <link rel="icon" type="image/png" sizes="32x32" href="../../assets/favicon-32.png?v=3">
   <link rel="apple-touch-icon" sizes="180x180" href="../../assets/apple-touch-icon.png?v=3">
-  <link rel="stylesheet" href="qubit.css?v=5">
+  <link rel="stylesheet" href="qubit.css?v=7">
+  <script src="../lang.js?v=1"></script>
 </head>
 <body class="in-menu">
   <main class="stage" id="stage" hidden>
@@ -20,8 +34,8 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></svg>
         </button>
         <div class="top__mid">
-          <div class="top__title" id="lv-title">Level 1</div>
-          <div class="top__sub" id="lv-count">Gates 0</div>
+          <div class="top__title" id="lv-title"></div>
+          <div class="top__sub" id="lv-count"></div>
         </div>
         <button class="icon-btn" id="btn-mute" type="button" aria-label="Sound on or off">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -35,15 +49,15 @@
       <p class="hint" id="hint"></p>
 
       <section class="states" id="states" aria-label="Your state and the target state">
-        <div class="state" id="st-yours"><h2>Yours</h2><div class="tiles" id="tiles-yours"></div></div>
-        <div class="state" id="st-target"><h2 id="target-head">Target</h2><div class="tiles" id="tiles-target"></div></div>
+        <div class="state" id="st-yours"><h2><span lang="en">Yours</span><span lang="vi">Của bạn</span></h2><div class="tiles" id="tiles-yours"></div></div>
+        <div class="state" id="st-target"><h2 id="target-head"><span lang="en">Target</span><span lang="vi">Mục tiêu</span></h2><div class="tiles" id="tiles-target"></div></div>
       </section>
 
       <p class="kets" id="kets" hidden></p>
 
       <div class="match" id="match">
         <div class="match__bar"><i id="match-fill"></i></div>
-        <span id="match-text">Match 0%</span>
+        <span id="match-text"></span>
       </div>
 
       <div class="work">
@@ -53,8 +67,8 @@
         <div class="controls" id="controls">
           <div class="gates" id="gates"></div>
           <div class="tools">
-            <button type="button" id="btn-undo">Undo</button>
-            <button type="button" id="btn-reset">Reset</button>
+            <button type="button" id="btn-undo"><span lang="en">Undo</span><span lang="vi">Hoàn tác</span></button>
+            <button type="button" id="btn-reset"><span lang="en">Reset</span><span lang="vi">Làm lại</span></button>
           </div>
         </div>
 
@@ -63,47 +77,48 @@
           <p class="win__text" id="win-text"></p>
           <p class="win__note" id="win-note" hidden></p>
           <div class="win__buttons">
-            <button type="button" id="btn-again">Again</button>
-            <button type="button" id="btn-next" class="is-main">Next level</button>
+            <button type="button" id="btn-again"><span lang="en">Again</span><span lang="vi">Chơi lại</span></button>
+            <button type="button" id="btn-next" class="is-main"></button>
           </div>
         </div>
 
-        <p class="foot"><a href="../">All games</a></p>
+        <p class="foot"><a href="../"><span lang="en">All games</span><span lang="vi">Tất cả trò chơi</span></a></p>
       </div>
     </div>
   </main>
 
   <div class="panel" id="menu">
     <h1>Qubit</h1>
-    <p class="panel__sub">Puzzles about quantum gates. Start with no equations, then go further.</p>
+    <p class="panel__sub"><span lang="en">Puzzles about quantum gates. Start with no equations, then go further.</span><span lang="vi">Câu đố về cổng lượng tử. Bắt đầu không cần công thức, rồi đi xa hơn.</span></p>
     <div class="panel__buttons">
-      <button type="button" id="btn-play">Play</button>
-      <button type="button" id="btn-adv" class="is-plain">Advanced</button>
-      <button type="button" id="btn-open-levels" class="is-plain">Levels</button>
+      <button type="button" id="btn-play"></button>
+      <button type="button" id="btn-adv" class="is-plain"></button>
+      <button type="button" id="btn-open-levels" class="is-plain"><span lang="en">Levels</span><span lang="vi">Các màn</span></button>
     </div>
     <p class="panel__best" id="best"></p>
     <ul class="panel__help">
-      <li>Turn your state into the target state with as few gates as you can.</li>
-      <li>Each tile is one answer you could read out. A bigger disc means a bigger chance.</li>
-      <li>The colour and the little hand show the phase.</li>
-      <li>Not every gate on a level is needed. Choosing the right ones is part of the puzzle.</li>
-      <li>Drag a gate onto the qubit it should act on. For a gate on two qubits, drop it on the first one; with three qubits, then tap the second.</li>
-      <li>Advanced adds Bell states, measurement, superdense coding and teleportation, and writes each state out as kets. It is open from the start.</li>
-      <li class="keys">On a keyboard, press the key shown in the corner of a gate and then 1, 2 or 3. U is undo, R is reset, M is sound.</li>
+      <li><span lang="en">Turn your state into the target state with as few gates as you can.</span><span lang="vi">Biến trạng thái của bạn thành trạng thái mục tiêu với ít cổng nhất có thể.</span></li>
+      <li><span lang="en">Each tile is one answer you could read out. A bigger disc means a bigger chance.</span><span lang="vi">Mỗi ô là một kết quả bạn có thể đọc ra. Đĩa càng to thì xác suất càng cao.</span></li>
+      <li><span lang="en">The colour and the little hand show the phase.</span><span lang="vi">Màu sắc và cái kim nhỏ cho biết pha.</span></li>
+      <li><span lang="en">Not every gate on a level is needed. Choosing the right ones is part of the puzzle.</span><span lang="vi">Không phải cổng nào trong màn cũng cần dùng. Chọn đúng cổng cũng là một phần của câu đố.</span></li>
+      <li><span lang="en">Drag a gate onto the qubit it should act on. For a gate on two qubits, drop it on the first one; with three qubits, then tap the second.</span><span lang="vi">Kéo một cổng thả vào qubit mà nó tác động. Với cổng hai qubit, thả vào qubit thứ nhất; nếu có ba qubit thì chạm tiếp vào qubit thứ hai.</span></li>
+      <li><span lang="en">Advanced adds Bell states, measurement, superdense coding and teleportation, and writes each state out as kets. It is open from the start.</span><span lang="vi">Phần nâng cao có thêm trạng thái Bell, phép đo, mã hóa siêu dày đặc và dịch chuyển lượng tử, và viết rõ từng trạng thái bằng ket. Phần này mở ngay từ đầu.</span></li>
+      <li class="keys"><span lang="en">On a keyboard, press the key shown in the corner of a gate and then 1, 2 or 3. U is undo, R is reset, M is sound.</span><span lang="vi">Trên bàn phím, bấm phím ghi ở góc của cổng rồi bấm 1, 2 hoặc 3. U là hoàn tác, R là làm lại, M là âm thanh.</span></li>
     </ul>
-    <p class="panel__back"><a href="../">All games</a><a href="../../">Home</a></p>
+    <p class="panel__back"><a href="../"><span lang="en">All games</span><span lang="vi">Tất cả trò chơi</span></a><a href="../../"><span lang="en">Home</span><span lang="vi">Trang chủ</span></a></p>
+    <p class="panel__lang"><span data-lang-pick></span></p>
   </div>
 
   <div class="panel panel--wide" id="levels" hidden>
-    <h2>Levels</h2>
+    <h2><span lang="en">Levels</span><span lang="vi">Các màn</span></h2>
     <p class="panel__sub" id="levels-sub"></p>
     <div class="lv" id="lv-list"></div>
     <div class="panel__buttons">
-      <button type="button" id="btn-levels-back">Menu</button>
+      <button type="button" id="btn-levels-back"><span lang="en">Menu</span><span lang="vi">Menu</span></button>
     </div>
-    <p class="panel__back"><a href="../">All games</a></p>
+    <p class="panel__back"><a href="../"><span lang="en">All games</span><span lang="vi">Tất cả trò chơi</span></a></p>
   </div>
 
-  <script src="qubit.js?v=5"></script>
+  <script src="qubit.js?v=7"></script>
 </body>
 </html>

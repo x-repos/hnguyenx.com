@@ -14,12 +14,15 @@
   const N = CaroEngine.N, CELLS = N * N;
   const $ = (id) => document.getElementById(id);
   const eng = CaroEngine();
+  // tr("English", "Tiếng Việt") gives the text in the language the visitor chose (see ../lang.js)
+  const tr = window.PlayLang ? PlayLang.t : (en) => en;
 
   const LEVELS = [
-    { name: "Easy", opts: { depth: 1, wide: 8, noise: 500, blind: 0.25 } },
-    { name: "Medium", opts: { depth: 2, wide: 10, noise: 40 } },
-    { name: "Hard", opts: { depth: 8, wide: 11, time: 900, nodes: 1200000 } },
+    { name: "Easy", vi: "Dễ", opts: { depth: 1, wide: 8, noise: 500, blind: 0.25 } },
+    { name: "Medium", vi: "Vừa", opts: { depth: 2, wide: 10, noise: 40 } },
+    { name: "Hard", vi: "Khó", opts: { depth: 8, wide: 11, time: 900, nodes: 1200000 } },
   ];
+  const levelName = (i) => tr(LEVELS[i].name, LEVELS[i].vi);
   const MARK = ["", "X", "O"];
   // where online games meet (see chess-worker/). A local preview can point at a test relay with ?relay=ws://...
   const RELAY = (() => {
@@ -127,8 +130,8 @@
     boardEl.classList.toggle("can-o", mine === 2);
   }
   function nameOf(p) {
-    if (game.mode === "two") return "Player " + MARK[p];
-    return p === game.human ? "You" : game.mode === "online" ? "Friend" : "Computer";
+    if (game.mode === "two") return tr("Player ", "Người chơi ") + MARK[p];
+    return p === game.human ? tr("You", "Bạn") : game.mode === "online" ? tr("Friend", "Đối thủ") : tr("Computer", "Máy");
   }
   function paintSides() {
     // the player whose screen this is sits at the bottom; with two players on one screen, X does
@@ -141,12 +144,12 @@
     fill($("side-top"), top); fill($("side-bot"), bottom);
   }
   function resultText() {
-    const who = (p) => (game.mode === "two" ? MARK[p] + " wins." : p === game.human ? "You win." : game.mode === "online" ? "Your friend wins." : "The computer wins.");
+    const who = (p) => (game.mode === "two" ? MARK[p] + tr(" wins.", " thắng.") : p === game.human ? tr("You win.", "Bạn thắng.") : game.mode === "online" ? tr("Your friend wins.", "Đối thủ thắng.") : tr("The computer wins.", "Máy thắng."));
     switch (state.kind) {
-      case "five": return ["Five in a row", who(state.winner)];
-      case "full": return ["Draw", "The board is full."];
-      case "resign": return ["Resigned", state.winner === game.human ? "Your friend resigned. You win." : "You resigned. Your friend wins."];
-      case "left": return ["Game over", "Your friend left the game."];
+      case "five": return [tr("Five in a row", "Đủ năm quân"), who(state.winner)];
+      case "full": return [tr("Draw", "Hòa"), tr("The board is full.", "Bàn cờ đã kín.")];
+      case "resign": return [tr("Resigned", "Xin thua"), state.winner === game.human ? tr("Your friend resigned. You win.", "Đối thủ đã xin thua. Bạn thắng.") : tr("You resigned. Your friend wins.", "Bạn đã xin thua. Đối thủ thắng.")];
+      case "left": return [tr("Game over", "Kết thúc"), tr("Your friend left the game.", "Đối thủ đã rời ván cờ.")];
     }
     return ["", ""];
   }
@@ -155,19 +158,21 @@
     const online = game.mode === "online";
     let s;
     if (state.over) { const r = resultText(); s = state.kind === "five" ? r[0] + ". " + r[1] : r[0]; }
-    else if (online && !netOpen()) s = "Connection lost. Reconnecting";
-    else if (online && !net.peer) s = "Your friend is offline. Waiting";
-    else if (online) s = eng.turn() === game.human ? "Your move" : "Your friend's move";
-    else if (thinking) s = "The computer is thinking";
-    else if (game.mode === "two") s = MARK[eng.turn()] + " to move";
-    else s = "Your move";
+    else if (online && !netOpen()) s = tr("Connection lost. Reconnecting", "Mất kết nối. Đang kết nối lại");
+    else if (online && !net.peer) s = tr("Your friend is offline. Waiting", "Đối thủ mất kết nối. Đang chờ");
+    else if (online) s = eng.turn() === game.human ? tr("Your move", "Lượt của bạn") : tr("Your friend's move", "Lượt của đối thủ");
+    else if (thinking) s = tr("The computer is thinking", "Máy đang nghĩ");
+    else if (game.mode === "two") s = tr(MARK[eng.turn()] + " to move", "Đến lượt " + MARK[eng.turn()]);
+    else s = tr("Your move", "Lượt của bạn");
     $("status").textContent = s;
-    $("sub").textContent = game.mode === "two" ? "Two players, one screen" : "You are " + MARK[game.human] + (online ? ". Online game" : ". Level: " + LEVELS[game.level].name);
+    $("sub").textContent = game.mode === "two" ? tr("Two players, one screen", "Hai người, một màn hình")
+      : tr("You are ", "Bạn cầm ") + MARK[game.human] + (online ? tr(". Online game", ". Chơi qua mạng") : tr(". Level: ", ". Cấp độ: ") + levelName(game.level));
     // online there is no taking back; the same button gives up the game instead, on a second press
-    $("btn-undo").textContent = online ? (resignArmed ? "Sure?" : "Resign") : "Undo";
+    $("btn-undo").textContent = online ? (resignArmed ? tr("Sure?", "Chắc chứ?") : tr("Resign", "Xin thua")) : tr("Undo", "Đi lại");
     $("btn-undo").disabled = online ? state.over : !game.moves.length;
-    $("hint").textContent = state.over ? "" : ghost >= 0 ? "Tap the same square again to place your " + MARK[eng.turn()] + "."
-      : game.moves.length ? "Move " + (game.moves.length + 1) + ". Five in a row wins." : "Five in a row wins. X goes first.";
+    $("hint").textContent = state.over ? "" : ghost >= 0 ? tr("Tap the same square again to place your " + MARK[eng.turn()] + ".", "Chạm lại đúng ô đó để đặt quân " + MARK[eng.turn()] + ".")
+      : game.moves.length ? tr("Move " + (game.moves.length + 1) + ". Five in a row wins.", "Nước thứ " + (game.moves.length + 1) + ". Xếp năm quân thẳng hàng là thắng.")
+      : tr("Five in a row wins. X goes first.", "Xếp năm quân thẳng hàng là thắng. X đi trước.");
   }
   function render(animate) { paintBoard(animate); paintSides(); paintStatus(); }
 
@@ -201,10 +206,13 @@
     clearTimeout(overTimer);
     overTimer = setTimeout(() => {
       if (screen !== "play" || !state.over) return;
-      const r = resultText();
-      $("over-title").textContent = r[0]; $("over-text").textContent = r[1];
+      paintOver();
       $("over").hidden = false;
     }, 900);
+  }
+  function paintOver() {
+    const r = resultText();
+    $("over-title").textContent = r[0]; $("over-text").textContent = r[1];
   }
   function undo() {
     if (screen === "play" && game && game.mode === "online") { resign(); return; }
@@ -337,16 +345,20 @@
   function findOnline() {
     // looking for a new game gives up any online game still going
     if (game && game.mode === "online") { game = null; save.game = null; persist(); }
-    net.want = "find"; net.tries = 0;
+    net.want = "find"; net.tries = 0; linkShown = ""; linkCopied = false;
     show("online"); paintOnline();
     if (netOpen()) netSend({ t: "find" }); else netConnect();
   }
+  let onlineFailed = false, linkShown = "", linkCopied = false;
   function paintOnline(failed) {
+    onlineFailed = !!failed;
     if (screen !== "online") return;
-    $("online-text").textContent = failed ? "Could not reach the game server. Check your connection and try again."
-      : netOpen() ? "Waiting for another player. Copy the link and send it to your friend. The game starts when they open it." : "Connecting";
+    $("online-text").textContent = failed ? tr("Could not reach the game server. Check your connection and try again.", "Không kết nối được tới máy chủ trò chơi. Hãy kiểm tra mạng rồi thử lại.")
+      : linkShown ? tr("Copy this link and send it to your friend: ", "Hãy sao chép liên kết này và gửi cho bạn của bạn: ") + linkShown
+      : netOpen() ? tr("Waiting for another player. Copy the link and send it to your friend. The game starts when they open it.", "Đang chờ người chơi khác. Hãy sao chép liên kết và gửi cho bạn của bạn. Ván cờ bắt đầu khi họ mở liên kết.") : tr("Connecting", "Đang kết nối");
     $("btn-online-retry").hidden = !failed;
     $("btn-online-copy").hidden = !!failed;
+    $("btn-online-copy").textContent = linkCopied ? tr("Link copied", "Đã sao chép") : tr("Copy link", "Sao chép liên kết");
   }
   // the link to send: opening it goes straight to looking for a game, so the two of you are paired
   function inviteLink() {
@@ -356,11 +368,11 @@
     return location.origin + location.pathname + "?" + keep.toString();
   }
   function copyInvite() {
-    const link = inviteLink(), btn = $("btn-online-copy");
+    const link = inviteLink();
     const done = (ok) => {
-      if (!ok) { $("online-text").textContent = "Copy this link and send it to your friend: " + link; return; }
-      btn.textContent = "Link copied";
-      setTimeout(() => { btn.textContent = "Copy link"; }, 2200);
+      if (!ok) { linkShown = link; paintOnline(onlineFailed); return; }      // could not copy: show the link to copy by hand
+      linkCopied = true; paintOnline(onlineFailed);
+      setTimeout(() => { linkCopied = false; paintOnline(onlineFailed); }, 2200);
     };
     const oldWay = () => {       // for pages that are not allowed to use the clipboard directly
       const ta = document.createElement("textarea");
@@ -500,7 +512,7 @@
     const won = save.wins.reduce((a, b) => a + b, 0);
     let top = -1;
     save.wins.forEach((n, i) => { if (n) top = i; });
-    $("best").textContent = won ? "Games won against the computer: " + won + ". Hardest level beaten: " + LEVELS[top].name + "." : "";
+    $("best").textContent = won ? tr("Games won against the computer: ", "Số ván thắng máy: ") + won + tr(". Hardest level beaten: ", ". Cấp độ cao nhất đã thắng: ") + levelName(top) + "." : "";
   }
   $("seg-level").addEventListener("click", (e) => {
     const b = e.target.closest("button"); if (!b) return;
@@ -558,6 +570,19 @@
     try { history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q.toString() : "") + location.hash); } catch (e) {}
     findOnline();
   }
+
+  // labels that are not text on the page, and everything painted from here, in the chosen language
+  function paintLanguage() {
+    $("btn-menu").setAttribute("aria-label", tr("Menu", "Menu"));
+    $("btn-mute").setAttribute("aria-label", tr("Sound on or off", "Bật hoặc tắt âm thanh"));
+    $("board").setAttribute("aria-label", tr("Caro board, 15 by 15", "Bàn cờ caro, 15 nhân 15"));
+    if (game) { paintSides(); paintStatus(); }
+    if (screen === "menu") paintMenu();
+    paintOnline(onlineFailed);
+    if (!$("over").hidden) paintOver();
+  }
+  paintLanguage();
+  if (window.PlayLang) PlayLang.onChange(paintLanguage);
 
   // test handle
   window.__caro = {

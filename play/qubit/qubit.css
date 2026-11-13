@@ -34,10 +34,12 @@ button { font-family: inherit; color: inherit; touch-action: manipulation; }
 a { color: var(--gold); }
 
 /* ---------- play screen ---------- */
-.stage { position: fixed; inset: 0; z-index: 1; display: flex; justify-content: center; overflow-y: auto; }
+/* align-items: flex-start lets the content be taller than the screen, so a long level scrolls instead of being squeezed */
+.stage { position: fixed; inset: 0; z-index: 1; display: flex; justify-content: center; align-items: flex-start; overflow-y: auto; }
 body.in-menu .stage { filter: blur(2px); opacity: 0.35; pointer-events: none; }
 .stage__in {
-  width: min(100%, 720px); height: 100%;
+  /* at least the screen tall, and taller if a level needs it: then the screen scrolls, and nothing spills */
+  width: min(100%, 720px); min-height: 100%; height: auto;
   display: flex; flex-direction: column; gap: 8px;
   padding: calc(8px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right))
            calc(8px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
@@ -184,6 +186,8 @@ body.in-menu .stage { filter: blur(2px); opacity: 0.35; pointer-events: none; }
 }
 .gate__name.is-long { font-size: 1rem; }
 .gate__sub { font-size: 0.82rem; color: var(--muted); line-height: 1.05; text-align: center; }
+/* the Vietnamese captions stay on one line; the longest, "xoay liên kết", reaches a little past its box */
+html[lang="vi"] .gate__sub { white-space: nowrap; }
 .gate__key { display: none; position: absolute; top: 4px; right: 5px; font: 600 0.62rem/1 system-ui, sans-serif; color: var(--muted); border: 1px solid var(--line); border-radius: 5px; padding: 1px 3px; }
 @media (hover: hover) and (pointer: fine) and (min-width: 760px) and (min-height: 561px) { .gate__key { display: block; } }
 .gate:active .gate__name { transform: scale(0.95); }
@@ -233,7 +237,7 @@ body.in-menu .stage { filter: blur(2px); opacity: 0.35; pointer-events: none; }
 /* short and wide screens such as a phone on its side: two columns */
 @media (orientation: landscape) and (max-height: 560px) {
   .stage__in {
-    width: 100%; max-width: 980px; min-height: 0; display: grid; gap: 6px 14px;
+    width: 100%; max-width: 980px; height: auto; min-height: 100%; display: grid; gap: 6px 14px;
     grid-template-columns: 1fr 1fr; grid-template-rows: auto auto 1fr auto auto;
     grid-template-areas: "top top" "hint work" "states work" "kets work" "match work"; align-content: center;
   }
@@ -282,6 +286,8 @@ body.in-menu .stage { filter: blur(2px); opacity: 0.35; pointer-events: none; }
 @media (hover: none) { .panel__help li.keys { display: none; } }
 .panel__back { margin: 8px 0 0; font-size: 1.05rem; display: flex; justify-content: center; gap: 10px; }
 .panel__back a { display: inline-block; padding: 12px 8px; min-width: 96px; }
+/* the EN / VI switch under the links */
+.panel__lang { margin: 0 0 2px; color: var(--gold); }
 
 .lv { margin-top: 8px; text-align: left; flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior: contain; padding: 0 2px 4px; border-top: 1px solid var(--line); }
 .lv h3 { margin: 16px 2px 8px; font-size: 0.88rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
@@ -322,3 +328,9 @@ body.in-menu .stage { filter: blur(2px); opacity: 0.35; pointer-events: none; }
   .gate { width: 48px; } .gate__sub { display: none; }
   .win__text { font-size: 0.96rem; }
 }
+
+/* After a measurement the box holds one small picture for each reading and needs the room for them,
+   on every screen size. This comes last so the small-screen rules above do not shrink it again;
+   on a short screen the page scrolls instead. */
+.states.has-outcomes { min-height: 176px; }
+.states.has-many { min-height: 250px; }

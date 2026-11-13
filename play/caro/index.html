@@ -5,12 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Caro</title>
   <meta name="description" content="Caro: five in a row with X and O. Play the computer at three levels, a friend on one screen, or a friend online.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Hoang Anh (Ben) Nguyen">
+  <meta property="og:title" content="Caro: five in a row, play with me">
+  <meta property="og:description" content="Play a friend online, or the computer. X goes first, and five in a row wins.">
+  <meta property="og:url" content="https://hnguyenx.com/play/caro/">
+  <meta property="og:image" content="https://hnguyenx.com/play/og/caro.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Caro: Play a friend online, or the computer. X goes first, and five in a row wins.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Caro: five in a row, play with me">
+  <meta name="twitter:description" content="Play a friend online, or the computer. X goes first, and five in a row wins.">
+  <meta name="twitter:image" content="https://hnguyenx.com/play/og/caro.png">
   <meta name="theme-color" content="#fffdf8" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#14110c" media="(prefers-color-scheme: dark)">
   <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg?v=3">
   <link rel="icon" type="image/png" sizes="32x32" href="../../assets/favicon-32.png?v=3">
   <link rel="apple-touch-icon" sizes="180x180" href="../../assets/apple-touch-icon.png?v=3">
-  <link rel="stylesheet" href="caro.css?v=1">
+  <link rel="stylesheet" href="caro.css?v=2">
+  <script src="../lang.js?v=1"></script>
 </head>
 <body class="in-menu">
   <main class="app" id="app">
@@ -19,7 +33,7 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="top__mid">
-        <div class="top__title" id="status" aria-live="polite">Caro</div>
+        <div class="top__title" id="status" aria-live="polite"><span lang="en">Caro</span><span lang="vi">Cờ caro</span></div>
         <div class="top__sub" id="sub"></div>
       </div>
       <button class="round" id="btn-mute" type="button" aria-label="Sound on or off">
@@ -42,51 +56,52 @@
     <p class="hint" id="hint"></p>
 
     <div class="tools">
-      <button type="button" id="btn-undo">Undo</button>
-      <button type="button" id="btn-new">New game</button>
+      <button type="button" id="btn-undo"><span lang="en">Undo</span><span lang="vi">Đi lại</span></button>
+      <button type="button" id="btn-new"><span lang="en">New game</span><span lang="vi">Ván mới</span></button>
     </div>
   </main>
 
   <div class="panel" id="menu">
-    <h1>Caro</h1>
-    <p class="panel__sub">Five in a row wins. X goes first.</p>
+    <h1><span lang="en">Caro</span><span lang="vi">Cờ caro</span></h1>
+    <p class="panel__sub"><span lang="en">Five in a row wins. X goes first.</span><span lang="vi">Xếp năm quân thẳng hàng là thắng. X đi trước.</span></p>
     <div class="panel__buttons" id="continue-wrap" hidden>
-      <button type="button" id="btn-continue">Continue game</button>
+      <button type="button" id="btn-continue"><span lang="en">Continue game</span><span lang="vi">Tiếp tục ván</span></button>
     </div>
     <div class="menu__cols">
       <div class="menu__col">
-        <h3>Level</h3>
+        <h3><span lang="en">Level</span><span lang="vi">Cấp độ</span></h3>
         <div class="seg" id="seg-level">
-          <button type="button" data-v="0">Easy</button>
-          <button type="button" data-v="1">Medium</button>
-          <button type="button" data-v="2">Hard</button>
+          <button type="button" data-v="0"><span lang="en">Easy</span><span lang="vi">Dễ</span></button>
+          <button type="button" data-v="1"><span lang="en">Medium</span><span lang="vi">Vừa</span></button>
+          <button type="button" data-v="2"><span lang="en">Hard</span><span lang="vi">Khó</span></button>
         </div>
-        <h3>You play</h3>
+        <h3><span lang="en">You play</span><span lang="vi">Bạn cầm quân</span></h3>
         <div class="seg" id="seg-side">
-          <button type="button" data-v="x">X: first</button>
-          <button type="button" data-v="o">O: second</button>
-          <button type="button" data-v="r">Random</button>
+          <button type="button" data-v="x"><span lang="en">X: first</span><span lang="vi">X: đi trước</span></button>
+          <button type="button" data-v="o"><span lang="en">O: second</span><span lang="vi">O: đi sau</span></button>
+          <button type="button" data-v="r"><span lang="en">Random</span><span lang="vi">Ngẫu nhiên</span></button>
         </div>
       </div>
       <div class="menu__col">
         <div class="panel__buttons">
-          <button type="button" id="btn-start">Play the computer</button>
-          <button type="button" id="btn-two" class="is-plain">Two players, one screen</button>
-          <button type="button" id="btn-online" class="is-plain">Play a friend online</button>
+          <button type="button" id="btn-start"><span lang="en">Play the computer</span><span lang="vi">Chơi với máy</span></button>
+          <button type="button" id="btn-two" class="is-plain"><span lang="en">Two players, one screen</span><span lang="vi">Hai người, một màn hình</span></button>
+          <button type="button" id="btn-online" class="is-plain"><span lang="en">Play a friend online</span><span lang="vi">Chơi với bạn bè qua mạng</span></button>
         </div>
       </div>
     </div>
     <p class="panel__best" id="best"></p>
-    <p class="panel__links"><a href="../">All games</a><a href="../../">Home</a></p>
+    <p class="panel__links"><a href="../"><span lang="en">All games</span><span lang="vi">Tất cả trò chơi</span></a><a href="../../"><span lang="en">Home</span><span lang="vi">Trang chủ</span></a></p>
+    <p class="panel__lang"><span data-lang-pick></span></p>
   </div>
 
   <div class="panel panel--small" id="online" hidden>
-    <h2>Play online</h2>
-    <p class="panel__sub" id="online-text" aria-live="polite">Connecting</p>
+    <h2><span lang="en">Play online</span><span lang="vi">Chơi qua mạng</span></h2>
+    <p class="panel__sub" id="online-text" aria-live="polite"></p>
     <div class="panel__buttons">
-      <button type="button" id="btn-online-retry" hidden>Try again</button>
-      <button type="button" id="btn-online-copy">Copy link</button>
-      <button type="button" id="btn-online-cancel" class="is-plain">Cancel</button>
+      <button type="button" id="btn-online-retry" hidden><span lang="en">Try again</span><span lang="vi">Thử lại</span></button>
+      <button type="button" id="btn-online-copy"></button>
+      <button type="button" id="btn-online-cancel" class="is-plain"><span lang="en">Cancel</span><span lang="vi">Hủy</span></button>
     </div>
   </div>
 
@@ -94,12 +109,12 @@
     <h2 id="over-title"></h2>
     <p class="panel__sub" id="over-text"></p>
     <div class="panel__buttons">
-      <button type="button" id="btn-over-new">New game</button>
-      <button type="button" id="btn-over-see" class="is-plain">See the board</button>
+      <button type="button" id="btn-over-new"><span lang="en">New game</span><span lang="vi">Ván mới</span></button>
+      <button type="button" id="btn-over-see" class="is-plain"><span lang="en">See the board</span><span lang="vi">Xem bàn cờ</span></button>
     </div>
   </div>
 
   <script src="engine.js?v=1"></script>
-  <script src="caro.js?v=2"></script>
+  <script src="caro.js?v=3"></script>
 </body>
 </html>

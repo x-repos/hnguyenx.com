@@ -1,0 +1,221 @@
+/* Chinese chess (cờ tướng): the look of the home page (paper, gold, Crimson Pro). */
+@font-face {
+  font-family: "Crimson Pro";
+  src: url("../../assets/fonts/crimson-pro.woff2") format("woff2");
+  font-weight: 200 900; font-style: normal; font-display: swap;
+}
+:root {
+  --paper: #fffdf8; --ink: #3b3226; --gold: #8a6d3b; --line: rgba(138, 109, 59, 0.3); --card: rgba(255, 253, 248, 0.97);
+  --wood: #f1e0b6; --rule: #6f5630; --red: #b3261e; --black: #2a231a; --disc: #fff8e8;
+  --mark: #e0a81a; --danger: #d63c28;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --paper: #14110c; --ink: #f3ead8; --gold: #e8c87a; --line: rgba(232, 200, 122, 0.3); --card: rgba(20, 17, 12, 0.97); --wood: #e3d0a2; }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body {
+  margin: 0; height: 100%; overflow: hidden;
+  background: var(--paper); color: var(--ink);
+  font-family: "Crimson Pro", Georgia, serif;
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+  overscroll-behavior: none; touch-action: manipulation;
+}
+button { font-family: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+
+/* ---------- play screen: one column, the board as large as fits. The board is 9 wide and 10 tall. ---------- */
+.app {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  padding: calc(8px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left));
+  --bw: min(100vw - 20px, (100vh - 244px) * 0.9, 720px);
+  --bh: calc(var(--bw) * 10 / 9);
+}
+@supports (height: 100dvh) { .app { --bw: min(100vw - 20px, (100dvh - 244px) * 0.9, 720px); } }
+.app > * { width: var(--bw); flex: 0 0 auto; }
+body.in-menu .app { filter: blur(2px); opacity: 0.4; pointer-events: none; }
+
+.top { display: flex; align-items: center; gap: 10px; height: 48px; }
+.top__mid { flex: 1; min-width: 0; text-align: center; }
+.top__title { font-size: 1.35rem; font-weight: 600; line-height: 1.1; }
+.top__sub { font-size: 0.98rem; opacity: 0.75; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.round {
+  width: 46px; height: 46px; flex: 0 0 46px; padding: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); background: var(--card); color: var(--gold);
+}
+.round svg { width: 26px; height: 26px; fill: currentColor; display: block; }
+.round .snd-off { display: none; }
+.round.is-off { opacity: 0.6; }
+.round.is-off .snd-on { display: none; }
+.round.is-off .snd-off { display: inline; }
+
+.side { display: flex; align-items: center; gap: 8px; height: 26px; font-size: 1.08rem; line-height: 1; }
+.side__dot { width: 13px; height: 13px; flex: 0 0 13px; border-radius: 50%; background: var(--red); }
+.side__dot.is-b { background: var(--black); }
+@media (prefers-color-scheme: dark) { .side__dot.is-b { box-shadow: 0 0 0 1.5px var(--ink); } }
+.side__name { font-weight: 600; white-space: nowrap; }
+.side.is-turn .side__name { color: var(--gold); }
+.side__turn { font-weight: 400; color: var(--gold); white-space: nowrap; }
+.tray { display: flex; align-items: center; min-width: 0; margin-left: auto; padding-left: 4px; overflow: hidden; }
+.mini {
+  width: 21px; height: 21px; flex: 0 0 21px; margin-left: -5px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--disc); border: 1.5px solid var(--pcol); color: var(--pcol);
+  font: 700 12px/1 "Noto Serif CJK SC", "Songti SC", "STSong", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", serif;
+}
+.mini--r { --pcol: var(--red); } .mini--b { --pcol: var(--black); }
+.tray__adv { margin-left: 8px; font-size: 0.98rem; opacity: 0.8; font-variant-numeric: tabular-nums; }
+
+/* the board: lines on wood, pieces on the crossings */
+.board {
+  position: relative; height: var(--bh); border-radius: 8px; overflow: hidden; touch-action: none;
+  background: var(--wood); --cell: calc(var(--bw) / 9);
+  box-shadow: 0 0 0 1px var(--line), 0 14px 34px rgba(59, 50, 38, 0.22);
+}
+.grid { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.grid path, .grid rect { fill: none; stroke: var(--rule); stroke-width: 0.35; stroke-linecap: round; }
+.grid .frame { stroke-width: 0.7; }
+.grid text { fill: var(--rule); fill-opacity: 0.55; font: 500 5.4px "Noto Serif CJK SC", "Songti SC", "STKaiti", "KaiTi", "PingFang SC", "Microsoft YaHei", serif; text-anchor: middle; dominant-baseline: central; letter-spacing: 3px; }
+.pieces, .marks { position: absolute; inset: 0; }
+.marks { pointer-events: none; }
+.pc, .mark { position: absolute; left: 0; top: 0; width: calc(100% / 9); height: 10%; display: flex; align-items: center; justify-content: center; }
+.pc { transition: transform 0.18s ease, opacity 0.18s ease; will-change: transform; pointer-events: none; }
+.pc.is-instant { transition: none; }
+.pc.is-moving { z-index: 4; }
+.pc.is-drag { transition: none; z-index: 5; }
+.pc.is-drag .pc__disc { box-shadow: 0 8px 10px rgba(0, 0, 0, 0.4); }
+.pc.is-out { opacity: 0; }
+.pc__disc {
+  width: 88%; aspect-ratio: 1; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 35% 30%, #fffdf6, var(--disc) 60%, #f1e4c4);
+  border: max(1.5px, calc(var(--cell) * 0.045)) solid var(--pcol); color: var(--pcol);
+  box-shadow: inset 0 0 0 max(1.5px, calc(var(--cell) * 0.05)) var(--disc), inset 0 0 0 max(2.5px, calc(var(--cell) * 0.075)) var(--pcol), 0 2px 3px rgba(0, 0, 0, 0.3);
+}
+.pc--r { --pcol: var(--red); } .pc--b { --pcol: var(--black); }
+.pc__han { font: 700 calc(var(--cell) * 0.5)/1 "Noto Serif CJK SC", "Songti SC", "STKaiti", "KaiTi", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", serif; }
+.pc__abc { display: none; font: 700 calc(var(--cell) * 0.44)/1 "Crimson Pro", Georgia, serif; letter-spacing: -0.02em; }
+body.style-abc .pc__han { display: none; }
+body.style-abc .pc__abc { display: block; }
+
+.mark::after { content: ""; border-radius: 50%; }
+.mark.is-last::after { width: 96%; aspect-ratio: 1; border: max(2px, calc(var(--cell) * 0.05)) solid var(--mark); opacity: 0.9; }
+.mark.is-from::after { width: 34%; aspect-ratio: 1; border: max(2px, calc(var(--cell) * 0.045)) solid var(--mark); opacity: 0.9; }
+.mark.is-sel::after { width: 98%; aspect-ratio: 1; border: max(3px, calc(var(--cell) * 0.08)) solid var(--mark); }
+.mark.is-target::after { width: 26%; aspect-ratio: 1; background: rgba(42, 35, 26, 0.42); }
+.mark.is-capture::after { width: 98%; aspect-ratio: 1; border: max(3px, calc(var(--cell) * 0.07)) solid var(--danger); opacity: 0.85; }
+.mark.is-check::after { width: 104%; aspect-ratio: 1; box-shadow: 0 0 0 max(3px, calc(var(--cell) * 0.07)) var(--danger), 0 0 calc(var(--cell) * 0.4) var(--danger); }
+.mark.is-hover::after { width: 60%; aspect-ratio: 1; border: 3px solid rgba(255, 255, 255, 0.9); background: none; }
+
+.moves {
+  list-style: none; margin: 0; padding: 0 4px; height: 32px;
+  display: flex; align-items: center; gap: 14px; overflow-x: auto; white-space: nowrap;
+  font-size: 1.08rem; scrollbar-width: none; touch-action: pan-x;
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+.moves::-webkit-scrollbar { display: none; }
+.moves li { display: inline-flex; gap: 7px; flex: 0 0 auto; }
+.moves .n { opacity: 0.55; }
+.moves .m--r { color: var(--red); }
+@media (prefers-color-scheme: dark) { .moves .m--r { color: #f08a7e; } }
+.moves .m.is-last { font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.moves .moves__none { opacity: 0.55; }
+
+.tools { display: flex; gap: 8px; }
+.tools button {
+  flex: 1 1 0; height: 46px; border-radius: 999px; padding: 0 4px;
+  border: 1px solid var(--line); background: transparent; font-size: 1.12rem; font-weight: 600;
+}
+.tools button:disabled { opacity: 0.4; cursor: default; }
+
+/* wide screens and phones on their side: board on the left, everything else beside it */
+@media (min-aspect-ratio: 1/1) and (min-width: 620px) {
+  .app {
+    display: grid; align-content: center; justify-content: center; align-items: stretch; column-gap: 22px; row-gap: 8px;
+    grid-template-columns: var(--bw) minmax(230px, 320px);
+    grid-template-rows: 48px 26px calc(var(--bh) - 178px) 26px 46px;   /* adds up to the board's height */
+    grid-template-areas: "board top" "board st" "board moves" "board sb" "board tools";
+    --bh: min(100vh - 24px, (100vw - 290px) * 10 / 9, 900px);
+    --bw: calc(var(--bh) * 0.9);
+  }
+  @supports (height: 100dvh) { .app { --bh: min(100dvh - 24px, (100vw - 290px) * 10 / 9, 900px); --bw: calc(var(--bh) * 0.9); } }
+  .app > * { width: auto; }
+  .board { grid-area: board; width: var(--bw); }
+  .top { grid-area: top; }
+  #side-top { grid-area: st; }
+  #side-bot { grid-area: sb; }
+  .tools { grid-area: tools; }
+  .moves {
+    grid-area: moves; height: auto; min-height: 0; padding: 8px 4px;
+    flex-wrap: wrap; align-content: flex-start; gap: 6px 16px; white-space: normal;
+    overflow-x: hidden; overflow-y: auto; touch-action: pan-y;
+  }
+}
+
+/* ---------- panels ---------- */
+.panel {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 10;
+  width: min(92vw, 400px); max-height: calc(100% - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior: contain;
+  padding: 20px 20px 10px; text-align: center;
+  border: 1px solid var(--line); border-radius: 14px; background: var(--card);
+  box-shadow: 0 18px 50px rgba(59, 50, 38, 0.25);
+}
+.panel--small { width: min(88vw, 340px); padding-bottom: 16px; }
+/* the result sits at the bottom, clear of the board, so the final position stays in view */
+#over { top: auto; bottom: calc(10px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(94vw, 400px); padding: 12px 14px; }
+/* it is kept low: this board is tall, and on a small phone there is little room under it */
+#over h2 { font-size: 1.5rem; }
+#over .panel__sub { margin-top: 2px; font-size: 1.08rem; line-height: 1.2; }
+#over .panel__buttons { flex-direction: row; gap: 8px; margin: 9px 0 0; }
+#over .panel__buttons button { flex: 1 1 0; padding: 10px 6px; font-size: 1.08rem; }
+@media (min-aspect-ratio: 1/1) and (min-width: 620px) {
+  #over { left: auto; right: calc(10px + env(safe-area-inset-right)); transform: none; }
+}
+.panel h1 { margin: 0; font-size: clamp(2.3rem, 10.5vw, 3.1rem); font-weight: 600; letter-spacing: -0.01em; color: var(--gold); line-height: 1; }
+.panel h2 { margin: 0; font-size: 2rem; font-weight: 600; line-height: 1.1; color: var(--gold); }
+.panel h3 { margin: 10px 0 5px; font-size: 0.9rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; }
+.panel__sub { margin: 8px 0 0; font-size: 1.15rem; line-height: 1.3; }
+.seg { display: flex; gap: 6px; }
+.seg button {
+  flex: 1 1 0; min-width: 0; min-height: 44px; padding: 4px 2px; border-radius: 12px;
+  border: 1px solid var(--line); background: transparent; font-size: 1.04rem; font-weight: 600; line-height: 1.1;
+}
+.seg button.is-on { border: 2px solid var(--gold); color: var(--gold); }
+.panel__buttons { display: flex; flex-direction: column; gap: 9px; margin: 14px 0 4px; }
+.panel__buttons button {
+  padding: 13px 18px; border-radius: 999px;
+  border: 1px solid var(--gold); background: var(--gold); color: var(--paper);
+  font-size: 1.22rem; font-weight: 600; line-height: 1.1;
+}
+.panel__buttons button.is-plain { background: transparent; color: var(--gold); }
+.panel__best { margin: 8px 0 0; font-size: 1rem; line-height: 1.35; opacity: 0.85; }
+.panel__best:empty { display: none; }
+.panel__links { margin: 4px 0 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px 10px; font-size: 1.05rem; }
+.panel__links a { color: var(--gold); display: inline-block; padding: 11px 6px; line-height: 1.25; }
+.panel__links [data-lang-pick] { color: var(--gold); }
+
+@media (max-height: 700px) {
+  .panel { padding: 12px 18px 4px; }
+  .panel h1 { font-size: 2.1rem; }
+  .panel__sub { font-size: 1.02rem; margin-top: 4px; }
+  .panel h3 { margin: 6px 0 3px; font-size: 0.82rem; }
+  .panel__buttons { margin-top: 9px; gap: 7px; }
+  .panel__buttons button { padding: 10px 18px; font-size: 1.15rem; }
+  .seg button { min-height: 44px; font-size: 1rem; }
+  .panel__links a { padding: 8px 6px; }
+}
+/* a phone on its side: two columns inside the menu so nothing needs scrolling */
+@media (max-height: 460px) and (min-width: 620px) {
+  #menu { width: min(96vw, 720px); padding-top: 8px; }
+  #menu h1 { font-size: 1.7rem; }
+  #menu .panel__sub { display: none; }
+  .menu__cols { display: grid; grid-template-columns: 1.15fr 1fr; column-gap: 22px; align-items: end; }
+  .menu__col .panel__buttons { margin: 0; }
+  #continue-wrap { margin: 4px 0 0; }
+  .seg button { min-height: 44px; }
+}

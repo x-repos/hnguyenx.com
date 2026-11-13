@@ -5,12 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Chess</title>
   <meta name="description" content="Chess: play the computer at four levels, a friend on one screen, or a friend online. Play in the browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Hoang Anh (Ben) Nguyen">
+  <meta property="og:title" content="Chess: play with me">
+  <meta property="og:description" content="Play a friend online, or the computer at four levels. Right in the browser, nothing to install.">
+  <meta property="og:url" content="https://hnguyenx.com/play/chess/">
+  <meta property="og:image" content="https://hnguyenx.com/play/og/chess.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Chess: Play a friend online, or the computer at four levels. Right in the browser, nothing to install.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Chess: play with me">
+  <meta name="twitter:description" content="Play a friend online, or the computer at four levels. Right in the browser, nothing to install.">
+  <meta name="twitter:image" content="https://hnguyenx.com/play/og/chess.png">
   <meta name="theme-color" content="#fffdf8" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#14110c" media="(prefers-color-scheme: dark)">
   <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg?v=3">
   <link rel="icon" type="image/png" sizes="32x32" href="../../assets/favicon-32.png?v=3">
   <link rel="apple-touch-icon" sizes="180x180" href="../../assets/apple-touch-icon.png?v=3">
-  <link rel="stylesheet" href="chess.css?v=1">
+  <link rel="stylesheet" href="chess.css?v=2">
+  <script src="../lang.js?v=1"></script>
 </head>
 <body class="in-menu">
   <!-- the six pieces, drawn once and reused everywhere. .pb is the body, .pl the fine lines. -->
@@ -78,7 +92,7 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="top__mid">
-        <div class="top__title" id="status" aria-live="polite">Chess</div>
+        <div class="top__title" id="status" aria-live="polite"><span lang="en">Chess</span><span lang="vi">Cờ vua</span></div>
         <div class="top__sub" id="sub"></div>
       </div>
       <button class="round" id="btn-mute" type="button" aria-label="Sound on or off">
@@ -96,9 +110,9 @@
       <div class="squares" id="squares"></div>
       <div class="pieces" id="pieces"></div>
       <div class="promo" id="promo" hidden>
-        <p>Promote to</p>
+        <p><span lang="en">Promote to</span><span lang="vi">Phong cấp thành</span></p>
         <div class="promo__row" id="promo-row"></div>
-        <button type="button" class="promo__cancel" id="promo-cancel">Cancel</button>
+        <button type="button" class="promo__cancel" id="promo-cancel"><span lang="en">Cancel</span><span lang="vi">Hủy</span></button>
       </div>
     </div>
 
@@ -107,53 +121,54 @@
     <ol class="moves" id="moves" aria-label="Moves"></ol>
 
     <div class="tools">
-      <button type="button" id="btn-undo">Undo</button>
-      <button type="button" id="btn-flip">Flip</button>
-      <button type="button" id="btn-new">New game</button>
+      <button type="button" id="btn-undo"><span lang="en">Undo</span><span lang="vi">Đi lại</span></button>
+      <button type="button" id="btn-flip"><span lang="en">Flip</span><span lang="vi">Lật bàn</span></button>
+      <button type="button" id="btn-new"><span lang="en">New game</span><span lang="vi">Ván mới</span></button>
     </div>
   </main>
 
   <div class="panel" id="menu">
-    <h1>Chess</h1>
-    <p class="panel__sub">Play the computer, or a friend here or online.</p>
+    <h1><span lang="en">Chess</span><span lang="vi">Cờ vua</span></h1>
+    <p class="panel__sub"><span lang="en">Play the computer, or a friend here or online.</span><span lang="vi">Chơi với máy, hoặc với bạn bè tại chỗ hay qua mạng.</span></p>
     <div class="panel__buttons" id="continue-wrap" hidden>
-      <button type="button" id="btn-continue">Continue game</button>
+      <button type="button" id="btn-continue"><span lang="en">Continue game</span><span lang="vi">Tiếp tục ván</span></button>
     </div>
     <div class="menu__cols">
       <div class="menu__col">
-        <h3>Level</h3>
+        <h3><span lang="en">Level</span><span lang="vi">Cấp độ</span></h3>
         <div class="seg" id="seg-level">
-          <button type="button" data-v="0">Beginner</button>
-          <button type="button" data-v="1">Easy</button>
-          <button type="button" data-v="2">Medium</button>
-          <button type="button" data-v="3">Hard</button>
+          <button type="button" data-v="0"><span lang="en">Beginner</span><span lang="vi">Mới chơi</span></button>
+          <button type="button" data-v="1"><span lang="en">Easy</span><span lang="vi">Dễ</span></button>
+          <button type="button" data-v="2"><span lang="en">Medium</span><span lang="vi">Vừa</span></button>
+          <button type="button" data-v="3"><span lang="en">Hard</span><span lang="vi">Khó</span></button>
         </div>
-        <h3>You play</h3>
+        <h3><span lang="en">You play</span><span lang="vi">Bạn cầm quân</span></h3>
         <div class="seg" id="seg-side">
-          <button type="button" data-v="w">White</button>
-          <button type="button" data-v="b">Black</button>
-          <button type="button" data-v="r">Random</button>
+          <button type="button" data-v="w"><span lang="en">White</span><span lang="vi">Trắng</span></button>
+          <button type="button" data-v="b"><span lang="en">Black</span><span lang="vi">Đen</span></button>
+          <button type="button" data-v="r"><span lang="en">Random</span><span lang="vi">Ngẫu nhiên</span></button>
         </div>
       </div>
       <div class="menu__col">
         <div class="panel__buttons">
-          <button type="button" id="btn-start">Play the computer</button>
-          <button type="button" id="btn-two" class="is-plain">Two players, one screen</button>
-          <button type="button" id="btn-online" class="is-plain">Play a friend online</button>
+          <button type="button" id="btn-start"><span lang="en">Play the computer</span><span lang="vi">Chơi với máy</span></button>
+          <button type="button" id="btn-two" class="is-plain"><span lang="en">Two players, one screen</span><span lang="vi">Hai người, một màn hình</span></button>
+          <button type="button" id="btn-online" class="is-plain"><span lang="en">Play a friend online</span><span lang="vi">Chơi với bạn bè qua mạng</span></button>
         </div>
       </div>
     </div>
     <p class="panel__best" id="best"></p>
-    <p class="panel__links"><a href="../">All games</a><a href="../../">Home</a></p>
+    <p class="panel__links"><a href="../"><span lang="en">All games</span><span lang="vi">Tất cả trò chơi</span></a><a href="../../"><span lang="en">Home</span><span lang="vi">Trang chủ</span></a></p>
+    <p class="panel__lang"><span data-lang-pick></span></p>
   </div>
 
   <div class="panel panel--small" id="online" hidden>
-    <h2>Play online</h2>
-    <p class="panel__sub" id="online-text" aria-live="polite">Connecting</p>
+    <h2><span lang="en">Play online</span><span lang="vi">Chơi qua mạng</span></h2>
+    <p class="panel__sub" id="online-text" aria-live="polite"></p>
     <div class="panel__buttons">
-      <button type="button" id="btn-online-retry" hidden>Try again</button>
-      <button type="button" id="btn-online-copy">Copy link</button>
-      <button type="button" id="btn-online-cancel" class="is-plain">Cancel</button>
+      <button type="button" id="btn-online-retry" hidden><span lang="en">Try again</span><span lang="vi">Thử lại</span></button>
+      <button type="button" id="btn-online-copy"></button>
+      <button type="button" id="btn-online-cancel" class="is-plain"><span lang="en">Cancel</span><span lang="vi">Hủy</span></button>
     </div>
   </div>
 
@@ -161,12 +176,12 @@
     <h2 id="over-title"></h2>
     <p class="panel__sub" id="over-text"></p>
     <div class="panel__buttons">
-      <button type="button" id="btn-over-new">New game</button>
-      <button type="button" id="btn-over-see" class="is-plain">See the board</button>
+      <button type="button" id="btn-over-new"><span lang="en">New game</span><span lang="vi">Ván mới</span></button>
+      <button type="button" id="btn-over-see" class="is-plain"><span lang="en">See the board</span><span lang="vi">Xem bàn cờ</span></button>
     </div>
   </div>
 
   <script src="engine.js?v=1"></script>
-  <script src="chess.js?v=3"></script>
+  <script src="chess.js?v=4"></script>
 </body>
 </html>

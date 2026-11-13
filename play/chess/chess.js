@@ -14,15 +14,19 @@
   const START = ChessEngine.START;
   const $ = (id) => document.getElementById(id);
   const eng = ChessEngine();
+  // tr("English", "Tiếng Việt") gives the text in the language the visitor chose (see ../lang.js)
+  const tr = window.PlayLang ? PlayLang.t : (en) => en;
 
   const LEVELS = [
-    { name: "Beginner", opts: { depth: 1, noise: 120, random: 0.25 } },
-    { name: "Easy", opts: { depth: 2, noise: 60, random: 0.06, book: true } },
-    { name: "Medium", opts: { depth: 3, noise: 20, book: true } },
-    { name: "Hard", opts: { depth: 24, time: 1200, nodes: 1500000, book: true } },
+    { name: "Beginner", vi: "Mới chơi", opts: { depth: 1, noise: 120, random: 0.25 } },
+    { name: "Easy", vi: "Dễ", opts: { depth: 2, noise: 60, random: 0.06, book: true } },
+    { name: "Medium", vi: "Vừa", opts: { depth: 3, noise: 20, book: true } },
+    { name: "Hard", vi: "Khó", opts: { depth: 24, time: 1200, nodes: 1500000, book: true } },
   ];
+  const levelName = (i) => tr(LEVELS[i].name, LEVELS[i].vi);
   const WORTH = [0, 1, 3, 3, 5, 9, 0];
   const PIECE = ["", "pawn", "knight", "bishop", "rook", "queen", "king"];
+  const PIECE_VI = ["", "tốt", "mã", "tượng", "xe", "hậu", "vua"];
   const sqOf = (name) => (name.charCodeAt(1) - 49) * 16 + (name.charCodeAt(0) - 97);
   // where online games meet (see chess-worker/). A local preview can point at a test relay with ?relay=ws://...
   const RELAY = (() => {
@@ -201,8 +205,8 @@
   }
 
   function nameOf(color) {
-    if (game.mode === "two") return color === "w" ? "White" : "Black";
-    return color === game.human ? "You" : game.mode === "online" ? "Friend" : "Computer";
+    if (game.mode === "two") return color === "w" ? tr("White", "Trắng") : tr("Black", "Đen");
+    return color === game.human ? tr("You", "Bạn") : game.mode === "online" ? tr("Friend", "Đối thủ") : tr("Computer", "Máy");
   }
   function paintSides() {
     const bottom = flipped() ? "b" : "w", top = bottom === "w" ? "b" : "w";
@@ -236,33 +240,36 @@
     host.scrollLeft = host.scrollWidth; host.scrollTop = host.scrollHeight;
   }
   function resultText() {
-    const who = (c) => (game.mode === "two" ? (c === "w" ? "White wins." : "Black wins.") : c === game.human ? "You win." : game.mode === "online" ? "Your friend wins." : "The computer wins.");
+    const who = (c) => (game.mode === "two" ? (c === "w" ? tr("White wins.", "Trắng thắng.") : tr("Black wins.", "Đen thắng."))
+      : c === game.human ? tr("You win.", "Bạn thắng.") : game.mode === "online" ? tr("Your friend wins.", "Đối thủ thắng.") : tr("The computer wins.", "Máy thắng."));
     switch (state.kind) {
-      case "checkmate": return ["Checkmate", who(state.winner)];
-      case "stalemate": return ["Stalemate", "The side to move has no legal move and is not in check. It is a draw."];
-      case "material": return ["Draw", "Neither side has enough pieces left to give checkmate."];
-      case "fifty": return ["Draw", "Fifty moves went by with no capture and no pawn move."];
-      case "repetition": return ["Draw", "The same position came up three times."];
-      case "resign": return ["Resigned", state.winner === game.human ? "Your friend resigned. You win." : "You resigned. Your friend wins."];
-      case "left": return ["Game over", "Your friend left the game."];
+      case "checkmate": return [tr("Checkmate", "Chiếu bí"), who(state.winner)];
+      case "stalemate": return [tr("Stalemate", "Hết nước đi"), tr("The side to move has no legal move and is not in check. It is a draw.", "Bên đến lượt không còn nước đi hợp lệ nào và không bị chiếu. Ván cờ hòa.")];
+      case "material": return [tr("Draw", "Hòa"), tr("Neither side has enough pieces left to give checkmate.", "Không bên nào còn đủ quân để chiếu bí.")];
+      case "fifty": return [tr("Draw", "Hòa"), tr("Fifty moves went by with no capture and no pawn move.", "Đã qua năm mươi nước mà không có quân nào bị ăn và không có nước đi tốt nào.")];
+      case "repetition": return [tr("Draw", "Hòa"), tr("The same position came up three times.", "Cùng một thế cờ đã lặp lại ba lần.")];
+      case "resign": return [tr("Resigned", "Xin thua"), state.winner === game.human ? tr("Your friend resigned. You win.", "Đối thủ đã xin thua. Bạn thắng.") : tr("You resigned. Your friend wins.", "Bạn đã xin thua. Đối thủ thắng.")];
+      case "left": return [tr("Game over", "Kết thúc"), tr("Your friend left the game.", "Đối thủ đã rời ván cờ.")];
     }
     return ["", ""];
   }
   function paintStatus() {
     if (!game) return;
     let s;
-    const online = game.mode === "online";
+    const online = game.mode === "online", check = state.check ? tr("Check. ", "Chiếu. ") : "";
     if (state.over) { const r = resultText(); s = state.kind === "checkmate" ? r[0] + ". " + r[1] : r[0]; }
-    else if (online && !netOpen()) s = "Connection lost. Reconnecting";
-    else if (online && !net.peer) s = "Your friend is offline. Waiting";
-    else if (online) s = (state.check ? "Check. " : "") + (eng.turn() === game.human ? "Your move" : "Your friend's move");
-    else if (thinking) s = "The computer is thinking";
-    else if (game.mode === "two") s = (state.check ? "Check. " : "") + (eng.turn() === "w" ? "White to move" : "Black to move");
-    else s = (state.check ? "Check. " : "") + "Your move";
+    else if (online && !netOpen()) s = tr("Connection lost. Reconnecting", "Mất kết nối. Đang kết nối lại");
+    else if (online && !net.peer) s = tr("Your friend is offline. Waiting", "Đối thủ mất kết nối. Đang chờ");
+    else if (online) s = check + (eng.turn() === game.human ? tr("Your move", "Lượt của bạn") : tr("Your friend's move", "Lượt của đối thủ"));
+    else if (thinking) s = tr("The computer is thinking", "Máy đang nghĩ");
+    else if (game.mode === "two") s = check + (eng.turn() === "w" ? tr("White to move", "Đến lượt Trắng") : tr("Black to move", "Đến lượt Đen"));
+    else s = check + tr("Your move", "Lượt của bạn");
     $("status").textContent = s;
-    $("sub").textContent = game.mode === "two" ? "Two players, one screen" : "You are " + (game.human === "w" ? "White" : "Black") + (online ? ". Online game" : ". Level: " + LEVELS[game.level].name);
+    const side = game.human === "w" ? tr("You are White", "Bạn cầm quân Trắng") : tr("You are Black", "Bạn cầm quân Đen");
+    $("sub").textContent = game.mode === "two" ? tr("Two players, one screen", "Hai người, một màn hình")
+      : side + (online ? tr(". Online game", ". Chơi qua mạng") : tr(". Level: ", ". Cấp độ: ") + levelName(game.level));
     // online there is no taking back; the same button gives up the game instead, on a second press
-    $("btn-undo").textContent = online ? (resignArmed ? "Sure?" : "Resign") : "Undo";
+    $("btn-undo").textContent = online ? (resignArmed ? tr("Sure?", "Chắc chứ?") : tr("Resign", "Xin thua")) : tr("Undo", "Đi lại");
     $("btn-undo").disabled = online ? state.over : !game.moves.length;
   }
   function render(animate) {
@@ -316,10 +323,13 @@
     clearTimeout(overTimer);
     overTimer = setTimeout(() => {
       if (screen !== "play" || !state.over) return;
-      const r = resultText();
-      $("over-title").textContent = r[0]; $("over-text").textContent = r[1];
+      paintOver();
       $("over").hidden = false;
     }, 700);
+  }
+  function paintOver() {
+    const r = resultText();
+    $("over-title").textContent = r[0]; $("over-text").textContent = r[1];
   }
   function undo() {
     if (screen === "play" && game && game.mode === "online") { resign(); return; }
@@ -361,7 +371,7 @@
   function askPromo(list, instant) {
     promo = { list, instant };
     const black = eng.turn() === "b";
-    $("promo-row").innerHTML = [5, 4, 3, 2].map((t) => '<button type="button" data-t="' + t + '" aria-label="' + PIECE[t] + '">' + sprite(t | (black ? 8 : 0), "mini") + "</button>").join("");
+    $("promo-row").innerHTML = [5, 4, 3, 2].map((t) => '<button type="button" data-t="' + t + '" aria-label="' + tr(PIECE[t], PIECE_VI[t]) + '">' + sprite(t | (black ? 8 : 0), "mini") + "</button>").join("");
     $("promo").hidden = false;
   }
   function closePromo() {
@@ -472,16 +482,20 @@
   function findOnline() {
     // looking for a new game gives up any online game still going
     if (game && game.mode === "online") { game = null; save.game = null; persist(); }
-    net.want = "find"; net.tries = 0;
+    net.want = "find"; net.tries = 0; linkShown = ""; linkCopied = false;
     show("online"); paintOnline();
     if (netOpen()) netSend({ t: "find" }); else netConnect();
   }
+  let onlineFailed = false, linkShown = "", linkCopied = false;
   function paintOnline(failed) {
+    onlineFailed = !!failed;
     if (screen !== "online") return;
-    $("online-text").textContent = failed ? "Could not reach the game server. Check your connection and try again."
-      : netOpen() ? "Waiting for another player. Copy the link and send it to your friend. The game starts when they open it." : "Connecting";
+    $("online-text").textContent = failed ? tr("Could not reach the game server. Check your connection and try again.", "Không kết nối được tới máy chủ trò chơi. Hãy kiểm tra mạng rồi thử lại.")
+      : linkShown ? tr("Copy this link and send it to your friend: ", "Hãy sao chép liên kết này và gửi cho bạn của bạn: ") + linkShown
+      : netOpen() ? tr("Waiting for another player. Copy the link and send it to your friend. The game starts when they open it.", "Đang chờ người chơi khác. Hãy sao chép liên kết và gửi cho bạn của bạn. Ván cờ bắt đầu khi họ mở liên kết.") : tr("Connecting", "Đang kết nối");
     $("btn-online-retry").hidden = !failed;
     $("btn-online-copy").hidden = !!failed;
+    $("btn-online-copy").textContent = linkCopied ? tr("Link copied", "Đã sao chép") : tr("Copy link", "Sao chép liên kết");
   }
   // the link to send: opening it goes straight to looking for a game, so the two of you are paired
   function inviteLink() {
@@ -491,11 +505,11 @@
     return location.origin + location.pathname + "?" + keep.toString();
   }
   function copyInvite() {
-    const link = inviteLink(), btn = $("btn-online-copy");
+    const link = inviteLink();
     const done = (ok) => {
-      if (!ok) { $("online-text").textContent = "Copy this link and send it to your friend: " + link; return; }
-      btn.textContent = "Link copied";
-      setTimeout(() => { btn.textContent = "Copy link"; }, 2200);
+      if (!ok) { linkShown = link; paintOnline(onlineFailed); return; }      // could not copy: show the link to copy by hand
+      linkCopied = true; paintOnline(onlineFailed);
+      setTimeout(() => { linkCopied = false; paintOnline(onlineFailed); }, 2200);
     };
     const oldWay = () => {       // for pages that are not allowed to use the clipboard directly
       const ta = document.createElement("textarea");
@@ -686,7 +700,7 @@
     const won = save.wins.reduce((a, b) => a + b, 0);
     let top = -1;
     save.wins.forEach((n, i) => { if (n) top = i; });
-    $("best").textContent = won ? "Games won against the computer: " + won + ". Hardest level beaten: " + LEVELS[top].name + "." : "";
+    $("best").textContent = won ? tr("Games won against the computer: ", "Số ván thắng máy: ") + won + tr(". Hardest level beaten: ", ". Cấp độ cao nhất đã thắng: ") + levelName(top) + "." : "";
   }
   $("seg-level").addEventListener("click", (e) => {
     const b = e.target.closest("button"); if (!b) return;
@@ -750,6 +764,21 @@
     try { history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q.toString() : "") + location.hash); } catch (e) {}
     findOnline();
   }
+
+  // labels that are not text on the page, and everything painted from here, in the chosen language
+  function paintLanguage() {
+    $("btn-menu").setAttribute("aria-label", tr("Menu", "Menu"));
+    $("btn-mute").setAttribute("aria-label", tr("Sound on or off", "Bật hoặc tắt âm thanh"));
+    $("board").setAttribute("aria-label", tr("Chess board", "Bàn cờ vua"));
+    $("moves").setAttribute("aria-label", tr("Moves", "Các nước đi"));
+    if (game) { paintSides(); paintStatus(); }
+    if (screen === "menu") paintMenu();
+    paintOnline(onlineFailed);
+    if (!$("over").hidden) paintOver();
+    if (promo) askPromo(promo.list, promo.instant);
+  }
+  paintLanguage();
+  if (window.PlayLang) PlayLang.onChange(paintLanguage);
 
   // test handle
   window.__chess = {

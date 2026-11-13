@@ -20,6 +20,8 @@
   const EPS = 1e-7;
   const MAX_OUTCOMES = 4;
   const $ = (id) => document.getElementById(id);
+  // tr("English", "Tiếng Việt") gives the text in the language the visitor chose (see ../lang.js)
+  const tr = window.PlayLang ? PlayLang.t : (en) => en;
 
   // ---------- quantum states and gates ----------
   function zero(n) {
@@ -214,12 +216,13 @@
 
   // ---------- levels ----------
   const GATE = {
-    X: { name: "X", sub: "flip", key: "x" }, H: { name: "H", sub: "split", key: "h" },
-    Z: { name: "Z", sub: "half turn", key: "z" }, S: { name: "S", sub: "quarter turn", key: "s" },
-    T: { name: "T", sub: "eighth turn", key: "t" }, M: { name: "M", sub: "measure", key: "d" },
-    CX: { name: "CNOT", sub: "linked flip", key: "c" }, CZ: { name: "CZ", sub: "linked turn", key: "v" },
-    SW: { name: "SWAP", sub: "trade", key: "w" },
+    X: { name: "X", sub: "flip", vi: "lật", key: "x" }, H: { name: "H", sub: "split", vi: "tách đôi", key: "h" },
+    Z: { name: "Z", sub: "half turn", vi: "nửa vòng", key: "z" }, S: { name: "S", sub: "quarter turn", vi: "¼ vòng", key: "s" },
+    T: { name: "T", sub: "eighth turn", vi: "⅛ vòng", key: "t" }, M: { name: "M", sub: "measure", vi: "đo", key: "d" },
+    CX: { name: "CNOT", sub: "linked flip", vi: "lật liên kết", key: "c" }, CZ: { name: "CZ", sub: "linked turn", vi: "xoay liên kết", key: "v" },
+    SW: { name: "SWAP", sub: "trade", vi: "đổi chỗ", key: "w" },
   };
+  const gateSub = (g) => tr(GATE[g].sub, GATE[g].vi);
   // Most levels offer more gates than they need, so that choosing is part of the puzzle. The spare
   // gates are ones already taught, and were checked by search: no solution within par uses any of them.
   // o: { goal, q, want, measured, after } for the levels that need more than "reach this state"
@@ -297,16 +300,70 @@
   ];
   const LEVELS = BASIC.concat(ADVANCED), ADV = BASIC.length;
   const CHAPTERS = [
-    { title: "Flip", from: 0 }, { title: "Superposition", from: 3 }, { title: "Phase", from: 7 },
-    { title: "Entanglement", from: 12 }, { title: "New gates", from: 19 }, { title: "Three qubits", from: 25 },
-    { title: "Bell states", from: ADV, first: true }, { title: "Phase and kickback", from: ADV + 6 },
-    { title: "Measurement", from: ADV + 10 }, { title: "Protocols", from: ADV + 15 },
+    { title: "Flip", vi: "Lật", from: 0 }, { title: "Superposition", vi: "Chồng chập", from: 3 }, { title: "Phase", vi: "Pha", from: 7 },
+    { title: "Entanglement", vi: "Vướng víu", from: 12 }, { title: "New gates", vi: "Cổng mới", from: 19 }, { title: "Three qubits", vi: "Ba qubit", from: 25 },
+    { title: "Bell states", vi: "Trạng thái Bell", from: ADV, first: true }, { title: "Phase and kickback", vi: "Pha và pha dội ngược", from: ADV + 6 },
+    { title: "Measurement", vi: "Phép đo", from: ADV + 10 }, { title: "Protocols", vi: "Giao thức", from: ADV + 15 },
+  ];
+  // The same levels in Vietnamese, in the same order: name, hint, and the note shown after solving.
+  // "ô" is a tile, "đĩa" a disc, "kim" the hand that shows the phase, "kết quả đo" a reading.
+  const VI = [
+    ["Lật đầu tiên", "X lật một qubit. Kéo X thả vào qubit để đưa đĩa từ 0 sang 1."],
+    ["Chọn một qubit", "Với hai qubit, hãy kéo X thả vào qubit bạn muốn lật. Mỗi ô là một kết quả bạn có thể đọc ra."],
+    ["Đổi chỗ", "Chữ số bên trái là qubit trên, q1. Chữ số bên phải là qubit dưới, q2."],
+    ["Nửa nọ nửa kia", "H tách một qubit thành 0 và 1 cùng lúc. Kích thước của đĩa cho biết khả năng đọc ra kết quả đó."],
+    ["Quay trở lại", "H tự đảo ngược chính nó. Dùng H lần nữa để gộp hai nửa lại."],
+    ["Khắp mọi nơi", "Đặt H lên cả hai qubit để trải trạng thái ra cả bốn ô."],
+    ["Nửa bàn", "Hãy phối hợp các cổng. Một qubit được lật, qubit kia được tách."],
+    ["Xoay kim", "Z xoay kim trên ô 1 đi nửa vòng. Đó chính là pha. Các đĩa giữ nguyên kích thước, nên xác suất không đổi."],
+    ["Pha ẩn", "Pha vẫn ẩn cho đến khi H làm nó lộ ra. Dùng H và xem cái kim đã xoay biến thành một cú lật."],
+    ["Lật mà không cần X", "Ở đây không có X. Hãy đặt một cổng Z giữa hai cổng H để tự tạo ra phép lật."],
+    ["Cộng và trừ", "Tách cả hai qubit, rồi xoay kim trên chỉ một qubit."],
+    ["Lộ diện kép", "Xoay các kim trước. Sau đó để H làm chúng lộ ra."],
+    ["Điều khiển", "CNOT chỉ lật qubit mục tiêu khi qubit điều khiển là 1. Thả CNOT vào qubit điều khiển. Qubit còn lại là mục tiêu."],
+    ["Theo chiều ngược lại", "Qubit nào cũng có thể làm điều khiển. Hãy chọn qubit đang là 1."],
+    ["Cặp Bell", "Tách một qubit, rồi dùng nó làm điều khiển. Giờ hai qubit luôn cho cùng kết quả. Đó là vướng víu lượng tử."],
+    ["Trái ngược", "Hãy tạo một cặp luôn cho kết quả trái ngược nhau."],
+    ["Trái ngược, thêm pha", "Một cặp vướng víu cũng có thể mang pha. Hãy quan sát các kim."],
+    ["Gỡ rối", "Cổng nào cũng đảo ngược được. Hãy làm ngược lại công thức tạo cặp Bell."],
+    ["Ba mối nối", "Ba cổng CNOT lần lượt đổi vai điều khiển sẽ đổi chỗ hai qubit cho nhau."],
+    ["Đổi chỗ bằng SWAP", "SWAP đổi chỗ hai qubit cho nhau chỉ trong một nước."],
+    ["Kim ở góc", "CZ chỉ xoay kim trên ô 11. Hai qubit có vai trò như nhau, nên thả vào qubit nào cũng được."],
+    ["Cặp Bell không cần CNOT", "Một cổng CZ kẹp giữa hai cổng H trên cùng một qubit hoạt động y như CNOT."],
+    ["Một phần tư vòng", "S xoay kim một phần tư vòng. Hai cổng S bằng một cổng Z."],
+    ["Lật trong bốn bước", "Hãy tạo phép lật chỉ bằng H và S."],
+    ["Xoay ngược", "Một phần tư vòng theo chiều ngược lại bằng nửa vòng cộng một phần tư vòng."],
+    ["Tám ô", "Ba qubit có tám kết quả. Các chữ số đọc theo thứ tự trên, giữa, dưới."],
+    ["Liên kết ba", "Một cổng H và hai cổng CNOT buộc cả ba qubit lại với nhau. Chúng luôn cho cùng kết quả."],
+    ["Chuyển tiếp", "Vướng víu có thể chuyển đi được. Hãy trao một nửa của cặp cho qubit thứ ba."],
+    ["Kẻ khác biệt", "Buộc cả ba lại với nhau, nhưng để qubit dưới cùng trái ngược với hai qubit kia."],
+    ["Màn kết", "Gom trạng thái đang trải rộng thành một liên kết ba, rồi thêm một nửa vòng."],
+    ["Phi cộng", "Trạng thái Bell đầu tiên, |Φ+⟩ = (|00⟩ + |11⟩)/√2. Đặt H lên một qubit, rồi CNOT với qubit đó làm điều khiển.", "Không qubit nào còn trạng thái của riêng nó nữa. Chỉ cả cặp mới có trạng thái."],
+    ["Phi trừ", "|Φ−⟩ = (|00⟩ − |11⟩)/√2. Vẫn là cặp đó, nhưng kim trên ô 11 xoay nửa vòng.", "Đặt Z lên qubit nào cũng cho cùng một trạng thái. Trong một cặp vướng víu, pha thuộc về cả cặp chứ không thuộc về riêng bên nào."],
+    ["Psi cộng", "|Ψ+⟩ = (|01⟩ + |10⟩)/√2. Hai qubit luôn cho kết quả trái ngược nhau.", "Φ+, Φ−, Ψ+ và Ψ− là bốn trạng thái Bell. Chúng hợp thành một cơ sở cho hai qubit."],
+    ["Psi trừ", "|Ψ−⟩ = (|01⟩ − |10⟩)/√2, trạng thái singlet. Ở đây không có Z: hãy tạo dấu trừ từ X và H.", "Trạng thái singlet trông như nhau trong mọi cơ sở: hai bên đo theo cách nào thì kết quả cũng trái ngược nhau."],
+    ["Chỉ một phía", "Alice giữ qubit trên của một cặp |Φ+⟩ dùng chung. Chỉ tác động lên qubit của cô ấy, hãy biến cặp này thành |Ψ−⟩.", "Với I, X, Z hoặc cả X lẫn Z trên một qubit, Alice tạo được cả bốn trạng thái Bell. Tức là một qubit mang được hai bit lựa chọn."],
+    ["Phép đo Bell", "Hãy làm ngược lại công thức tạo cặp Bell trên |Ψ−⟩. Mỗi trạng thái Bell sẽ gỡ ra thành một cặp bit thường khác nhau.", "CNOT rồi H biến Φ+, Ψ+, Φ−, Ψ− thành 00, 01, 10, 11. Đo sau bước này sẽ phân biệt được bốn trạng thái Bell."],
+    ["Một phần tám vòng", "T xoay kim một phần tám vòng: một pha e^(iπ/4) trên |1⟩.", "T là cổng đưa máy tính lượng tử vượt ra ngoài những gì mô phỏng được một cách dễ dàng. Chỉ H, S và CNOT thì chưa đủ."],
+    ["S từ T", "Hai lần một phần tám vòng thành một phần tư vòng."],
+    ["Pha dội ngược", "Qubit dưới đang ở |−⟩ và CNOT không thể thay đổi nó. Hãy xem pha đi về đâu.", "Qubit mục tiêu không đổi, còn qubit điều khiển nhận nửa vòng. Hiện tượng pha dội ngược này là cách các thuật toán đọc một hàm mà không cần nhìn vào đầu ra của nó."],
+    ["Deutsch", "Qubit dưới đã sẵn sàng ở |−⟩. Cổng CNOT là hộp đen của một hàm cân bằng: dùng nó một lần, với qubit trên làm điều khiển, để qubit trên chắc chắn đọc ra 1.", "Với hàm hằng, qubit trên sẽ đọc ra 0. Chỉ một lần dùng hộp đen là phân biệt được hàm hằng với hàm cân bằng; theo cách cổ điển phải cần hai lần."],
+    ["Sụp đổ", "M đo một qubit. Chồng chập không tồn tại sau phép đo: trạng thái tách thành các kết quả đo có thể có, mỗi kết quả có xác suất riêng.", "Từ đây trò chơi theo dõi mọi kết quả đo. Một màn chỉ được coi là giải xong khi nó đúng trong tất cả các kết quả."],
+    ["Một câu hỏi khác", "Đây là |−⟩. Nếu đo ngay, nó đọc ra 0 hoặc 1 một cách ngẫu nhiên. Hãy dùng H trước để kết quả đo là chắc chắn.", "H trước M là đo trong cơ sở X: nó hỏi cộng hay trừ thay vì 0 hay 1. Một trạng thái có thể chắc chắn với câu hỏi này nhưng ngẫu nhiên với câu hỏi kia."],
+    ["Cả hai cùng lúc", "Chỉ đo qubit trên của một cặp Bell và quan sát qubit dưới.", "Qubit dưới không hề bị động đến, vậy mà giờ nó cũng chắc chắn. Các kết quả đo là ngẫu nhiên, nên không thể gửi tin theo cách này."],
+    ["Sụp đổ bộ ba", "Đây là trạng thái GHZ (|000⟩ + |111⟩)/√2. Hãy đo một qubit bất kỳ.", "Chỉ một lần đo trong cơ sở 0/1 là không còn gì vướng víu nữa. Màn sau sẽ đo cùng trạng thái này theo cách khác."],
+    ["Giữ lại cặp", "Hãy đo qubit trên của trạng thái GHZ sao cho hai qubit còn lại vẫn vướng víu, rồi dùng kết quả đo để sửa dấu của chúng.", "Khi đo trong cơ sở X, qubit trên để lại một cặp Bell. Cổng CZ từ qubit đã đo chính là cổng Z chỉ được áp dụng khi nó đọc ra 1."],
+    ["Mã hóa siêu dày đặc", "Alice và Bob dùng chung |Φ+⟩. Alice muốn gửi hai bit 11 mà chỉ gửi đi một qubit của mình. Hãy mã hóa trên qubit trên, giải mã bằng phép đo Bell, rồi đo cả hai.", "Z rồi X trên qubit của Alice tạo ra |Ψ−⟩, giải mã ra 11. Một qubit mang được hai bit, vì cặp vướng víu đã được chia sẵn từ trước."],
+    ["Dịch chuyển lượng tử", "Hãy chuyển trạng thái của q1 sang q3. q2 và q3 đã dùng chung một cặp Bell, và q3 ở rất xa. Thực hiện phép đo Bell trên q1 và q2, rồi sửa q3 bằng CNOT từ q2 và CZ từ q1.", "Giờ trạng thái nằm trên q3 trong cả bốn kết quả đo, và q1 không còn giữ nó nữa. Chỉ có hai bit thường được truyền đi, và không có gì bị sao chép."],
   ];
   LEVELS.forEach((lv, i) => {
+    lv.vi = { name: VI[i][0], hint: VI[i][1], after: VI[i][2] || "" };
     lv.adv = i >= ADV;
     lv.targetWorld = build(lv.n, lv.target);
     if (lv.goal === "qubit") lv.wantState = build(1, lv.want)[0].s;
   });
+
+  const lvName = (l) => tr(l.name, l.vi.name), lvHint = (l) => tr(l.hint, l.vi.hint), lvAfter = (l) => (l.after ? tr(l.after, l.vi.after) : "");
 
   // ---------- save ----------
   const save = { stars: [], best: [], solved: 0, totalStars: 0, last: 0, muted: false };
@@ -419,7 +476,7 @@
         for (const h of t.hands) h.style.transform = "rotate(" + t.ang.toFixed(2) + "deg)";
         t.disc.style.fill = phaseColor(deg);
       }
-      t.el.setAttribute("aria-label", "chance " + Math.round(mag * mag * 100) + " percent");
+      t.el.setAttribute("aria-label", tr("chance " + Math.round(mag * mag * 100) + " percent", "xác suất " + Math.round(mag * mag * 100) + " phần trăm"));
     });
     return c;
   }
@@ -443,7 +500,7 @@
       for (let q = 0; q < b.s.n; q++) if (!bits.includes(q)) keep.push(q);
       const cap = bits.map((q) => '<span class="q' + q + '">q' + (q + 1) + "=" + sureBit(b.s, q) + "</span>").join(" ");
       h += '<div class="outcome" data-keep="' + keep.join("") + '"><div class="outcome__cap"><b>' + pct(b.p) + "</b> " + cap + "</div>" +
-        (keep.length ? '<div class="tiles tiles--mini k' + keep.length + '">' + tilesHtml(keep) + "</div>" : '<div class="outcome__done">all read</div>') + "</div>";
+        (keep.length ? '<div class="tiles tiles--mini k' + keep.length + '">' + tilesHtml(keep) + "</div>" : '<div class="outcome__done">' + tr("all read", "đã đo hết") + "</div>") + "</div>";
     }
     return h;
   }
@@ -485,17 +542,17 @@
     const host = $("tiles-target"), head = $("target-head");
     host.className = "tiles";
     if (lv.goal === "qubit") {
-      head.textContent = "q" + (lv.q + 1) + " must be";
+      head.textContent = tr("q" + (lv.q + 1) + " must be", "q" + (lv.q + 1) + " phải là");
       host.classList.add("k1");
       host.innerHTML = tilesHtml([lv.q]);
       requestAnimationFrame(() => paintTiles(grab(host), lv.wantState));
     } else if (lv.targetWorld.length > 1) {
-      head.textContent = "Target";
+      head.textContent = tr("Target", "Mục tiêu");
       host.classList.add("is-outcomes");
       host.innerHTML = outcomesHtml(lv.targetWorld, readOf(lv.target.split(" ")));
       requestAnimationFrame(() => paintOutcomes(host, lv.targetWorld));
     } else {
-      head.textContent = "Target";
+      head.textContent = tr("Target", "Mục tiêu");
       host.innerHTML = tilesHtml([...Array(lv.n).keys()]);
       const tiles = grab(host);
       requestAnimationFrame(() => { targetCanon = paintTiles(tiles, lv.targetWorld[0].s); });
@@ -519,33 +576,39 @@
       });
     }
     yoursShape = shape;
+    $("states").classList.toggle("has-outcomes", world.length > 1 || lv.targetWorld.length > 1);
+    $("states").classList.toggle("has-many", world.length > 2 || lv.targetWorld.length > 2);
   }
   function paintKets() {
     const host = $("kets");
     host.hidden = !lv.adv;
     if (!lv.adv) return;
-    const mine = world.length > 1 ? world.length + " outcomes" : ket(world[0].s);
-    const goal = lv.goal === "qubit" ? "q" + (lv.q + 1) + " = " + ket(lv.wantState) : lv.targetWorld.length > 1 ? lv.targetWorld.length + " outcomes" : ket(lv.targetWorld[0].s);
-    host.innerHTML = '<span><b>Yours</b> ' + mine + '</span><span><b>Target</b> ' + goal + "</span>";
+    const many = (n) => n + tr(" outcomes", " kết quả đo");
+    const mine = world.length > 1 ? many(world.length) : ket(world[0].s);
+    const goal = lv.goal === "qubit" ? "q" + (lv.q + 1) + " = " + ket(lv.wantState) : lv.targetWorld.length > 1 ? many(lv.targetWorld.length) : ket(lv.targetWorld[0].s);
+    host.innerHTML = "<span><b>" + tr("Yours", "Của bạn") + "</b> " + mine + "</span><span><b>" + tr("Target", "Mục tiêu") + "</b> " + goal + "</span>";
   }
 
+  // the words of the level: its title, its hint, and the gates with their captions
+  function paintLevelText() {
+    $("lv-title").textContent = (lv.adv ? tr("Advanced ", "Nâng cao ") + (cur - ADV + 1) : tr("Level ", "Màn ") + (cur + 1)) + ". " + lvName(lv);
+    $("hint").textContent = lvHint(lv);
+    $("gates").innerHTML = lv.gates.map((t) => '<button type="button" class="gate" data-g="' + t + '" aria-label="' + GATE[t].name + ", " + gateSub(t) + '">' +
+      '<span class="gate__name' + (GATE[t].name.length > 2 ? " is-long" : "") + '">' + GATE[t].name + '</span><span class="gate__sub">' + gateSub(t) + '</span><span class="gate__key" aria-hidden="true">' + GATE[t].key.toUpperCase() + "</span></button>").join("");
+    $("gates").classList.toggle("is-many", lv.gates.length > 4);
+  }
   function startLevel(i) {
     clearTimeout(winTimer);
     cur = Math.max(0, Math.min(LEVELS.length - 1, i | 0)); lv = LEVELS[cur];
     save.last = cur; persist();
     hist = []; armed = null; pick = -1; solved = false; yoursShape = ""; targetCanon = null;
     $("states").className = "states n" + lv.n + (lv.adv ? " is-adv" : "");
-    $("lv-title").textContent = (lv.adv ? "Advanced " + (cur - ADV + 1) : "Level " + (cur + 1)) + ". " + lv.name;
-    $("hint").textContent = lv.hint;
     // qubit wires
     let h = '<svg aria-hidden="true"></svg>';
     for (let q = 0; q < lv.n; q++) h += '<button type="button" class="wire q' + q + '" data-q="' + q + '" aria-label="Qubit ' + (q + 1) + '"><span class="wire__name">q' + (q + 1) + "</span></button>";
     $("circuit").innerHTML = h;
     $("circuit").classList.toggle("is-single", lv.n === 1);
-    // gate buttons
-    $("gates").innerHTML = lv.gates.map((t) => '<button type="button" class="gate" data-g="' + t + '" aria-label="' + GATE[t].name + ", " + GATE[t].sub + '">' +
-      '<span class="gate__name' + (GATE[t].name.length > 2 ? " is-long" : "") + '">' + GATE[t].name + '</span><span class="gate__sub">' + GATE[t].sub + '</span><span class="gate__key" aria-hidden="true">' + GATE[t].key.toUpperCase() + "</span></button>").join("");
-    $("gates").classList.toggle("is-many", lv.gates.length > 4);
+    paintLevelText();
     showWin(false);
     show("play");
     paintTarget();
@@ -563,23 +626,23 @@
     match = judge(lv, world, hist);
     let pc = Math.round(match.f * 100); if (!match.solved && pc > 99) pc = 99; if (match.solved) pc = 100;
     $("match-fill").style.width = pc + "%";
-    $("match-text").textContent = "Match " + pc + "%";
+    $("match-text").textContent = tr("Match ", "Khớp ") + pc + "%";
     $("match").classList.toggle("is-full", match.solved);
     $("states").classList.toggle("is-match", match.solved);
-    $("lv-count").textContent = "Gates " + hist.length + " · Best possible " + lv.par;
+    $("lv-count").textContent = tr("Gates ", "Số cổng ") + hist.length + tr(" · Best possible ", " · Ít nhất có thể ") + lv.par;
     $("btn-undo").disabled = !hist.length; $("btn-reset").disabled = !hist.length;
     paintKets(); paintArmed(); drawCircuit(isNew);
     return match.solved;
   }
 
   function promptText() {
-    if (solved) return "Solved.";
-    if (lv.n === 1) return "Drag a gate onto the qubit.";
-    if (!armed) return "Drag a gate onto a qubit.";
-    const nm = GATE[armed].name;
-    if (armed === "CX") return pick < 0 ? "CNOT is ready. Tap the control qubit." : "Control is q" + (pick + 1) + ". Now tap the target qubit.";
-    if (armed === "CZ" || armed === "SW") return pick < 0 ? nm + " is ready. Tap the first qubit." : "First is q" + (pick + 1) + ". Now tap the second qubit.";
-    return (armed === "M" ? "Measure" : nm) + " is ready. Tap a qubit.";
+    if (solved) return tr("Solved.", "Đã giải xong.");
+    if (lv.n === 1) return tr("Drag a gate onto the qubit.", "Kéo một cổng thả vào qubit.");
+    if (!armed) return tr("Drag a gate onto a qubit.", "Kéo một cổng thả vào một qubit.");
+    const nm = GATE[armed].name, q = "q" + (pick + 1);
+    if (armed === "CX") return pick < 0 ? tr("CNOT is ready. Tap the control qubit.", "CNOT đã sẵn sàng. Chạm vào qubit điều khiển.") : tr("Control is " + q + ". Now tap the target qubit.", "Điều khiển là " + q + ". Giờ chạm vào qubit mục tiêu.");
+    if (armed === "CZ" || armed === "SW") return pick < 0 ? tr(nm + " is ready. Tap the first qubit.", nm + " đã sẵn sàng. Chạm vào qubit thứ nhất.") : tr("First is " + q + ". Now tap the second qubit.", "Qubit thứ nhất là " + q + ". Giờ chạm vào qubit thứ hai.");
+    return armed === "M" ? tr("Measure is ready. Tap a qubit.", "Phép đo đã sẵn sàng. Chạm vào một qubit.") : tr(nm + " is ready. Tap a qubit.", nm + " đã sẵn sàng. Chạm vào một qubit.");
   }
   function paintArmed() {
     for (const b of $("gates").children) b.classList.toggle("is-armed", b.dataset.g === armed);
@@ -590,7 +653,7 @@
       let tag = w.querySelector(".wire__tag");
       if (on && !tag) { tag = document.createElement("span"); tag.className = "wire__tag"; w.appendChild(tag); }
       if (!on && tag) tag.remove();
-      if (on) tag.textContent = armed === "CX" ? "control" : "first";
+      if (on) tag.textContent = armed === "CX" ? tr("control", "điều khiển") : tr("first", "thứ nhất");
     }
     $("prompt").textContent = promptText();
   }
@@ -636,12 +699,12 @@
     if (!lv.gates.includes(g.t)) return false;
     if (!reachable(lv, world, hist, tok)) {
       SFX.nope(); armed = null; pick = -1; paintArmed();
-      $("prompt").textContent = "q" + (lv.far + 1) + " is far away. Only a qubit that has been measured can act on it.";
+      $("prompt").textContent = tr("q" + (lv.far + 1) + " is far away. Only a qubit that has been measured can act on it.", "q" + (lv.far + 1) + " ở rất xa. Chỉ qubit đã được đo mới tác động được lên nó.");
       return false;
     }
     if (after.length > MAX_OUTCOMES) {
       SFX.nope(); armed = null; pick = -1; paintArmed();
-      $("prompt").textContent = "That would be too many outcomes to follow. Undo a measurement first.";
+      $("prompt").textContent = tr("That would be too many outcomes to follow. Undo a measurement first.", "Như vậy sẽ có quá nhiều kết quả đo để theo dõi. Hãy hoàn tác một phép đo trước.");
       return false;
     }
     const before = worldKey(world), hadRead = hist.includes(tok);
@@ -649,8 +712,19 @@
     (SFX[g.t] || SFX.pick)();
     pick = -1;
     if (refresh(true)) win();
-    else if (worldKey(world) === before) $("prompt").textContent = g.t === "M" ? (hadRead ? "That qubit was already measured." : "That qubit was already certain. Measuring it changed nothing.") : "That gate left this state as it was.";
+    else if (worldKey(world) === before) $("prompt").textContent = g.t === "M" ? (hadRead ? tr("That qubit was already measured.", "Qubit đó đã được đo rồi.") : tr("That qubit was already certain. Measuring it changed nothing.", "Qubit đó vốn đã chắc chắn. Đo nó không làm thay đổi gì.")) : tr("That gate left this state as it was.", "Cổng đó không làm thay đổi trạng thái này.");
     return true;
+  }
+  // the words on the solved panel
+  function paintWin() {
+    const n = hist.length, stars = lastStars, last = cur === LEVELS.length - 1 || cur === ADV - 1;
+    let txt = tr("Solved in " + n + (n === 1 ? " gate. " : " gates. "), "Giải xong với " + n + " cổng. ");
+    txt += stars === 3 ? tr("That is the best possible.", "Đó là ít nhất có thể.") : tr("The best possible is " + lv.par + ".", "Ít nhất có thể là " + lv.par + ".");
+    if (last && solvedIn(lv.adv ? ADV : 0, lv.adv ? LEVELS.length : ADV) === (lv.adv ? LEVELS.length - ADV : ADV)) txt += lv.adv ? tr(" You have solved every advanced level.", " Bạn đã giải hết các màn nâng cao.") : tr(" You have solved every level of the basics.", " Bạn đã giải hết các màn cơ bản.");
+    $("win-text").textContent = txt;
+    $("win-note").textContent = lvAfter(lv);
+    $("win-note").hidden = !lv.after;
+    $("btn-next").textContent = last ? tr("Levels", "Các màn") : tr("Next level", "Màn tiếp");
   }
   function win() {
     solved = true; armed = null; pick = -1;
@@ -660,15 +734,8 @@
     if (!save.best[cur] || n < save.best[cur]) save.best[cur] = n;
     tally(); persist(); paintArmed();
     SFX.win(stars);
-    const last = cur === LEVELS.length - 1 || cur === ADV - 1;
-    let txt = "Solved in " + n + (n === 1 ? " gate. " : " gates. ");
-    txt += stars === 3 ? "That is the best possible." : "The best possible is " + lv.par + ".";
-    if (last && solvedIn(lv.adv ? ADV : 0, lv.adv ? LEVELS.length : ADV) === (lv.adv ? LEVELS.length - ADV : ADV)) txt += lv.adv ? " You have solved every advanced level." : " You have solved every level of the basics.";
-    $("win-text").textContent = txt;
-    $("win-note").textContent = lv.after || "";
-    $("win-note").hidden = !lv.after;
+    paintWin();
     $("win-stars").innerHTML = [1, 2, 3].map((k) => starSvg(k <= stars)).join("");
-    $("btn-next").textContent = last ? "Levels" : "Next level";
     clearTimeout(winTimer);
     winTimer = setTimeout(() => { if (solved) { showWin(true); drawCircuit(false); } }, 420);
   }
@@ -688,7 +755,7 @@
     if (solved || q >= lv.n) return;
     audio();
     if (lv.n === 1) return;
-    if (!armed) { SFX.nope(); $("prompt").textContent = "Drag a gate from the row below onto this qubit."; return; }
+    if (!armed) { SFX.nope(); $("prompt").textContent = tr("Drag a gate from the row below onto this qubit.", "Hãy kéo một cổng ở hàng bên dưới thả vào qubit này."); return; }
     if (armed === "CX" || armed === "CZ" || armed === "SW") {
       if (pick < 0) { pick = q; SFX.pick(); paintArmed(); return; }
       if (pick === q) { pick = -1; SFX.pick(); paintArmed(); return; }
@@ -743,7 +810,7 @@
     if (!d.ghost) { if (!cancelled) tapGate(d.t); return; }       // a plain tap still picks the gate up, as before
     d.ghost.remove();
     if (cancelled) return;
-    if (d.over >= 0) dropGate(d.t, d.over); else { SFX.nope(); $("prompt").textContent = "Drop the gate on a qubit."; }
+    if (d.over >= 0) dropGate(d.t, d.over); else { SFX.nope(); $("prompt").textContent = tr("Drop the gate on a qubit.", "Hãy thả cổng vào một qubit."); }
   }
   $("gates").addEventListener("pointerdown", (e) => {
     const btn = e.target.closest(".gate");
@@ -800,22 +867,24 @@
   }
   function paintMenu() {
     const open = firstOpen(false), openAdv = firstOpen(true), nb = solvedIn(0, ADV), na = solvedIn(ADV, LEVELS.length);
-    $("btn-play").textContent = nb === 0 ? "Play" : open < 0 ? "Play the basics again" : "Continue at level " + (open + 1);
-    $("btn-adv").textContent = na === 0 ? "Advanced" : openAdv < 0 ? "Advanced, again" : "Advanced, level " + (openAdv - ADV + 1);
-    $("best").textContent = save.solved ? "Basics " + nb + " of " + ADV + ". Advanced " + na + " of " + (LEVELS.length - ADV) + ". " + save.totalStars + " of " + LEVELS.length * 3 + " stars." : "";
+    $("btn-play").textContent = nb === 0 ? tr("Play", "Chơi") : open < 0 ? tr("Play the basics again", "Chơi lại phần cơ bản") : tr("Continue at level ", "Chơi tiếp màn ") + (open + 1);
+    $("btn-adv").textContent = na === 0 ? tr("Advanced", "Nâng cao") : openAdv < 0 ? tr("Advanced, again", "Nâng cao, chơi lại") : tr("Advanced, level ", "Nâng cao, màn ") + (openAdv - ADV + 1);
+    $("best").textContent = !save.solved ? "" : tr(
+      "Basics " + nb + " of " + ADV + ". Advanced " + na + " of " + (LEVELS.length - ADV) + ". " + save.totalStars + " of " + LEVELS.length * 3 + " stars.",
+      "Cơ bản " + nb + "/" + ADV + ". Nâng cao " + na + "/" + (LEVELS.length - ADV) + ". " + save.totalStars + "/" + LEVELS.length * 3 + " sao.");
   }
   function paintLevels() {
     const open = save.last >= ADV ? firstOpen(true) : firstOpen(false);
-    $("levels-sub").textContent = save.totalStars + " of " + LEVELS.length * 3 + " stars. Three stars means the fewest gates possible.";
+    $("levels-sub").textContent = tr(save.totalStars + " of " + LEVELS.length * 3 + " stars. Three stars means the fewest gates possible.", save.totalStars + "/" + LEVELS.length * 3 + " sao. Ba sao nghĩa là dùng ít cổng nhất có thể.");
     let h = "";
     CHAPTERS.forEach((ch, c) => {
       const to = c + 1 < CHAPTERS.length ? CHAPTERS[c + 1].from : LEVELS.length;
-      if (ch.first) h += '<p class="lv__part">Advanced. Bell states, measurement and protocols, with the states written out.</p>';
-      h += "<h3>" + ch.title + '</h3><div class="lv__grid">';
+      if (ch.first) h += '<p class="lv__part">' + tr("Advanced. Bell states, measurement and protocols, with the states written out.", "Nâng cao. Trạng thái Bell, phép đo và các giao thức, có viết rõ trạng thái bằng ket.") + "</p>";
+      h += "<h3>" + tr(ch.title, ch.vi) + '</h3><div class="lv__grid">';
       for (let i = ch.from; i < to; i++) {
         const st = save.stars[i] | 0, ok = unlocked(i), num = i >= ADV ? i - ADV + 1 : i + 1;
         h += '<button type="button" class="lv__btn' + (st ? " is-done" : "") + (i === open ? " is-next" : "") + '" data-i="' + i + '"' + (ok ? "" : " disabled") +
-          ' aria-label="' + (i >= ADV ? "Advanced level " : "Level ") + num + (ok ? ", " + st + " stars" : ", locked") + '"><span class="lv__num">' + num + '</span><span class="lv__stars">' +
+          ' aria-label="' + (i >= ADV ? tr("Advanced level ", "Màn nâng cao ") : tr("Level ", "Màn ")) + num + (ok ? ", " + st + tr(" stars", " sao") : tr(", locked", ", chưa mở")) + '"><span class="lv__num">' + num + '</span><span class="lv__stars">' +
           [1, 2, 3].map((k) => starSvg(k <= st)).join("") + "</span></button>";
       }
       h += "</div>";
@@ -869,8 +938,24 @@
     try { if (document.hidden) ac.suspend().catch(() => {}); else ac.resume().catch(() => {}); } catch (e) {}
   });
 
+  // labels that are not text on the page, and everything painted from here, in the chosen language
+  function paintLanguage() {
+    $("btn-levels").setAttribute("aria-label", tr("Levels", "Các màn"));
+    $("btn-mute").setAttribute("aria-label", tr("Sound on or off", "Bật hoặc tắt âm thanh"));
+    $("states").setAttribute("aria-label", tr("Your state and the target state", "Trạng thái của bạn và trạng thái mục tiêu"));
+    $("circuit").setAttribute("aria-label", tr("Qubits", "Các qubit"));
+    if (screen === "menu") paintMenu();
+    if (screen === "levels") paintLevels();
+    if (!$("stage").hidden) {          // a level is open, in view or behind a panel
+      paintLevelText();
+      yoursShape = ""; paintTarget(); refresh(false);
+      if (solved) paintWin();
+    }
+  }
   $("btn-mute").classList.toggle("is-off", save.muted);
   show("menu");
+  paintLanguage();
+  if (window.PlayLang) PlayLang.onChange(paintLanguage);
 
   // test handle
   window.__qubit = {

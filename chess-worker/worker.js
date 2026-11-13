@@ -1,4 +1,4 @@
-// Online game relay for hnguyenx.com (chess and caro)
+// Online game relay for hnguyenx.com (chess, caro and Chinese chess)
 //
 // One Durable Object per game holds that game's open connections. It pairs
 // players who press "Play a friend online" and then passes their moves back and
@@ -8,7 +8,7 @@
 // asleep and costs nothing, and "ping" is answered with "pong" without waking it.
 //
 //   GET /ws          (WebSocket)   the game connection for chess
-//   GET /ws?g=caro   (WebSocket)   the same for caro
+//   GET /ws?g=caro   (WebSocket)   the same for caro, and ?g=cotuong for Chinese chess
 //   GET /     plain text, to check the worker is up
 
 import { DurableObject } from "cloudflare:workers";
@@ -18,7 +18,7 @@ import { onMessage, onClose } from "./hub.js";
 const ALLOWED_ORIGIN = /^(https:\/\/(www\.)?hnguyenx\.com|http:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|100\.\d+\.\d+\.\d+)(:\d+)?)$/;
 const MAX_SOCKETS = 200;
 // each game has its own hub, so a chess player is never paired with a caro player
-const GAMES = ["chess", "caro"];
+const GAMES = ["chess", "caro", "cotuong"];
 
 // Each connection carries a small note (its "attachment") that survives sleep:
 // an id, and where the player is: idle, waiting, or playing in a room.
