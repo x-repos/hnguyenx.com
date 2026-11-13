@@ -73,6 +73,10 @@ html, body {
 .panel button[hidden] { display: none; }
 .panel__links { margin: 12px 0 0; display: flex; justify-content: center; gap: 10px; font-size: 1rem; }
 .panel__links a { color: var(--gold); display: inline-block; min-width: 96px; padding: 13px 8px; line-height: 1.25; }
+/* the EN / VI switch: small and plain, not one of the big gold buttons */
+.panel__lang { margin: 0; }
+.panel [data-lang-pick] button { width: auto; height: auto; padding: 0 10px; border: 1px solid transparent; border-radius: 999px; background: none; color: var(--ink); font: 600 14px/1 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.panel [data-lang-pick] button[aria-pressed="true"] { border-color: currentColor; }
 
 /* the looks for π: one small button each */
 .looks { display: flex; justify-content: center; gap: 8px; margin: 12px 0 0; }

@@ -14,6 +14,8 @@
 
   const TAU = Math.PI * 2;
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  // the text in the language chosen for the site: English, or Vietnamese
+  const TX = (en, vi) => (window.PlayLang ? window.PlayLang.t(en, vi) : en);
 
   // ====================================================
   // WORLD AND LEVELS
@@ -74,6 +76,38 @@
     { n: "Long Way Round", par: 5, L: [480, 880], T: [120, 860, 32], G: [[380, 480, 480, 480], [120, 480, 220, 480]], B: [[300, 480, 50, 5e6, "gas"], [0, 0, 18, 8e5, "moon", [300, 480, 250, 10, 270]]] },
     { n: "Grand Tour", par: 5, L: [300, 910], T: [300, 100, 30], G: [[262, 500, 338, 500]], W: [[-10, 250, 230, 250], [370, 250, 610, 250]], B: [[0, 0, 34, 3e6, "sun", [300, 500, 115, 8, 0]], [0, 0, 34, 3e6, "sun2", [300, 500, 115, 8, 180]], [0, 0, 16, 7e5, "moon", [300, 500, 235, -11, 90]]] },
   ];
+
+  // The levels' names and tips in Vietnamese, in the same order.
+  const LEVELS_VI = [
+    ["Ánh sáng đầu tiên", "Kéo lùi ở bất kỳ đâu như kéo ná cao su, rồi thả tay."],
+    ["Né sang bên", "Kéo lùi xa hơn để phóng mạnh hơn. Các chấm cho thấy tàu sẽ bắt đầu bay về đâu."],
+    ["Lực hút nhẹ", "Hành tinh hút tàu về phía mình. Hãy ngắm lệch ra một chút."],
+    ["Khúc cong", "Hành tinh chắn ngay giữa đường. Hãy để nó bẻ cong đường bay vòng qua."],
+    ["Khe hẹp", "Hai lực hút cùng lúc. Hành tinh lớn hút mạnh hơn."],
+    ["Nửa vòng quỹ đạo", "Bệ phóng này yếu. Hãy để tàu rơi vòng quanh hành tinh thay vì cưỡng lại nó."],
+    ["Trăng lang thang", "Mặt trăng bắt đầu chuyển động khi tàu được phóng. Phóng mạnh hơn thì tới nơi sớm hơn."],
+    ["Cổng đầu tiên", "Hãy bay qua cổng trước. Sau đó vòng đích mới mở."],
+    ["Hành tinh và trăng", ""],
+    ["Vượt tường", "Mảnh vỡ sẽ chặn tàu lại. Hãy lượn vòng quanh hành tinh để vượt qua."],
+    ["Hai mặt trời", "Hai mặt trời quay quanh nhau. Chúng hút mạnh nhất khi ở gần."],
+    ["Trạm di động", "Vòng đích đang di chuyển. Hãy ngắm vào nơi nó sắp tới."],
+    ["Lượn zíc zắc", "Hai cổng, mỗi bên một cổng. Qua cổng nào trước cũng được."],
+    ["Trọn một vòng", "Lại một bệ phóng yếu. Hãy bay trọn một vòng."],
+    ["Hai giếng", ""],
+    ["Mượn tốc độ", "Chỉ riêng bệ phóng này thì quá yếu. Hãy bay sát phía sau mặt trăng để được kéo theo."],
+    ["Trăng chăn dắt", ""],
+    ["Chiếc cốc", ""],
+    ["Giữa hai mặt trời", ""],
+    ["Nhật thực", "Vòng đích nấp sau hành tinh."],
+    ["Ba cổng", ""],
+    ["Điệu van", ""],
+    ["Đường vòng xa", ""],
+    ["Đại hành trình", ""],
+  ];
+  const levelName = (l) => TX(l.n, (LEVELS_VI[l.i] || [])[0]);
+  // the tip of a level. Where a level has none, a weak launcher still gets a word when the level opens.
+  const levelTip = (l, opening) => (l.tip ? TX(l.tip, (LEVELS_VI[l.i] || [])[1])
+    : opening && l.pmax < PMAX ? TX("This launcher is weak. The dashed circle shows its full power.", "Bệ phóng này yếu. Vòng tròn nét đứt cho thấy lực phóng tối đa của nó.") : "");
 
   // fill in defaults and turn rail angles into radians
   function prepare(lv, i) {
@@ -339,21 +373,24 @@
     }
   }
 
+  // the tip is given as a function, so that it can be written out again when the language changes
+  let tipText = () => "";
   function showTip(text, toast) {
-    tipEl.textContent = text || "";
+    tipText = text;
+    tipEl.textContent = text() || "";
     tipEl.classList.toggle("is-toast", !!toast);
     toastUntil = toast ? clock + 2.6 : 0;
   }
 
   function updateHud() {
-    $("hud-title").textContent = (lv.i + 1) + " · " + lv.n;
-    $("hud-probes").textContent = "Probes " + probes;
+    $("hud-title").textContent = (lv.i + 1) + " · " + levelName(lv);
+    $("hud-probes").textContent = TX("Probes ", "Số tàu ") + probes;
     const would = starsFor(lv, state === "aim" ? probes + 1 : Math.max(1, probes));
     const els = $("hud-stars").children;
     for (let i = 0; i < 3; i++) els[i].classList.toggle("lit", i < would);
-    $("read-angle").textContent = "Angle " + aim.angle.toFixed(1) + "°";
-    $("read-power").textContent = "Power " + aim.power + (lv.pmax < PMAX ? " of " + lv.pmax : "");
-    $("btn-launch").textContent = state === "fly" ? "Recall" : "Launch";
+    $("read-angle").textContent = TX("Angle ", "Góc ") + aim.angle.toFixed(1) + "°";
+    $("read-power").textContent = TX("Power ", "Lực ") + aim.power + (lv.pmax < PMAX ? TX(" of ", " / ") + lv.pmax : "");
+    $("btn-launch").textContent = state === "fly" ? TX("Recall", "Gọi về") : TX("Launch", "Phóng");
   }
 
   function startLevel(i) {
@@ -367,7 +404,7 @@
     setAim(lv.i === 0 ? Math.atan2(-(tp[1] - lv.L[1]), tp[0] - lv.L[0]) * 180 / Math.PI : 90, Math.min(240, lv.pmax * 0.8));
     for (let k = 0; lv.i > 0 && k < 6 && simulate(lv, aim.angle, aim.power).result === "win"; k++) setAim(aim.angle, aim.power - 25);
     setState("aim");
-    showTip(lv.tip || (lv.pmax < PMAX ? "This launcher is weak. The dashed circle shows its full power." : ""));
+    showTip(() => levelTip(lv, true));
   }
 
   function setState(s) {
@@ -395,16 +432,16 @@
     probes++; acc = 0; lastResult = null;
     state = "fly";
     sfx.whoosh(aim.power / PMAX);
-    if (toastUntil) showTip(lv.tip || "");
+    if (toastUntil) showTip(() => levelTip(lv));
     updateHud();
   }
 
   const FAIL_TEXT = {
-    crash: "Crashed. A new probe is ready.",
-    wall: "Hit the debris. A new probe is ready.",
-    out: "Drifted out of range. A new probe is ready.",
-    fuel: "The probe ran out of power after 20 seconds. A new one is ready.",
-    recall: "Probe recalled. A new one is ready.",
+    crash: ["Crashed. A new probe is ready.", "Va chạm rồi. Tàu mới đã sẵn sàng."],
+    wall: ["Hit the debris. A new probe is ready.", "Đâm vào mảnh vỡ. Tàu mới đã sẵn sàng."],
+    out: ["Drifted out of range. A new probe is ready.", "Trôi ra ngoài tầm. Tàu mới đã sẵn sàng."],
+    fuel: ["The probe ran out of power after 20 seconds. A new one is ready.", "Tàu hết năng lượng sau 20 giây. Tàu mới đã sẵn sàng."],
+    recall: ["Probe recalled. A new one is ready.", "Đã gọi tàu về. Tàu mới đã sẵn sàng."],
   };
 
   function burst(x, y, rgb, n, speed) {
@@ -438,19 +475,25 @@
     else if (result !== "recall") sfx.lost();
     flight = null; acc = 0;
     state = "aim";
-    showTip(FAIL_TEXT[result], true);
+    showTip(() => (FAIL_TEXT[result] ? TX(FAIL_TEXT[result][0], FAIL_TEXT[result][1]) : ""), true);
     updateHud();
   }
 
-  function showWon() {
+  // the words on the panel shown when the ring is reached, in the language now chosen
+  function paintWon() {
     const got = starsFor(lv, probes);
     const last = lv.i === LEVELS.length - 1;
     const allDone = doneCount() === LEVELS.length;
-    $("won-title").textContent = last && allDone ? "Every level cleared" : "Target reached";
-    let text = probes === 1 ? "First probe. Perfect." : "Reached with probe " + probes + ".";
-    if (got < 3) text += " Use " + lv.par + " or fewer for three stars.";
-    if (last) text += allDone ? " You have " + totalStars() + " of " + LEVELS.length * 3 + " stars." : " Some earlier levels are still open.";
+    $("won-title").textContent = last && allDone ? TX("Every level cleared", "Đã qua hết các màn") : TX("Target reached", "Đã tới đích");
+    let text = probes === 1 ? TX("First probe. Perfect.", "Ngay tàu đầu tiên. Hoàn hảo.") : TX("Reached with probe " + probes + ".", "Tới đích bằng tàu thứ " + probes + ".");
+    if (got < 3) text += TX(" Use " + lv.par + " or fewer for three stars.", " Dùng " + lv.par + " tàu trở xuống để được ba sao.");
+    if (last) text += allDone ? TX(" You have " + totalStars() + " of " + LEVELS.length * 3 + " stars.", " Bạn có " + totalStars() + " trên " + LEVELS.length * 3 + " sao.") : TX(" Some earlier levels are still open.", " Vẫn còn vài màn trước chưa qua.");
     $("won-text").textContent = text;
+  }
+  function showWon() {
+    const got = starsFor(lv, probes);
+    const last = lv.i === LEVELS.length - 1;
+    paintWon();
     $("btn-next").hidden = last;
     const els = $("won-stars").children;
     for (let i = 0; i < 3; i++) els[i].classList.remove("lit");
@@ -856,8 +899,8 @@
   // ====================================================
   function refreshMenu() {
     const d = doneCount();
-    $("btn-play").textContent = d === 0 ? "Play" : d === LEVELS.length ? "Choose a level" : "Continue";
-    $("best").textContent = d ? d + " of " + LEVELS.length + " levels · " + totalStars() + " of " + LEVELS.length * 3 + " stars" : "";
+    $("btn-play").textContent = d === 0 ? TX("Play", "Chơi") : d === LEVELS.length ? TX("Choose a level", "Chọn màn") : TX("Continue", "Chơi tiếp");
+    $("best").textContent = d ? TX(d + " of " + LEVELS.length + " levels · " + totalStars() + " of " + LEVELS.length * 3 + " stars", d + " trên " + LEVELS.length + " màn · " + totalStars() + " trên " + LEVELS.length * 3 + " sao") : "";
   }
   function nextOpen() {
     for (let i = 0; i < LEVELS.length; i++) if (!starsOf(i) && unlocked(i)) return i;
@@ -877,7 +920,7 @@
       const open = unlocked(i), st = starsOf(i);
       b.disabled = !open;
       if (i === nx) b.className = "is-next";
-      b.setAttribute("aria-label", "Level " + (i + 1) + ", " + l.n + (open ? ", " + st + " stars" : ", locked"));
+      b.setAttribute("aria-label", TX("Level ", "Màn ") + (i + 1) + ", " + levelName(l) + (open ? ", " + st + TX(" stars", " sao") : TX(", locked", ", đã khóa")));
       const num = document.createElement("b"); num.textContent = String(i + 1);
       const ss = document.createElement("span"); ss.className = "stars";
       for (let s = 0; s < 3; s++) { const el = document.createElement("i"); el.textContent = "★"; if (s < st) el.className = "lit"; ss.appendChild(el); }
@@ -885,7 +928,7 @@
       b.addEventListener("click", () => { audioInit(); sfx.ui(); startLevel(i); });
       grid.appendChild(b);
     });
-    $("levels-sub").textContent = totalStars() + " of " + LEVELS.length * 3 + " stars. Finish a level to open the next two.";
+    $("levels-sub").textContent = TX(totalStars() + " of " + LEVELS.length * 3 + " stars. Finish a level to open the next two.", totalStars() + " trên " + LEVELS.length * 3 + " sao. Qua một màn để mở hai màn kế tiếp.");
   }
   function toggleMute() {
     save.mute = !save.mute; persist(); applyMute();
@@ -934,7 +977,7 @@
       p.life += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.97; p.vy *= 0.97;
       if (p.life >= p.max) particles.splice(i, 1);
     }
-    if (toastUntil && clock > toastUntil && state === "aim") showTip(lv.tip || "");
+    if (toastUntil && clock > toastUntil && state === "aim") showTip(() => levelTip(lv));
     drawScene();
   }
   document.addEventListener("visibilitychange", () => {
@@ -942,9 +985,26 @@
     else { lastFrame = performance.now(); if (ac && ac.state !== "running") ac.resume().catch(() => {}); }
   });
 
+  // words that are not written in the page: labels for screen readers, and whatever is on screen now
+  function paintLang() {
+    const label = (id, en, vi) => $(id).setAttribute("aria-label", TX(en, vi));
+    label("game", "Orbit Sling game", "Trò chơi Orbit Sling");
+    label("btn-mute", "Sound on or off", "Bật hoặc tắt âm thanh");
+    label("btn-levels", "Levels", "Các màn");
+    label("btn-ccw", "Turn the aim left", "Xoay hướng ngắm sang trái");
+    label("btn-cw", "Turn the aim right", "Xoay hướng ngắm sang phải");
+    label("btn-less", "Less power", "Giảm lực");
+    label("btn-more", "More power", "Tăng lực");
+    tipEl.textContent = tipText() || "";
+    refreshMenu();
+    if (state === "levels") refreshLevels();
+    if (lv) { updateHud(); if (state === "won") paintWon(); }
+    layout();
+  }
+  if (window.PlayLang) window.PlayLang.onChange(paintLang);
   applyMute();
   setState("menu");
-  layout();
+  paintLang();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout).catch(() => {});
   requestAnimationFrame((t) => { lastFrame = t; requestAnimationFrame(frame); });
 

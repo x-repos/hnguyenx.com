@@ -23,6 +23,8 @@
   const TAU = Math.PI * 2;
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
   const lerp = (a, b, t) => a + (b - a) * t;
+  // the text in the language chosen for the site: English, or Vietnamese
+  const TX = (en, vi) => (window.PlayLang ? window.PlayLang.t(en, vi) : en);
 
   // ----- The view fills the screen. Logical units: at least 520 wide and 560 tall. -----
   let W = 520, H = 560, scale = 1, groundY = 420, PX = 104, safeT = 0, safeL = 0, safeB = 0;
@@ -100,11 +102,12 @@
 
   // Looks for π, unlocked by the total number of circles ever collected.
   const LOOKS = [
-    { at: 0,   name: "Gold" },
-    { at: 50,  name: "Ink" },
-    { at: 200, name: "Sunrise" },
-    { at: 500, name: "Spectrum" },
+    { at: 0,   name: "Gold", vi: "Vàng" },
+    { at: 50,  name: "Ink", vi: "Mực" },
+    { at: 200, name: "Sunrise", vi: "Bình minh" },
+    { at: 500, name: "Spectrum", vi: "Cầu vồng" },
   ];
+  const lookName = (k) => TX(LOOKS[k].name, LOOKS[k].vi);
   const unlockedCount = (circles) => { let k = 0; for (const l of LOOKS) if (circles >= l.at) k++; return k; };
   if (!(save.look >= 0 && save.look < unlockedCount(save.circles))) save.look = 0;
 
@@ -254,7 +257,12 @@
     brace:    { from: 140, weight: 1.5, react: 0.36, need: "double", name: "a curly brace" },
     widegap:  { from: 190, weight: 1.5, react: 0.36, need: "double", name: "" },
   };
-  const HINTS = { integral: "hold to jump higher", brackets: "hold to jump higher", gap: "hold to jump across", infinity: "stay on the line", sigmas: "stay on the line", brace: "jump, then jump again", widegap: "jump, then jump again" };
+  const HINT_TEXT = {
+    higher: ["hold to jump higher", "giữ để nhảy cao hơn"], across: ["hold to jump across", "giữ để nhảy qua"],
+    stay: ["stay on the line", "cứ chạy trên trục số"], twice: ["jump, then jump again", "nhảy, rồi nhảy tiếp"],
+  };
+  const HINTS = { integral: "higher", brackets: "higher", gap: "across", infinity: "stay", sigmas: "stay", brace: "twice", widegap: "twice" };
+  const hintText = (kind) => { const h = HINT_TEXT[HINTS[kind]]; return h ? TX(h[0], h[1]) : ""; };
   const GATE_REACT = { low: 0.2, mid: 0.26, high: 0.36 };
   const GATE_BAND = { low: [0, 62], mid: [66, 160], high: [146, 250] };   // where π's middle must be
 
@@ -361,7 +369,7 @@
       const v0 = speedAt(x0);
       const len = isGate ? buildGate(kind, x0, v0) : build(kind, x0, v0);
       // a few words over a sign the first time it comes up, until the player has run a fair way
-      if (fresh && bestAtStart < 150 && HINTS[kind]) { const q = groups[groups.length - 1]; hints.push({ x: q.cx, h: Math.max(q.top, 40) + 34, text: HINTS[kind], until: q.x1 }); }
+      if (fresh && bestAtStart < 150 && HINTS[kind]) { const q = groups[groups.length - 1]; hints.push({ x: q.cx, h: Math.max(q.top, 40) + 34, kind, until: q.x1 }); }
       plan.push({ kind: isGate ? "gate-" + kind : kind, from: freeX, x0, len, react, v: v0 });
       if (isGate) { gateCount++; nextGateU = x0 / UNIT + 11 + rnd() * 7; }
       else lastKinds.push(kind);
@@ -394,11 +402,7 @@
   function showReady() {
     clearWorld(); state = "ready";
     $("over").hidden = true; $("pause").hidden = true; $("start").hidden = false; $("btn-pause").hidden = true;
-    const bits = [];
-    if (save.best > 0) bits.push("Best run: " + save.best.toFixed(1) + " units.");
-    if (save.streak > 0) bits.push("Best digit streak: " + save.streak + ".");
-    if (save.circles > 0) bits.push("Circles: " + save.circles + ".");
-    $("start-best").textContent = bits.join(" ");
+    paintStart();
     renderLooks();
   }
   function startRun(seed) {
@@ -431,23 +435,35 @@
   }
   const rnd2 = Math.random;        // for effects only, so they never disturb the course
   const CAUSES = {
-    minus: "Tripped on a minus sign.", plus: "Stubbed a toe on a plus sign.", integral: "Ran into an integral.",
-    brackets: "Got caught in the brackets.", brace: "Ran into a curly brace.", infinity: "Bumped into infinity.",
-    sigma: "Bumped into a sigma.", fall: "Fell off the number line.",
+    minus: ["Tripped on a minus sign.", "Vấp phải dấu trừ."], plus: ["Stubbed a toe on a plus sign.", "Đá phải dấu cộng."], integral: ["Ran into an integral.", "Đâm vào dấu tích phân."],
+    brackets: ["Got caught in the brackets.", "Mắc kẹt trong dấu ngoặc."], brace: ["Ran into a curly brace.", "Đâm vào dấu ngoặc nhọn."], infinity: ["Bumped into infinity.", "Đụng phải vô cực."],
+    sigma: ["Bumped into a sigma.", "Đụng phải dấu sigma."], fall: ["Fell off the number line.", "Rơi khỏi trục số."],
   };
-  function showOver() {
-    overShown = true;
+  // the words on the start panel and on the end panel, in the language now chosen
+  function paintStart() {
+    const bits = [];
+    if (save.best > 0) bits.push(TX("Best run: " + save.best.toFixed(1) + " units.", "Kỷ lục: " + save.best.toFixed(1) + " đơn vị."));
+    if (save.streak > 0) bits.push(TX("Best digit streak: " + save.streak + ".", "Chuỗi chữ số dài nhất: " + save.streak + "."));
+    if (save.circles > 0) bits.push(TX("Circles: " + save.circles + ".", "Vòng tròn: " + save.circles + "."));
+    $("start-best").textContent = bits.join(" ");
+  }
+  function paintOver() {
     const d = Math.round(dist() * 10) / 10;
-    $("over-count").textContent = d.toFixed(1) + " units";
-    $("over-digits").textContent = runBestStreak > 0 ? "π ≈ " + piText(Math.min(runBestStreak, 40)) + (runBestStreak > 40 ? "…" : "") : "";
-    $("over-cause").textContent = CAUSES[cause] || "";
-    let line = newBest && d > 0 ? "A new best run. " : "Best run: " + save.best.toFixed(1) + " units. ";
-    line += "Circles: " + runCircles + " this run, " + save.circles + " in all. ";
-    line += "Digits in a row: " + runBestStreak + " this run, " + save.streak + " at best.";
+    $("over-count").textContent = d.toFixed(1) + TX(" units", " đơn vị");
+    $("over-cause").textContent = CAUSES[cause] ? TX(CAUSES[cause][0], CAUSES[cause][1]) : "";
+    let line = newBest && d > 0 ? TX("A new best run. ", "Kỷ lục mới. ") : TX("Best run: " + save.best.toFixed(1) + " units. ", "Kỷ lục: " + save.best.toFixed(1) + " đơn vị. ");
+    line += TX("Circles: " + runCircles + " this run, " + save.circles + " in all. ", "Vòng tròn: " + runCircles + " lần này, tổng cộng " + save.circles + ". ");
+    line += TX("Digits in a row: " + runBestStreak + " this run, " + save.streak + " at best.", "Chữ số liên tiếp: " + runBestStreak + " lần này, nhiều nhất " + save.streak + ".");
     $("over-best").textContent = line;
     const had = unlockedCount(save.circles - runCircles), has = unlockedCount(save.circles);
     $("over-unlock").hidden = has === had;
-    if (has !== had) $("over-unlock").textContent = "New look unlocked: " + LOOKS[has - 1].name + ". Tap it to wear it.";
+    if (has !== had) $("over-unlock").textContent = TX("New look unlocked: " + LOOKS[has - 1].name + ". Tap it to wear it.", "Đã mở khóa diện mạo mới: " + LOOKS[has - 1].vi + ". Chạm vào để dùng.");
+  }
+  function showOver() {
+    overShown = true;
+    const d = Math.round(dist() * 10) / 10;
+    $("over-digits").textContent = runBestStreak > 0 ? "π ≈ " + piText(Math.min(runBestStreak, 40)) + (runBestStreak > 40 ? "…" : "") : "";
+    paintOver();
     renderLooks();
     $("over").hidden = false;
     if (newBest && d > 0) sfx.best();
@@ -470,8 +486,8 @@
         b.type = "button";
         const locked = k >= open;
         b.className = (locked ? "is-locked" : "") + (k === save.look ? " is-on" : "");
-        b.innerHTML = lookSvg(k, host + "-g" + k) + "<span>" + (locked ? lk.at + " ○" : lk.name) + "</span>";
-        b.setAttribute("aria-label", locked ? lk.name + " look. Collect " + lk.at + " circles to unlock it." : lk.name + " look");
+        b.innerHTML = lookSvg(k, host + "-g" + k) + "<span>" + (locked ? lk.at + " ○" : lookName(k)) + "</span>";
+        b.setAttribute("aria-label", locked ? TX(lk.name + " look. Collect " + lk.at + " circles to unlock it.", "Diện mạo " + lk.vi + ". Nhặt " + lk.at + " vòng tròn để mở khóa.") : TX(lk.name + " look", "Diện mạo " + lk.vi));
         if (locked) b.setAttribute("aria-disabled", "true");
         b.addEventListener("click", () => { audioInit(); if (locked) return; save.look = k; persist(); renderLooks(); sfx.circle(0); });
         box.appendChild(b);
@@ -621,7 +637,7 @@
         pop(gt.x + 34, mid + 6, "+" + bonus + " ○");
       } else {
         gt.done = 2; gt.digit = digitAt(streak);
-        if (streak > 0) { pop(P.x + 30, P.h + 60, "digits start again"); sfx.miss(); }
+        if (streak > 0) { pop(P.x + 30, P.h + 60, TX("digits start again", "đếm lại từ đầu")); sfx.miss(); }
         streak = 0;
       }
     }
@@ -640,7 +656,7 @@
       if (hz.x1 < P.x - HIT_W) continue;
       if (P.h + HIT_LO < hz.y1 && P.h + HIT_HI > hz.y0) return die(hz.kind);
     }
-    if (dist() >= nextMile) { pops.push({ x: 0, h: 190, text: nextMile + " units", life: 1.2, big: true, fixed: true }); sfx.mile(); nextMile += 50; }
+    if (dist() >= nextMile) { pops.push({ x: 0, h: 190, text: nextMile + TX(" units", " đơn vị"), life: 1.2, big: true, fixed: true }); sfx.mile(); nextMile += 50; }
     generate();
   }
   function stepDead(dt) {
@@ -821,7 +837,7 @@
       if (bx > -40 && bx < W + 40) {
         g.strokeStyle = gold(0.7); g.fillStyle = gold(0.7); g.lineWidth = 1.5;
         g.beginPath(); g.moveTo(bx, groundY + 40); g.lineTo(bx, groundY + 74); g.stroke();
-        g.font = "600 17px " + FONT; g.textBaseline = "top"; g.fillText("best", bx, groundY + 76);
+        g.font = "600 17px " + FONT; g.textBaseline = "top"; g.fillText(TX("best", "kỷ lục"), bx, groundY + 76);
       }
     }
 
@@ -848,7 +864,7 @@
     for (const hn of hints) {
       const x = sxOf(hn.x); if (x < -120 || x > W + 120) continue;
       g.fillStyle = gold(P.x > hn.until ? 0.3 : 0.95);
-      g.fillText(hn.text, x, groundY - hn.h);
+      g.fillText(hintText(hn.kind), x, groundY - hn.h);
     }
     // dust
     for (const p of puffs) {
@@ -883,9 +899,9 @@
       g.fillText(dTxt, x, y);
       const dw = g.measureText(dTxt).width;
       g.fillStyle = ink(0.65); g.font = "500 21px " + FONT;
-      g.fillText("units", x + dw + 8, y + 21);
+      g.fillText(TX("units", "đơn vị"), x + dw + 8, y + 21);
       g.fillStyle = C.gold; g.font = "600 24px " + FONT;
-      g.fillText("○ " + runCircles + "    digits " + streak, x, y + 54);
+      g.fillText("○ " + runCircles + TX("    digits ", "    chữ số ") + streak, x, y + 54);
     }
   }
 
@@ -903,7 +919,19 @@
     render();
     requestAnimationFrame(frame);
   }
+  // words that are not in the page itself: labels for screen readers, and whatever panel is showing
+  function paintLang() {
+    canvas.setAttribute("aria-label", TX("Pi Run game", "Trò chơi Pi Run"));
+    $("btn-pause").setAttribute("aria-label", TX("Pause", "Tạm dừng"));
+    $("btn-mute").setAttribute("aria-label", TX("Sound on or off", "Bật hoặc tắt âm thanh"));
+    for (const id of ["start-looks", "over-looks"]) $(id).setAttribute("aria-label", TX("Looks for π", "Diện mạo của π"));
+    paintStart();
+    if (overShown) paintOver();
+    renderLooks();
+  }
+  if (window.PlayLang) window.PlayLang.onChange(paintLang);
   showReady();
+  paintLang();
   requestAnimationFrame(frame);
 
   // a small handle for automated tests

@@ -20,6 +20,8 @@
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
   const lerp = (a, b, t) => a + (b - a) * t;
   const rand = (a, b) => a + Math.random() * (b - a);
+  // the text in the language chosen for the site: English, or Vietnamese
+  const TX = (en, vi) => (window.PlayLang ? window.PlayLang.t(en, vi) : en);
 
   // ----- Logical playfield: 420 wide, height follows the screen -----
   const W = 420;
@@ -90,17 +92,18 @@
 
   // Looks for π, unlocked by the total number of circles ever collected.
   const LOOKS = [
-    { at: 0,   name: "Gold" },
-    { at: 30,  name: "Ink" },
-    { at: 100, name: "Sunrise" },
-    { at: 250, name: "Spectrum" },
+    { at: 0,   name: "Gold", vi: "Vàng" },
+    { at: 30,  name: "Ink", vi: "Mực" },
+    { at: 100, name: "Sunrise", vi: "Bình minh" },
+    { at: 250, name: "Spectrum", vi: "Cầu vồng" },
   ];
   const lookFor = (circles) => { let k = 0; for (let i = 0; i < LOOKS.length; i++) if (circles >= LOOKS[i].at) k = i; return k; };
   const RANKS = [
-    [0, "Rounding to 3"], [3, "Counting on fingers"], [6, "Pocket calculator"], [10, "Schoolbook π"],
-    [16, "Engineer"], [25, "Astronomer"], [40, "Mathematician"], [60, "Human computer"], [100, "Memory champion"], [200, "Transcendental"],
+    [0, "Rounding to 3", "Làm tròn thành 3"], [3, "Counting on fingers", "Đếm ngón tay"], [6, "Pocket calculator", "Máy tính bỏ túi"], [10, "Schoolbook π", "π trong sách giáo khoa"],
+    [16, "Engineer", "Kỹ sư"], [25, "Astronomer", "Nhà thiên văn"], [40, "Mathematician", "Nhà toán học"], [60, "Human computer", "Máy tính sống"], [100, "Memory champion", "Nhà vô địch trí nhớ"], [200, "Transcendental", "Siêu việt"],
   ];
-  const rankFor = (n) => { let r = RANKS[0][1]; for (const [at, name] of RANKS) if (n >= at) r = name; return r; };
+  const rankFor = (n) => { let r = RANKS[0]; for (const row of RANKS) if (n >= row[0]) r = row; return TX(r[1], r[2]); };
+  const places = (n) => TX(n === 1 ? "1 decimal place" : n + " decimal places", n + " chữ số thập phân");
 
   // ====================================================
   // AUDIO: a few synthesised voices, with a sub-bass layer
@@ -180,6 +183,7 @@
   let pi = { y: 300, vy: 0, tilt: 0, squash: 0 };
   let gates = [], circles = [], puffs = [], trail = [], pops = [];
   let passed = 0, nextIndex = 0, runCircles = 0, precise = 0, speed = 150, look = lookFor(save.circles), newBest = false;
+  let newLook = -1;               // the look this flight unlocked, if any
   const symbols = [];             // pale maths drifting in the background
   for (let k = 0; k < 9; k++) symbols.push({ ch: "∑∫√∞θφ∂≈Δ"[k], x: rand(0, W), y: rand(70, 520), s: rand(40, 90), v: rand(0.12, 0.3), a: rand(-0.3, 0.3) });
 
@@ -205,7 +209,10 @@
     passed = 0; nextIndex = 0; runCircles = 0; precise = 0; speed = 150; newBest = false;
     look = lookFor(save.circles);
     $("over").hidden = true; $("start").hidden = false;
-    $("start-best").textContent = save.best ? "Best: " + save.best + " decimal places · " + save.circles + " circles" : "";
+    paintStart();
+  }
+  function paintStart() {
+    $("start-best").textContent = save.best ? TX("Best: " + save.best + " decimal places · " + save.circles + " circles", "Kỷ lục: " + save.best + " chữ số thập phân · " + save.circles + " vòng tròn") : "";
   }
   function start() {
     state = "play"; $("start").hidden = true;
@@ -235,15 +242,23 @@
     if (newBest) save.best = passed;
     persist();
     const after = lookFor(save.circles);
-    $("over-unlock").hidden = after === before;
-    if (after !== before) $("over-unlock").textContent = "New look unlocked: " + LOOKS[after].name;
+    newLook = after !== before ? after : -1;
+    $("over-unlock").hidden = newLook < 0;
+    paintOver();
+  }
+  // the words on the end panel, in the language now chosen
+  function paintOver() {
+    if (newLook >= 0) $("over-unlock").textContent = TX("New look unlocked: " + LOOKS[newLook].name, "Đã mở khóa diện mạo mới: " + LOOKS[newLook].vi);
+    $("over-count").textContent = places(passed);
+    $("over-rank").textContent = rankFor(passed);
+    $("over-best").textContent = (newBest && passed > 0 ? TX("A new best. ", "Kỷ lục mới. ") : TX("Best: " + save.best + ". ", "Kỷ lục: " + save.best + ". ")) +
+      TX("Circles: " + runCircles + " this flight, " + save.circles + " in all.", "Vòng tròn: " + runCircles + " lần bay này, tổng cộng " + save.circles + ".");
+    $("btn-share").textContent = TX("Share", "Chia sẻ");
   }
   function showOver() {
     const shown = DIGITS.slice(0, passed);
     $("over-digits").textContent = "π ≈ 3" + (passed ? "." + shown : "");
-    $("over-count").textContent = passed === 1 ? "1 decimal place" : passed + " decimal places";
-    $("over-rank").textContent = rankFor(passed);
-    $("over-best").textContent = (newBest && passed > 0 ? "A new best. " : "Best: " + save.best + ". ") + "Circles: " + runCircles + " this flight, " + save.circles + " in all.";
+    paintOver();
     $("btn-share").hidden = !(navigator.share || (navigator.clipboard && navigator.clipboard.writeText));
     $("over").hidden = false;
     if (newBest && passed > 0) sfx.best();
@@ -277,10 +292,18 @@
   $("btn-mute").addEventListener("click", () => { audioInit(); toggleMute(); });
   $("btn-again").addEventListener("click", () => { audioInit(); reset(); });
   $("btn-share").addEventListener("click", () => {
-    const text = "I reached " + passed + " decimal places of π in Pi Flight. https://hnguyenx.com/play/pi/";
+    const text = TX("I reached " + passed + " decimal places of π in Pi Flight.", "Tôi bay được " + passed + " chữ số thập phân của π trong Pi Flight.") + " https://hnguyenx.com/play/pi/";
     if (navigator.share) navigator.share({ text }).catch(() => {});
-    else navigator.clipboard.writeText(text).then(() => { $("btn-share").textContent = "Copied"; setTimeout(() => { $("btn-share").textContent = "Share"; }, 1500); }).catch(() => {});
+    else navigator.clipboard.writeText(text).then(() => { $("btn-share").textContent = TX("Copied", "Đã sao chép"); setTimeout(() => { $("btn-share").textContent = TX("Share", "Chia sẻ"); }, 1500); }).catch(() => {});
   });
+  // words that are not in the page itself: labels for screen readers, and whatever panel is showing
+  function paintLang() {
+    canvas.setAttribute("aria-label", TX("Pi Flight game", "Trò chơi Pi Flight"));
+    $("btn-mute").setAttribute("aria-label", TX("Sound on or off", "Bật hoặc tắt âm thanh"));
+    paintStart();
+    if (!$("over").hidden) paintOver();
+  }
+  if (window.PlayLang) window.PlayLang.onChange(paintLang);
   let hiddenAt = 0;
   document.addEventListener("visibilitychange", () => { if (document.hidden) hiddenAt = performance.now(); else last = performance.now(); });
 
@@ -323,7 +346,7 @@
           const exact = Math.abs(pi.y - cy) < 18;
           precise = exact ? precise + 1 : 0;
           pops.push({ x: gt.x, y: cy, text: String(gt.d), life: 0.9, big: true });
-          if (precise >= 3) pops.push({ x: PX + 40, y: pi.y - 30, text: "precise ×" + precise, life: 0.8 });
+          if (precise >= 3) pops.push({ x: PX + 40, y: pi.y - 30, text: TX("precise ×", "chuẩn ×") + precise, life: 0.8 });
           if (exact && precise >= 3) { runCircles++; }
         }
       }
@@ -419,7 +442,7 @@
       g.fillStyle = C.ink; g.font = "600 26px " + FONT; g.textAlign = "center";
       g.fillText(text, W / 2, 34);
       g.fillStyle = "rgba(" + C.inkRgb + ",0.7)"; g.font = "500 16px " + FONT;
-      g.fillText(passed + (passed === 1 ? " decimal place" : " decimal places") + "  ·  " + runCircles + " ○", W / 2, 60);
+      g.fillText(places(passed) + "  ·  " + runCircles + " ○", W / 2, 60);
     }
   }
 
@@ -435,6 +458,7 @@
     requestAnimationFrame(frame);
   }
   reset();
+  paintLang();
   requestAnimationFrame(frame);
 
   // a small handle for automated tests

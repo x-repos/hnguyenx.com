@@ -146,7 +146,7 @@
         </svg>
         <div class="card__body">
           <h2>Pair Path</h2>
-          <p><span lang="en">Join matching tiles with a path of at most two turns and clear the board before the clock runs out.</span><span lang="vi">Nối hai ô giống nhau bằng đường đi không quá hai lần rẽ và dọn sạch bàn trước khi hết giờ.</span></p>
+          <p><span lang="en">Join matching tiles with a path of at most two turns and clear the board before the clock runs out. 100 levels.</span><span lang="vi">Nối hai ô giống nhau bằng đường đi không quá hai lần rẽ và dọn sạch bàn trước khi hết giờ. 100 màn.</span></p>
           <p class="card__best" id="best-link"></p>
           <span class="card__go"><span lang="en">Play</span><span lang="vi">Chơi</span></span>
         </div>
@@ -275,7 +275,7 @@
       var os = o.stars || {}, on = Object.keys(os).length, ost = Object.keys(os).reduce(function (a, k) { return a + (+os[k] || 0); }, 0);
       if (on) document.getElementById("best-orbit").textContent = vi ? "Đã qua " + on + " trên 24 màn, " + ost + " sao" : on + " of 24 levels, " + ost + " stars";
       if (rn.best) document.getElementById("best-run").textContent = (vi ? "Kỷ lục của bạn: " : "Your best: ") + rn.best + (vi ? " đơn vị" : " units");
-      if (pp.cleared) document.getElementById("best-link").textContent = vi ? "Đã qua " + pp.cleared + " trên 12 màn, " + (pp.stars || 0) + " sao" : pp.cleared + " of 12 levels, " + (pp.stars || 0) + " stars";
+      if (pp.cleared) document.getElementById("best-link").textContent = vi ? "Đã qua " + pp.cleared + " trên " + (pp.total || 100) + " màn, " + (pp.stars || 0) + " sao" : pp.cleared + " of " + (pp.total || 100) + " levels, " + (pp.stars || 0) + " stars";
       var ch = read("chess-v1"), cw = (Array.isArray(ch.wins) ? ch.wins : []).reduce(function (a, n) { return a + (+n || 0); }, 0);
       if (cw) document.getElementById("best-chess").textContent = (vi ? "Số ván thắng máy: " : "Games won against the computer: ") + cw;
       var ca = read("caro-v1"), caw = (Array.isArray(ca.wins) ? ca.wins : []).reduce(function (a, n) { return a + (+n || 0); }, 0);

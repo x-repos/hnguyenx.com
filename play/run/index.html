@@ -5,12 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Pi Run</title>
   <meta name="description" content="Pi Run: run π along the number line, jump the signs and collect the digits of π in order.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Hoang Anh (Ben) Nguyen">
+  <meta property="og:title" content="Pi Run">
+  <meta property="og:description" content="Run π along the number line, jump the signs and collect the digits of π in order.">
+  <meta property="og:url" content="https://hnguyenx.com/play/run/">
+  <meta property="og:image" content="https://hnguyenx.com/play/og/pi-run.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Pi Run: Run π along the number line, jump the signs and collect the digits of π in order.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Pi Run">
+  <meta name="twitter:description" content="Run π along the number line, jump the signs and collect the digits of π in order.">
+  <meta name="twitter:image" content="https://hnguyenx.com/play/og/pi-run.png">
   <meta name="theme-color" content="#fffdf8" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#14110c" media="(prefers-color-scheme: dark)">
   <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg?v=3">
   <link rel="icon" type="image/png" sizes="32x32" href="../../assets/favicon-32.png?v=3">
   <link rel="apple-touch-icon" sizes="180x180" href="../../assets/apple-touch-icon.png?v=3">
-  <link rel="stylesheet" href="run.css?v=2">
+  <link rel="stylesheet" href="run.css?v=3">
+  <script src="../lang.js?v=1"></script>
 </head>
 <body>
   <canvas id="game" aria-label="Pi Run game"></canvas>
@@ -31,20 +45,21 @@
 
   <div class="panel" id="start">
     <h1>Pi Run</h1>
-    <p class="panel__sub">Run π along the number line.</p>
-    <p class="panel__how">Tap to jump. Hold for a higher jump. Tap again in the air for a second jump. Dark signs end the run. Gold circles are good. Pass through each gold gate to collect the digits of π in order.</p>
-    <p class="panel__tap">Tap, click or press Space to run</p>
+    <p class="panel__sub"><span lang="en">Run π along the number line.</span><span lang="vi">Cho π chạy dọc theo trục số.</span></p>
+    <p class="panel__how"><span lang="en">Tap to jump. Hold for a higher jump. Tap again in the air for a second jump. Dark signs end the run. Gold circles are good. Pass through each gold gate to collect the digits of π in order.</span><span lang="vi">Chạm để nhảy. Giữ để nhảy cao hơn. Chạm lần nữa khi đang ở trên không để nhảy thêm một lần. Đụng ký hiệu màu tối là hết lượt chạy. Vòng tròn vàng thì nên nhặt. Chạy qua từng cổng vàng để nhặt các chữ số của π theo đúng thứ tự.</span></p>
+    <p class="panel__tap"><span lang="en">Tap, click or press Space to run</span><span lang="vi">Chạm, nhấp chuột hoặc nhấn phím cách để chạy</span></p>
     <p class="panel__best" id="start-best"></p>
     <div class="looks" id="start-looks" aria-label="Looks for π"></div>
-    <p class="panel__links"><a href="../">All games</a><a href="../../">Home</a></p>
+    <p class="panel__links"><a href="../"><span lang="en">All games</span><span lang="vi">Tất cả trò chơi</span></a><a href="../../"><span lang="en">Home</span><span lang="vi">Trang chủ</span></a></p>
+    <p class="panel__lang"><span data-lang-pick></span></p>
   </div>
 
   <div class="panel" id="pause" hidden>
-    <h2>Paused</h2>
+    <h2><span lang="en">Paused</span><span lang="vi">Tạm dừng</span></h2>
     <div class="panel__buttons">
-      <button type="button" id="btn-resume">Keep running</button>
+      <button type="button" id="btn-resume"><span lang="en">Keep running</span><span lang="vi">Chạy tiếp</span></button>
     </div>
-    <p class="panel__links"><a href="../">All games</a><a href="../../">Home</a></p>
+    <p class="panel__links"><a href="../"><span lang="en">All games</span><span lang="vi">Tất cả trò chơi</span></a><a href="../../"><span lang="en">Home</span><span lang="vi">Trang chủ</span></a></p>
   </div>
 
   <div class="panel" id="over" hidden>
@@ -55,11 +70,11 @@
     <p class="panel__unlock" id="over-unlock" hidden></p>
     <div class="looks" id="over-looks" aria-label="Looks for π"></div>
     <div class="panel__buttons">
-      <button type="button" id="btn-again">Run again</button>
+      <button type="button" id="btn-again"><span lang="en">Run again</span><span lang="vi">Chạy lại</span></button>
     </div>
-    <p class="panel__links"><a href="../">All games</a><a href="../../">Home</a></p>
+    <p class="panel__links"><a href="../"><span lang="en">All games</span><span lang="vi">Tất cả trò chơi</span></a><a href="../../"><span lang="en">Home</span><span lang="vi">Trang chủ</span></a></p>
   </div>
 
-  <script src="run.js?v=2"></script>
+  <script src="run.js?v=3"></script>
 </body>
 </html>

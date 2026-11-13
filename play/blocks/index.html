@@ -5,23 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Lattice</title>
   <meta name="description" content="Lattice: a calm block puzzle. Fit the pieces onto the board and clear whole rows and columns.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Hoang Anh (Ben) Nguyen">
+  <meta property="og:title" content="Lattice">
+  <meta property="og:description" content="A calm block puzzle. Fit the pieces onto the board and clear whole rows and columns.">
+  <meta property="og:url" content="https://hnguyenx.com/play/blocks/">
+  <meta property="og:image" content="https://hnguyenx.com/play/og/lattice.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Lattice: A calm block puzzle. Fit the pieces onto the board and clear whole rows and columns.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Lattice">
+  <meta name="twitter:description" content="A calm block puzzle. Fit the pieces onto the board and clear whole rows and columns.">
+  <meta name="twitter:image" content="https://hnguyenx.com/play/og/lattice.png">
   <meta name="theme-color" content="#05060b">
   <link rel="icon" type="image/svg+xml" href="../../pro/images/favicon-pro.svg?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="lattice.css?v=1">
+  <link rel="stylesheet" href="lattice.css?v=2">
+  <script src="../lang.js?v=1"></script>
 </head>
 <body>
   <canvas id="game" aria-label="Lattice game board"></canvas>
   <div id="safe" aria-hidden="true"></div>
 
   <header class="bar" id="bar">
-    <a class="bar__back" href="../">All games</a>
+    <a class="bar__back" href="../"><span lang="en">All games</span><span lang="vi">Trò chơi</span></a>
     <div class="stats" aria-live="polite">
-      <div class="stat"><span class="stat__label">Score</span><span class="stat__num" id="score">0</span></div>
-      <div class="stat"><span class="stat__label">Best</span><span class="stat__num" id="best">0</span></div>
-      <div class="stat stat--streak" id="streak-box"><span class="stat__label">Streak</span><span class="stat__num" id="streak">0</span></div>
+      <div class="stat"><span class="stat__label"><span lang="en">Score</span><span lang="vi">Điểm</span></span><span class="stat__num" id="score">0</span></div>
+      <div class="stat"><span class="stat__label"><span lang="en">Best</span><span lang="vi">Kỷ lục</span></span><span class="stat__num" id="best">0</span></div>
+      <div class="stat stat--streak" id="streak-box"><span class="stat__label"><span lang="en">Streak</span><span lang="vi">Chuỗi</span></span><span class="stat__num" id="streak">0</span></div>
     </div>
     <div class="bar__btns">
       <button class="round" id="btn-undo" type="button" aria-label="Undo the last move" title="Undo" disabled>
@@ -47,44 +61,44 @@
 
   <div class="panel" id="intro" hidden>
     <h1>Lattice</h1>
-    <p class="panel__sub">Fit the blocks. Clear the lines.</p>
+    <p class="panel__sub"><span lang="en">Fit the blocks. Clear the lines.</span><span lang="vi">Xếp khối. Xóa hàng.</span></p>
     <ul class="panel__help">
-      <li>Drag a piece from the tray onto the board.</li>
-      <li>Fill a whole row or column and it clears.</li>
-      <li>Clear several lines at once, or clear on back to back moves, to build a streak and score more.</li>
-      <li>Undo takes back your last move, once for each set of three pieces.</li>
-      <li>The game ends when none of your pieces fits.</li>
-      <li class="keys">On a keyboard, press 1, 2 or 3 to pick a piece. Arrows move it and Enter drops it. Z is undo, N is new game, M is sound.</li>
+      <li><span lang="en">Drag a piece from the tray onto the board.</span><span lang="vi">Kéo một khối từ khay vào bàn.</span></li>
+      <li><span lang="en">Fill a whole row or column and it clears.</span><span lang="vi">Lấp đầy cả một hàng hoặc một cột thì hàng, cột đó được xóa.</span></li>
+      <li><span lang="en">Clear several lines at once, or clear on back to back moves, to build a streak and score more.</span><span lang="vi">Xóa nhiều hàng cùng lúc, hoặc xóa liên tiếp qua từng nước đi, để tạo chuỗi và ghi thêm điểm.</span></li>
+      <li><span lang="en">Undo takes back your last move, once for each set of three pieces.</span><span lang="vi">Hoàn tác lấy lại nước vừa đi, mỗi bộ ba khối được dùng một lần.</span></li>
+      <li><span lang="en">The game ends when none of your pieces fits.</span><span lang="vi">Ván chơi kết thúc khi không còn khối nào đặt vừa.</span></li>
+      <li class="keys"><span lang="en">On a keyboard, press 1, 2 or 3 to pick a piece. Arrows move it and Enter drops it. Z is undo, N is new game, M is sound.</span><span lang="vi">Trên bàn phím, nhấn 1, 2 hoặc 3 để chọn khối. Phím mũi tên để di chuyển, Enter để đặt. Z là hoàn tác, N là ván mới, M là âm thanh.</span></li>
     </ul>
     <div class="panel__buttons">
       <button type="button" id="btn-play">Play</button>
     </div>
     <p class="panel__best" id="intro-best"></p>
-    <p class="panel__back"><a href="../">All games</a></p>
+    <p class="panel__back"><a href="../"><span lang="en">All games</span><span lang="vi">Tất cả trò chơi</span></a><span data-lang-pick></span></p>
   </div>
 
   <div class="panel" id="confirm" hidden>
-    <h2>Start a new game?</h2>
-    <p class="panel__sub">Your current board will be cleared. Your best score is kept.</p>
+    <h2><span lang="en">Start a new game?</span><span lang="vi">Bắt đầu ván mới?</span></h2>
+    <p class="panel__sub"><span lang="en">Your current board will be cleared. Your best score is kept.</span><span lang="vi">Bàn hiện tại sẽ bị xóa. Kỷ lục của bạn vẫn được giữ.</span></p>
     <div class="panel__buttons">
-      <button type="button" id="btn-confirm">New game</button>
-      <button type="button" id="btn-cancel" class="quiet">Keep playing</button>
+      <button type="button" id="btn-confirm"><span lang="en">New game</span><span lang="vi">Ván mới</span></button>
+      <button type="button" id="btn-cancel" class="quiet"><span lang="en">Keep playing</span><span lang="vi">Chơi tiếp</span></button>
     </div>
-    <p class="panel__back"><a href="../">All games</a></p>
+    <p class="panel__back"><a href="../"><span lang="en">All games</span><span lang="vi">Tất cả trò chơi</span></a></p>
   </div>
 
   <div class="panel" id="over" hidden>
-    <h2>No room left</h2>
+    <h2><span lang="en">No room left</span><span lang="vi">Hết chỗ</span></h2>
     <p class="panel__sub" id="over-text"></p>
     <p class="panel__score" id="over-score"></p>
     <p class="panel__best" id="over-best"></p>
     <div class="panel__buttons">
-      <button type="button" id="btn-again">New game</button>
-      <button type="button" id="btn-over-undo" class="quiet" hidden>Undo the last move</button>
+      <button type="button" id="btn-again"><span lang="en">New game</span><span lang="vi">Ván mới</span></button>
+      <button type="button" id="btn-over-undo" class="quiet" hidden><span lang="en">Undo the last move</span><span lang="vi">Hoàn tác nước vừa đi</span></button>
     </div>
-    <p class="panel__back"><a href="../">All games</a></p>
+    <p class="panel__back"><a href="../"><span lang="en">All games</span><span lang="vi">Tất cả trò chơi</span></a></p>
   </div>
 
-  <script src="lattice.js?v=3"></script>
+  <script src="lattice.js?v=4"></script>
 </body>
 </html>

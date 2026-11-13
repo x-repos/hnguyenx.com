@@ -120,6 +120,10 @@ html, body {
 @media (hover: none) and (pointer: coarse) { .panel__help .keys { display: none; } }
 .panel__back { margin: 6px 0 0; font-size: 1rem; }
 .panel__back a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; color: var(--accent); }
+/* the EN / VI switch beside the link on the how-to panel: small and plain, not one of the big buttons */
+.panel__back { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0 6px; }
+.panel [data-lang-pick] button, .panel [data-lang-pick] button:hover { width: auto; min-height: 36px; padding: 0 10px; border: 1px solid transparent; border-radius: 999px; background: none; color: inherit; font: 600 14px/1 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.panel [data-lang-pick] button[aria-pressed="true"] { border-color: currentColor; }
 @media (max-width: 359px) {
   .bar { padding-left: calc(8px + env(safe-area-inset-left)); padding-right: calc(8px + env(safe-area-inset-right)); gap: 8px 6px; }
   .bar__back { padding: 0 11px; font-size: 0.94rem; }

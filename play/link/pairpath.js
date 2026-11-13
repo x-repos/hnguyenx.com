@@ -17,6 +17,8 @@
   const g = canvas.getContext("2d");
   const TAU = Math.PI * 2;
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  // the text in the language chosen for the site: English, or Vietnamese
+  const TX = (en, vi) => (window.PlayLang ? window.PlayLang.t(en, vi) : en);
   const fmt = (n) => Math.round(n).toLocaleString("en-US");
   function shuffleArr(a) {
     for (let i = a.length - 1; i > 0; i--) {
@@ -30,21 +32,26 @@
   // SAVE
   // ====================================================
   const SAVE_KEY = "pair-path-v1";
-  const save = { mute: false, unlocked: 1, cleared: 0, stars: 0, best: 0, levels: {} };
+  const LEVEL_COUNT = 100;     // the game had 12 levels at first; saves from then load unchanged
+  const save = { mute: false, unlocked: 1, cleared: 0, stars: 0, best: 0, total: LEVEL_COUNT, levels: {} };
   try {
     const raw = JSON.parse(localStorage.getItem(SAVE_KEY) || "{}");
     if (raw && typeof raw === "object") Object.assign(save, raw);
     if (!save.levels || typeof save.levels !== "object") save.levels = {};
     // keep only well formed level records, so a damaged save can never show NaN
     const lv = {};
-    for (let n = 1; n <= 12; n++) {
+    let top = 0;               // the highest level cleared
+    for (let n = 1; n <= LEVEL_COUNT; n++) {
       const r = save.levels[n];
-      if (r && typeof r === "object" && Number.isFinite(r.score) && Number.isFinite(r.stars)) lv[n] = { score: Math.max(0, Math.round(r.score)), stars: clamp(r.stars | 0, 1, 3) };
+      if (r && typeof r === "object" && Number.isFinite(r.score) && Number.isFinite(r.stars)) { lv[n] = { score: Math.max(0, Math.round(r.score)), stars: clamp(r.stars | 0, 1, 3) }; top = n; }
     }
     save.levels = lv; save.mute = !!save.mute;
     save.cleared = 0; save.stars = 0; save.best = 0;
     for (const k in lv) { save.cleared++; save.stars += lv[k].stars; save.best += lv[k].score; }
-    save.unlocked = clamp(save.unlocked | 0, 1, 12);
+    // a level is open once the one before it is cleared. In the 12 level game nothing came after
+    // level 12, so a save from then that has level 12 cleared now opens level 13.
+    save.unlocked = clamp(Math.max(save.unlocked | 0, top + 1), 1, LEVEL_COUNT);
+    save.total = LEVEL_COUNT;
   } catch (e) {}
   const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} };
 
@@ -105,8 +112,9 @@
     save.mute = !!m; persist();
     if (master) master.gain.value = save.mute ? 0 : 0.9;
     $("btn-mute").classList.toggle("is-off", save.mute);
-    $("btn-sound").textContent = save.mute ? "Sound is off" : "Sound is on";
+    $("btn-sound").textContent = soundText();
   }
+  const soundText = () => (save.mute ? TX("Sound is off", "Âm thanh đang tắt") : TX("Sound is on", "Âm thanh đang bật"));
 
   // ====================================================
   // BOARD RULES
@@ -224,11 +232,13 @@
   // what each mode becomes when the board is turned on its side
   const TURNED = { none: "none", down: "right", right: "down", up: "left", left: "up", inh: "inv", inv: "inh", outh: "outv", outv: "outh", zipv: "ziph", ziph: "zipv" };
   const MODE_TEXT = {
-    none: "Tiles stay put", down: "Tiles fall down", up: "Tiles rise up", left: "Tiles slide left", right: "Tiles slide right",
-    inh: "Tiles close in sideways", outh: "Tiles spread sideways",
-    inv: "Tiles close in up and down", outv: "Tiles spread up and down",
-    zipv: "Columns alternate down and up", ziph: "Rows alternate right and left"
+    none: ["Tiles stay put", "Các ô đứng yên"], down: ["Tiles fall down", "Các ô rơi xuống"], up: ["Tiles rise up", "Các ô dâng lên"],
+    left: ["Tiles slide left", "Các ô trượt sang trái"], right: ["Tiles slide right", "Các ô trượt sang phải"],
+    inh: ["Tiles close in sideways", "Các ô dồn ngang vào giữa"], outh: ["Tiles spread sideways", "Các ô dạt sang hai bên"],
+    inv: ["Tiles close in up and down", "Các ô dồn dọc vào giữa"], outv: ["Tiles spread up and down", "Các ô dạt lên và xuống"],
+    zipv: ["Columns alternate down and up", "Cột xen kẽ xuống, lên"], ziph: ["Rows alternate right and left", "Hàng xen kẽ phải, trái"]
   };
+  const modeText = (m) => (MODE_TEXT[m] ? TX(MODE_TEXT[m][0], MODE_TEXT[m][1]) : "");
 
   // ----- solver: play random legal pairs until the board is empty -----
   // A finished run is a proof that the board can be cleared, and it is kept
@@ -246,7 +256,43 @@
     }
     return out;
   }
-  function generate(w, h, nk, mode) {
+  // ----- a board written from its own way through -----
+  // The sure way to a board that can be cleared is to write the way through first. Every tile starts
+  // blank. Two tiles that a path can join are picked, given the next kind, and taken off, and the rest
+  // moves as the level's mode says, until nothing is left. Such a pair always exists: the top tiles of
+  // two columns can be joined around the outside of the board, and two tiles alone in one column have
+  // nothing between them. So this never fails, and the steps taken are a way through the board made.
+  // occ says where the tiles are (anything but 0), kinds is the kind to give each pair in turn.
+  function construct(occ, w, h, mode, kinds) {
+    const c = new Int8Array(occ.length), from = new Int32Array(occ.length), out = new Int8Array(occ.length);
+    for (let i = 0; i < occ.length; i++) if (occ[i] !== 0) { c[i] = 1; from[i] = i; }
+    const sol = [], at = [], moves = [];
+    for (let k = 0; k < kinds.length; k++) {
+      at.length = 0;
+      for (let i = 0; i < c.length; i++) if (c[i] !== 0) at.push(i);
+      shuffleArr(at);
+      let a = -1, b = -1;
+      for (let p = 0; p < at.length && a < 0; p++) {
+        const first = Math.floor(Math.random() * at.length);       // partners are tried from a random place on
+        for (let q = 0; q < at.length; q++) {
+          const t = at[(first + q) % at.length];
+          if (t !== at[p] && search(c, w, h, at[p], t)) { a = at[p]; b = t; break; }
+        }
+      }
+      if (a < 0) return null;
+      out[from[a]] = kinds[k]; out[from[b]] = kinds[k];
+      sol.push([a, b]);
+      c[a] = 0; c[b] = 0;
+      moves.length = 0;
+      slide(c, w, h, mode, moves);
+      for (let m = 0; m < moves.length; m += 2) from[moves[m + 1]] = from[moves[m]];
+    }
+    return { c: out, sol };
+  }
+  // A board for a level, always with a way through it. First it fills the board at random and lets the
+  // solver try it, many times over. If none of those is cleared in the time allowed, it writes a board
+  // from its own way through. Either way the board handed out has been cleared once already.
+  function generate(w, h, nk, mode, written) {
     const sw = w + 2, N = w * h;
     const ks = shuffleArr(Array.from({ length: SYMBOLS.length }, (_, k) => k + 1)).slice(0, nk);
     const bag = [];
@@ -258,9 +304,16 @@
       let q = 0;
       for (let y = 1; y <= h; y++) for (let x = 1; x <= w; x++) c[y * sw + x] = bag[q++];
     };
-    do { fill(); sol = solve(c, w, h, mode); tries++; } while (!sol && tries < 600 && performance.now() - t0 < 500);
-    if (!sol) { let guard = 0; while (!anyPair(c, w, h, 0) && guard++ < 500) fill(); }
-    return { c, sol, tries, ms: performance.now() - t0 };
+    if (!written) do { fill(); sol = solve(c, w, h, mode); tries++; } while (!sol && tries < 600 && performance.now() - t0 < 500);
+    let built = false;
+    if (!sol) {
+      const kinds = [];
+      for (let p = 0; p < N / 2; p++) kinds.push(ks[p % nk]);
+      fill();
+      const b = construct(c, w, h, mode, shuffleArr(kinds));
+      if (b) { c = b.c; sol = b.sol; built = true; }
+    }
+    return { c, sol, tries, built, ms: performance.now() - t0 };
   }
 
   // ====================================================
@@ -522,7 +575,34 @@
     { s: 8, l: 12, kinds: 30, mode: "zipv" },
     { s: 8, l: 12, kinds: 32, mode: "ziph" }
   ];
+  // Levels 13 to 100 come in eight rounds of eleven. A round keeps one board size and goes through the
+  // eleven ways the tiles can move, in the order the first twelve levels brought them in. Every round
+  // has a bigger board than the one before, from 96 tiles to 140.
+  // Where the tiles stay put, spread apart or alternate, the board carries all 32 symbols. Where they
+  // pack tightly toward one side or toward the middle, a board with every symbol on it almost never has
+  // a way through, so those levels carry fewer kinds, and more of them as the boards grow. The numbers
+  // were chosen by measuring: at least about 3 random boards in 100 are cleared by the solver, with the
+  // board standing up and with it lying flat, which is no worse than level 9 always was.
+  const MODES = ["none", "down", "up", "left", "right", "inh", "outh", "inv", "outv", "zipv", "ziph"];
+  const ROUNDS = [
+    { s: 8, l: 12,  kinds: [32, 22, 20, 20, 22, 22, 32, 22, 32, 32, 32] },     // levels 13 to 23
+    { s: 8, l: 13,  kinds: [32, 22, 20, 20, 22, 22, 32, 22, 32, 32, 32] },     // 24 to 34
+    { s: 9, l: 12,  kinds: [32, 22, 20, 22, 22, 24, 32, 24, 32, 32, 32] },     // 35 to 45
+    { s: 8, l: 14,  kinds: [32, 22, 20, 22, 22, 24, 32, 24, 32, 32, 32] },     // 46 to 56
+    { s: 10, l: 12, kinds: [32, 24, 22, 22, 24, 24, 32, 24, 32, 32, 32] },     // 57 to 67
+    { s: 9, l: 14,  kinds: [32, 24, 22, 22, 22, 24, 32, 24, 32, 32, 32] },     // 68 to 78
+    { s: 10, l: 13, kinds: [32, 24, 22, 24, 24, 26, 32, 26, 32, 32, 32] },     // 79 to 89
+    { s: 10, l: 14, kinds: [32, 24, 22, 24, 24, 26, 32, 26, 32, 32, 32] }      // 90 to 100
+  ];
+  for (const r of ROUNDS) MODES.forEach((mode, k) => LEVELS.push({ s: r.s, l: r.l, kinds: r.kinds[k], mode }));
+  // Seconds allowed for each pair on the board: from 8.2 on level 1 down to 6.55 on level 12, as it
+  // always was, and from there more slowly down to 5 on level 100.
+  const secondsPerPair = (n) => (n <= 12 ? 8.2 - 0.15 * (n - 1) : 6.55 - 1.55 * (n - 12) / 88);
+  // Hints and shuffles a level starts with. The last two rounds give one hint less, the last round one shuffle less.
+  const hintsFor = (n) => (n >= 79 ? 3 : n >= 7 ? 4 : 3);
+  const shufflesFor = (n) => (n >= 90 ? 2 : n >= 9 ? 3 : 2);
   const COMBO_WINDOW = 4;      // seconds allowed between matches to keep a combo
+  const PER_PAGE = 20;         // levels the menu shows at a time
 
   // ====================================================
   // STATE
@@ -608,7 +688,7 @@
     const q = cur.x; cur.x = cur.y; cur.y = q;
     cells = nc; tileAt = nt; W = nW; H = nH; SW = nSW; mode = TURNED[mode];
     ghosts = []; floats = [];
-    $("bar-mode").textContent = MODE_TEXT[mode];
+    $("bar-mode").textContent = modeText(mode);
   }
 
   // ====================================================
@@ -648,22 +728,21 @@
     const w = upright ? L.s : L.l, h = upright ? L.l : L.s;
     mode = L.mode;
     const gen = generate(w, h, L.kinds, mode);
-    genInfo = { tries: gen.tries, ms: Math.round(gen.ms), solved: !!gen.sol };
+    genInfo = { tries: gen.tries, ms: Math.round(gen.ms), solved: !!gen.sol, built: gen.built };
     setBoard(gen.c, w, h);
     solution = gen.sol; solStep = 0;
     const pairs = left / 2;
-    timeMax = Math.round(pairs * (8.2 - 0.15 * (n - 1)));
+    timeMax = Math.round(pairs * secondsPerPair(n));
     timeLeft = timeMax;
-    hints = n >= 7 ? 4 : 3; shuffles = n >= 9 ? 3 : 2;
+    hints = hintsFor(n); shuffles = shufflesFor(n);
     score = 0; combo = 0; comboT = 0; bestCombo = 0; autoShuffles = 0;
     sel = -1; hint = null; cur.on = false; cur.x = 1; cur.y = 1;
     ghosts = []; parts = []; pathFx = []; floats = []; lastTick = 0;
-    $("hud-level").textContent = "Level " + n + " of " + LEVELS.length;
-    $("bar-mode").textContent = MODE_TEXT[mode];
+    paintHud();
     hudCache = {};
     layout();
     introT = 1.3;
-    toast("Level " + n + ". " + MODE_TEXT[mode] + ".", 1300);
+    toast(TX("Level ", "Màn ") + n + ". " + modeText(mode) + ".", 1300);
     sfx.start();
   }
   function burst(x, y, col, n) {
@@ -715,12 +794,12 @@
     if (!anyPair(cells, W, H, 0)) {
       autoShuffles++;
       doShuffle();
-      toast("No moves left. The tiles were shuffled for you.", 2000);
+      toast(TX("No moves left. The tiles were shuffled for you.", "Hết nước đi. Các ô đã được xáo lại giúp bạn."), 2000);
     }
   }
-  // Rearranges the remaining tiles among the cells they occupy. It prefers an
-  // arrangement the solver can clear and always ends with at least one move.
-  function doShuffle() {
+  // Rearranges the remaining tiles among the cells they occupy. What it hands back can always be
+  // cleared: either the solver has cleared it, or it was written from its own way through.
+  function doShuffle(written) {
     const occ = [];
     for (let i = 0; i < cells.length; i++) if (cells[i] !== 0) occ.push(i);
     const n = occ.length;
@@ -728,22 +807,18 @@
     const kinds = occ.map((i) => cells[i]), objs = occ.map((i) => tileAt[i]);
     const perm = occ.map((_, k) => k), c2 = cells.slice();
     let ok = false, sol = null;
-    for (let attempt = 0; attempt < 220 && !ok; attempt++) {
+    for (let attempt = 0; attempt < (written ? 0 : 30) && !ok; attempt++) {
       shuffleArr(perm);
       for (let k = 0; k < n; k++) c2[occ[k]] = kinds[perm[k]];
-      if (attempt < 30) { sol = solve(c2, W, H, mode); ok = !!sol; }
-      else ok = !!anyPair(c2, W, H, 0);
+      sol = solve(c2, W, H, mode); ok = !!sol;
     }
     if (!ok) {
-      // forced: find two cells a path can join and give them the same kind
-      outer:
-      for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) {
-        if (!search(c2, W, H, occ[a], occ[b])) continue;
-        if (kinds[perm[a]] !== kinds[perm[b]]) {
-          for (let k = 0; k < n; k++) if (k !== a && k !== b && kinds[perm[k]] === kinds[perm[a]]) { const q = perm[k]; perm[k] = perm[b]; perm[b] = q; break; }
-        }
-        break outer;
-      }
+      // none of those was cleared: write the arrangement from its own way through
+      const pools = {}, pairKinds = [];
+      for (let k = 0; k < n; k++) (pools[kinds[k]] = pools[kinds[k]] || []).push(k);
+      for (const kind in pools) for (let q = 0; q + 1 < pools[kind].length; q += 2) pairKinds.push(+kind);
+      const b = construct(cells, W, H, mode, shuffleArr(pairKinds));
+      if (b) { for (let k = 0; k < n; k++) perm[k] = pools[b.c[occ[k]]].pop(); sol = b.sol; }
     }
     for (let k = 0; k < n; k++) {
       const i = occ[k], t = objs[perm[k]];
@@ -754,14 +829,14 @@
   }
   function useShuffle() {
     if (state !== "play") return;
-    if (shuffles <= 0) { toast("No shuffles left."); sfx.bad(); return; }
+    if (shuffles <= 0) { toast(TX("No shuffles left.", "Hết lượt xáo.")); sfx.bad(); return; }
     shuffles--; combo = 0; comboT = 0;
     doShuffle();
   }
   function useHint() {
     if (state !== "play") return;
     if (hint) return;                                   // one is already showing
-    if (hints <= 0) { toast("No hints left."); sfx.bad(); return; }
+    if (hints <= 0) { toast(TX("No hints left.", "Hết gợi ý.")); sfx.bad(); return; }
     let p = solution && solStep < solution.length ? solution[solStep] : null;
     if (!p) p = anyPair(cells, W, H, Math.floor(Math.random() * cells.length));
     if (!p) return;
@@ -777,7 +852,7 @@
       const p = search(cells, W, H, sel, i);
       if (p) { removePair(sel, i, p); return; }
       tileAt[sel].shake = 0.3; tileAt[i].shake = 0.3;
-      floats.push({ x: clamp(cellPX(i % SW), 50, vw - 50), y: cellPY((i / SW) | 0) - ts * 0.4, text: "No path", t: 0, col: "#ff9a9a" });
+      floats.push({ x: clamp(cellPX(i % SW), 50, vw - 50), y: cellPY((i / SW) | 0) - ts * 0.4, text: TX("No path", "Không nối được"), t: 0, col: "#ff9a9a" });
       sfx.bad(); sel = i;
       return;
     }
@@ -800,42 +875,70 @@
     score = total;
     sfx.win();
     for (let k = 0; k < 9; k++) burst(vw * (0.15 + 0.7 * Math.random()), vh * (0.25 + 0.4 * Math.random()), SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)].color, 22);
-    $("win-title").textContent = level === LEVELS.length ? "Every level cleared" : "Level " + level + " cleared";
     $("win-stars").innerHTML = starSvg(stars >= 1) + starSvg(stars >= 2) + starSvg(stars >= 3);
-    $("win-text").textContent = "Score " + fmt(total) + ". Time bonus " + fmt(timeBonus) + ". Best combo " + bestCombo + ".";
-    $("win-best").textContent = isBest ? "New best for this level." : "Your best here is " + fmt(save.levels[level].score) + ".";
+    ended = { total, timeBonus, isBest, left: 0 };
+    paintEnd();
     $("btn-next").hidden = level >= LEVELS.length;
     setTimeout(() => { if (run === runId && state === "win") show("win"); }, 750);
   }
   function lose() {
     state = "lose"; runId++;
     sfx.lose();
-    $("lose-text").textContent = left + " tiles were left on level " + level + ". You scored " + fmt(score) + ".";
+    ended = { total: score, timeBonus: 0, isBest: false, left };
+    paintEnd();
     show("lose");
+  }
+  // the words on the two end panels and in the bars, in the language now chosen
+  let ended = null;
+  function paintEnd() {
+    if (!ended) return;
+    $("win-title").textContent = level === LEVELS.length ? TX("Every level cleared", "Đã qua hết các màn") : TX("Level " + level + " cleared", "Đã qua màn " + level);
+    $("win-text").textContent = TX("Score " + fmt(ended.total) + ". Time bonus " + fmt(ended.timeBonus) + ". Best combo " + bestCombo + ".", "Điểm " + fmt(ended.total) + ". Thưởng thời gian " + fmt(ended.timeBonus) + ". Combo cao nhất " + bestCombo + ".");
+    const rec = save.levels[level];
+    $("win-best").textContent = ended.isBest ? TX("New best for this level.", "Kỷ lục mới của màn này.") : rec ? TX("Your best here is " + fmt(rec.score) + ".", "Kỷ lục của bạn ở màn này là " + fmt(rec.score) + ".") : "";
+    $("lose-text").textContent = TX(ended.left + " tiles were left on level " + level + ". You scored " + fmt(ended.total) + ".", "Còn " + ended.left + " ô ở màn " + level + ". Bạn được " + fmt(ended.total) + " điểm.");
+  }
+  function paintHud() {
+    if (!level) return;
+    $("hud-level").textContent = TX("Level " + level + " of " + LEVELS.length, "Màn " + level + " trên " + LEVELS.length);
+    $("bar-mode").textContent = modeText(mode);
   }
   function pause() { if (state !== "play") return; state = "paused"; show("paused"); }
   function resume() { if (state !== "paused") return; state = "play"; show(null); last = performance.now(); }
+  let page = 0;                // which twenty levels the menu shows
+  const pageOf = (n) => Math.floor((clamp(n, 1, LEVELS.length) - 1) / PER_PAGE);
   function toMenu() {
     state = "menu"; runId++;
+    page = pageOf(save.unlocked);          // the menu opens at the player's next level
     tiles = []; ghosts = []; parts = []; pathFx = []; floats = [];
     $("toast").classList.remove("is-on");
     buildMenu(); show("menu"); layout();
   }
   function buildMenu() {
     const box = $("levels"); box.innerHTML = "";
-    for (let n = 1; n <= LEVELS.length; n++) {
+    page = clamp(page, 0, pageOf(LEVELS.length));
+    const first = page * PER_PAGE + 1, end = Math.min(LEVELS.length, first + PER_PAGE - 1);
+    $("page-label").textContent = TX("Levels ", "Màn ") + first + "–" + end;
+    $("btn-page-prev").disabled = page <= 0; $("btn-page-next").disabled = end >= LEVELS.length;
+    $("btn-page-prev").setAttribute("aria-label", TX("Earlier levels", "Các màn trước"));
+    $("btn-page-next").setAttribute("aria-label", TX("Later levels", "Các màn sau"));
+    for (let n = first; n <= end; n++) {
       const rec = save.levels[n], open = n <= save.unlocked;
       const b = document.createElement("button");
-      b.type = "button"; b.className = "lv"; b.disabled = !open;
-      b.setAttribute("aria-label", "Level " + n + (open ? "" : ", locked"));
+      b.type = "button"; b.className = "lv" + (n === save.unlocked && !rec ? " is-next" : ""); b.disabled = !open;
+      b.setAttribute("aria-label", TX("Level ", "Màn ") + n + (open ? "" : TX(", locked", ", đã khóa")));
       const st = rec ? rec.stars : 0;
       b.innerHTML = '<span class="lv__n">' + n + '</span><span class="lv__s">' + starSvg(st >= 1) + starSvg(st >= 2) + starSvg(st >= 3) + "</span>";
       b.addEventListener("click", () => { audioInit(); startLevel(n); });
       box.appendChild(b);
     }
-    $("btn-play").textContent = save.cleared ? "Play level " + save.unlocked : "Play";
-    $("menu-best").textContent = save.cleared ? save.cleared + " of " + LEVELS.length + " levels cleared. " + save.stars + " of " + LEVELS.length * 3 + " stars." : "";
-    $("btn-sound").textContent = save.mute ? "Sound is off" : "Sound is on";
+    $("btn-play").textContent = save.cleared ? TX("Play level " + save.unlocked, "Chơi màn " + save.unlocked) : TX("Play", "Chơi");
+    $("menu-best").textContent = save.cleared ? TX(save.cleared + " of " + LEVELS.length + " levels cleared. " + save.stars + " of " + LEVELS.length * 3 + " stars.", "Đã qua " + save.cleared + " trên " + LEVELS.length + " màn. " + save.stars + " trên " + LEVELS.length * 3 + " sao.") : "";
+    $("btn-sound").textContent = soundText();
+    $("levels").setAttribute("aria-label", TX("Levels", "Các màn"));
+    $("game").setAttribute("aria-label", TX("Pair Path game board", "Bàn chơi Pair Path"));
+    $("btn-pause").setAttribute("aria-label", TX("Pause", "Tạm dừng"));
+    $("btn-mute").setAttribute("aria-label", TX("Sound on or off", "Bật hoặc tắt âm thanh"));
     $("btn-mute").classList.toggle("is-off", save.mute);
   }
 
@@ -869,6 +972,8 @@
 
   const on = (id, fn) => $(id).addEventListener("click", () => { audioInit(); $(id).blur(); fn(); });
   on("btn-play", () => startLevel(save.unlocked));
+  on("btn-page-prev", () => { if (page > 0) { page--; buildMenu(); } });
+  on("btn-page-next", () => { if (page < pageOf(LEVELS.length)) { page++; buildMenu(); } });
   on("btn-pause", pause);
   on("btn-mute", () => setMute(!save.mute));
   on("btn-sound", () => setMute(!save.mute));
@@ -991,8 +1096,10 @@
       const k = f.t / 0.9;
       g.globalAlpha = k < 0.7 ? 1 : 1 - (k - 0.7) / 0.3;
       g.font = '700 ' + Math.round(clamp(ts * 0.36, 15, 22)) + 'px "Space Grotesk", system-ui, sans-serif';
-      g.lineWidth = 4; g.strokeStyle = "rgba(4,6,12,0.85)"; g.strokeText(f.text, f.x, f.y - 26 * easeOut(k));
-      g.fillStyle = f.col; g.fillText(f.text, f.x, f.y - 26 * easeOut(k));
+      // longer words (the Vietnamese ones) are kept whole inside the screen
+      const half = g.measureText(f.text).width / 2 + 6, fx = half * 2 < vw ? clamp(f.x, half, vw - half) : f.x;
+      g.lineWidth = 4; g.strokeStyle = "rgba(4,6,12,0.85)"; g.strokeText(f.text, fx, f.y - 26 * easeOut(k));
+      g.fillStyle = f.col; g.fillText(f.text, fx, f.y - 26 * easeOut(k));
     }
     g.globalAlpha = 1;
   }
@@ -1059,6 +1166,17 @@
   }
 
   setMute(save.mute);
+  // Google serves Space Grotesk in pieces, one for each group of alphabets, and words drawn on the canvas do
+  // not make the browser fetch the piece their letters are in. So ask for it. The board is drawn again on
+  // every frame, so the words change to the right letters as soon as the piece is here.
+  function loadCanvasFont() {
+    if (!document.fonts || !document.fonts.load) return;
+    document.fonts.load('700 16px "Space Grotesk"', TX("No path Combo", "Không nối được Combo")).catch(() => {});
+  }
+  // the language changed: write out again whatever is on screen
+  if (window.PlayLang) window.PlayLang.onChange(() => { hudCache = {}; paintHud(); paintEnd(); buildMenu(); loadCanvasFont(); });
+  loadCanvasFont();
+  page = pageOf(save.unlocked);
   buildMenu(); show("menu"); layout();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (state !== "menu") layout(); }).catch(() => {});
   requestAnimationFrame(frame);
@@ -1111,7 +1229,14 @@
     testAnyPair(rows) { const B = boardFromRows(rows); const p = anyPair(B.c, B.w, B.h, 0); return p ? [[p[0] % B.sw, (p[0] / B.sw) | 0], [p[1] % B.sw, (p[1] / B.sw) | 0]] : null; },
     // generate and solve boards without playing them, to measure the generator
     testGenerate(n, upright) { const L = LEVELS[n - 1]; const r = generate(upright ? L.s : L.l, upright ? L.l : L.s, L.kinds, L.mode); return { solved: !!r.sol, tries: r.tries, ms: Math.round(r.ms) }; },
+    // a board for level n with its way through, for checking outside the game. written: skip the random fillings
+    testBoard(n, upright, written) { const L = LEVELS[n - 1], w = upright ? L.s : L.l, h = upright ? L.l : L.s; const r = generate(w, h, L.kinds, L.mode, written); return { w, h, mode: L.mode, cells: Array.from(r.c), sol: r.sol, tries: r.tries, built: r.built, ms: r.ms }; },
+    slideCells(cells, w, h, md) { const c = Int8Array.from(cells); slide(c, w, h, md, null); return Array.from(c); },
+    levelInfo(n) { const L = LEVELS[n - 1], pairs = L.s * L.l / 2; return { s: L.s, l: L.l, kinds: L.kinds, mode: L.mode, pairs, time: Math.round(pairs * secondsPerPair(n)), perPair: secondsPerPair(n), hints: hintsFor(n), shuffles: shufflesFor(n) }; },
+    get page() { return page; }, get built() { return !!(genInfo && genInfo.built); },
+    // test only: shuffle what is left. written: skip the random tries and write the arrangement from its way through
+    shuffleNow(written) { doShuffle(written); return { hasMove: !!anyPair(cells, W, H, 0), line: !!solution }; },
     forceShuffle() { doShuffle(); return !!anyPair(cells, W, H, 0); },
-    setBoardRows(rows, md) { const B = boardFromRows(rows); mode = md || "none"; setBoard(B.c, B.w, B.h); solution = null; hint = null; sel = -1; $("bar-mode").textContent = MODE_TEXT[mode]; layout(); }
+    setBoardRows(rows, md) { const B = boardFromRows(rows); mode = md || "none"; setBoard(B.c, B.w, B.h); solution = null; hint = null; sel = -1; $("bar-mode").textContent = modeText(mode); layout(); }
   };
 })();

@@ -41,6 +41,9 @@ html, body {
 .panel[hidden] { display: none; }
 .panel a, .panel button { pointer-events: auto; }
 #start { top: 34%; }
+/* on a short screen the start panel stops at the top edge and is not cut off there */
+#start { transform: translate(-50%, max(-50%, calc(24px - 34vh))); }
+@supports (height: 100dvh) { #start { transform: translate(-50%, max(-50%, calc(8px - 34dvh))); } }
 .panel h1 { margin: 0; font-size: clamp(2.6rem, 12vw, 3.4rem); font-weight: 600; letter-spacing: -0.01em; color: var(--gold); line-height: 1; }
 .panel h2 { margin: 6px 0 0; font-size: 1.9rem; font-weight: 600; line-height: 1.1; }
 .panel__sub { margin: 8px 0 0; font-size: 1.25rem; }
@@ -61,3 +64,7 @@ html, body {
 .panel button[hidden] { display: none; }
 .panel__links { margin: 14px 0 0; display: flex; justify-content: center; gap: 22px; font-size: 1rem; }
 .panel__links a { color: var(--gold); }
+/* the EN / VI switch: small and plain, not one of the big gold buttons */
+.panel__lang { margin: 8px 0 0; }
+.panel [data-lang-pick] button { padding: 0 10px; border: 1px solid transparent; background: none; color: var(--ink); font: 600 14px/1 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.panel [data-lang-pick] button[aria-pressed="true"] { border-color: currentColor; }

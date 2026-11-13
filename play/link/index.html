@@ -5,12 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>Pair Path</title>
   <meta name="description" content="Pair Path: join matching science tiles with a path of at most two turns and clear the board before the time runs out.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Hoang Anh (Ben) Nguyen">
+  <meta property="og:title" content="Pair Path">
+  <meta property="og:description" content="Join matching tiles with a path of at most two turns, and clear the board before the clock runs out.">
+  <meta property="og:url" content="https://hnguyenx.com/play/link/">
+  <meta property="og:image" content="https://hnguyenx.com/play/og/pair-path.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Pair Path: Join matching tiles with a path of at most two turns, and clear the board before the clock runs out.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Pair Path">
+  <meta name="twitter:description" content="Join matching tiles with a path of at most two turns, and clear the board before the clock runs out.">
+  <meta name="twitter:image" content="https://hnguyenx.com/play/og/pair-path.png">
   <meta name="theme-color" content="#05070f">
   <link rel="icon" type="image/svg+xml" href="../../pro/images/favicon-pro.svg?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="pairpath.css?v=1">
+  <link rel="stylesheet" href="pairpath.css?v=3">
+  <script src="../lang.js?v=1"></script>
 </head>
 <body class="in-menu">
   <canvas id="game" aria-label="Pair Path game board"></canvas>
@@ -18,7 +32,7 @@
 
   <div class="top" id="top" hidden>
     <div class="top__row">
-      <a class="top__back" href="../">All games</a>
+      <a class="top__back" href="../"><span lang="en">All games</span><span lang="vi">Trò chơi</span></a>
       <div class="top__mid">
         <span class="top__level" id="hud-level">Level 1</span>
         <span class="top__score" id="hud-score">0</span>
@@ -42,12 +56,12 @@
   <div class="bar" id="bar" hidden>
     <button class="help" id="btn-hint" type="button">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a7 7 0 0 0-4.2 12.6c.7.6 1.2 1.4 1.2 2.4h6c0-1 .5-1.8 1.2-2.4A7 7 0 0 0 12 2.5z"/><rect x="9" y="19" width="6" height="2.6" rx="1.1"/></svg>
-      <span>Hint</span><b id="hint-count">3</b>
+      <span lang="en">Hint</span><span lang="vi">Gợi ý</span><b id="hint-count">3</b>
     </button>
     <p class="bar__mode" id="bar-mode"></p>
     <button class="help" id="btn-shuffle" type="button">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h4.5c2 0 3.2 1 4.5 5s2.5 5 4.5 5H20M3 17h4.5c1.3 0 2.2-.4 3-1.400M13.5 8.400c.800-1 1.7-1.4 3-1.400H20M17.5 4.500L20 7l-2.5 2.500M17.5 14.500L20 17l-2.5 2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span>Shuffle</span><b id="shuffle-count">2</b>
+      <span lang="en">Shuffle</span><span lang="vi">Xáo</span><b id="shuffle-count">2</b>
     </button>
   </div>
 
@@ -55,31 +69,37 @@
 
   <div class="panel" id="menu">
     <h1>Pair Path</h1>
-    <p class="panel__sub">Join the matching tiles before the clock runs out.</p>
+    <p class="panel__sub"><span lang="en">Join the matching tiles before the clock runs out.</span><span lang="vi">Nối các ô giống nhau trước khi hết giờ.</span></p>
     <div class="panel__buttons">
       <button type="button" id="btn-play">Play</button>
     </div>
     <p class="panel__best" id="menu-best"></p>
     <div class="levels" id="levels" aria-label="Levels"></div>
+    <div class="pager">
+      <button type="button" class="pager__btn" id="btn-page-prev" aria-label="Earlier levels"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <span class="pager__label" id="page-label"></span>
+      <button type="button" class="pager__btn" id="btn-page-next" aria-label="Later levels"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+    </div>
+    <p class="panel__lang"><span data-lang-pick></span></p>
     <ul class="panel__help">
-      <li>Tap two tiles that show the same symbol.</li>
-      <li>They clear when a line with at most two turns can join them through empty cells. The line may run around the outside of the board.</li>
-      <li>Quick matches in a row build a combo and add time.</li>
-      <li>From level 3 the tiles slide after every match.</li>
-      <li class="keys">Keys: arrows and Enter to pick, H for a hint, S to shuffle, P to pause, M for sound.</li>
+      <li><span lang="en">Tap two tiles that show the same symbol.</span><span lang="vi">Chạm vào hai ô có cùng ký hiệu.</span></li>
+      <li><span lang="en">They clear when a line with at most two turns can join them through empty cells. The line may run around the outside of the board.</span><span lang="vi">Hai ô biến mất khi có thể nối chúng bằng một đường đi qua các ô trống với không quá hai lần rẽ. Đường nối được phép chạy vòng ra ngoài bàn.</span></li>
+      <li><span lang="en">Quick matches in a row build a combo and add time.</span><span lang="vi">Ghép nhanh liên tiếp sẽ tạo combo và được cộng thêm giờ.</span></li>
+      <li><span lang="en">From level 3 on, most levels make the tiles slide after every match.</span><span lang="vi">Từ màn 3 trở đi, ở hầu hết các màn, các ô sẽ trượt sau mỗi lần ghép.</span></li>
+      <li class="keys"><span lang="en">Keys: arrows and Enter to pick, H for a hint, S to shuffle, P to pause, M for sound.</span><span lang="vi">Phím: mũi tên và Enter để chọn, H để xem gợi ý, S để xáo, P để tạm dừng, M để bật tắt âm thanh.</span></li>
     </ul>
-    <p class="panel__back"><a href="../">All games</a><button type="button" class="linkbtn" id="btn-sound">Sound is on</button></p>
+    <p class="panel__back"><a href="../"><span lang="en">All games</span><span lang="vi">Tất cả trò chơi</span></a><button type="button" class="linkbtn" id="btn-sound">Sound is on</button></p>
   </div>
 
   <div class="panel" id="paused" hidden>
-    <h2>Paused</h2>
-    <p class="panel__sub">The tiles are hidden while you rest.</p>
+    <h2><span lang="en">Paused</span><span lang="vi">Tạm dừng</span></h2>
+    <p class="panel__sub"><span lang="en">The tiles are hidden while you rest.</span><span lang="vi">Các ô được che đi trong lúc bạn nghỉ.</span></p>
     <div class="panel__buttons">
-      <button type="button" id="btn-resume">Resume</button>
-      <button type="button" id="btn-restart">Restart level</button>
-      <button type="button" id="btn-quit">Levels</button>
+      <button type="button" id="btn-resume"><span lang="en">Resume</span><span lang="vi">Tiếp tục</span></button>
+      <button type="button" id="btn-restart"><span lang="en">Restart level</span><span lang="vi">Chơi lại màn</span></button>
+      <button type="button" id="btn-quit"><span lang="en">Levels</span><span lang="vi">Các màn</span></button>
     </div>
-    <p class="panel__back"><a href="../">All games</a></p>
+    <p class="panel__back"><a href="../"><span lang="en">All games</span><span lang="vi">Tất cả trò chơi</span></a></p>
   </div>
 
   <div class="panel" id="win" hidden>
@@ -88,23 +108,23 @@
     <p class="panel__sub" id="win-text"></p>
     <p class="panel__best" id="win-best"></p>
     <div class="panel__buttons">
-      <button type="button" id="btn-next">Next level</button>
-      <button type="button" id="btn-again">Play again</button>
-      <button type="button" id="btn-levels">Levels</button>
+      <button type="button" id="btn-next"><span lang="en">Next level</span><span lang="vi">Màn tiếp theo</span></button>
+      <button type="button" id="btn-again"><span lang="en">Play again</span><span lang="vi">Chơi lại</span></button>
+      <button type="button" id="btn-levels"><span lang="en">Levels</span><span lang="vi">Các màn</span></button>
     </div>
-    <p class="panel__back"><a href="../">All games</a></p>
+    <p class="panel__back"><a href="../"><span lang="en">All games</span><span lang="vi">Tất cả trò chơi</span></a></p>
   </div>
 
   <div class="panel" id="lose" hidden>
-    <h2>Time is up</h2>
+    <h2><span lang="en">Time is up</span><span lang="vi">Hết giờ</span></h2>
     <p class="panel__sub" id="lose-text"></p>
     <div class="panel__buttons">
-      <button type="button" id="btn-retry">Try again</button>
-      <button type="button" id="btn-lose-levels">Levels</button>
+      <button type="button" id="btn-retry"><span lang="en">Try again</span><span lang="vi">Thử lại</span></button>
+      <button type="button" id="btn-lose-levels"><span lang="en">Levels</span><span lang="vi">Các màn</span></button>
     </div>
-    <p class="panel__back"><a href="../">All games</a></p>
+    <p class="panel__back"><a href="../"><span lang="en">All games</span><span lang="vi">Tất cả trò chơi</span></a></p>
   </div>
 
-  <script src="pairpath.js?v=2"></script>
+  <script src="pairpath.js?v=4"></script>
 </body>
 </html>

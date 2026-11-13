@@ -5,6 +5,8 @@
   const N = 8;
   const SAVE_KEY = "lattice-v1";
   const $ = (id) => document.getElementById(id);
+  // the text in the language chosen for the site: English, or Vietnamese
+  const TX = (en, vi) => (window.PlayLang ? window.PlayLang.t(en, vi) : en);
 
   // ------------------------------------------------------------ pieces
   // Each base shape is one "element" with its own colour. e and h are the
@@ -248,8 +250,8 @@
     if (L.cell) {
       const fx = L.bx + (c + v.w / 2) * L.cell, fy = L.by + (r + v.h / 2) * L.cell;
       floaters.push({ text: "+" + gain, x: fx, y: fy - L.cell * 0.2, t0: now, big: n > 0, col: n ? "#ffffff" : "rgba(214,236,255,0.9)" });
-      if (n && G.streak > 1) floaters.push({ text: "Streak " + G.streak, x: fx, y: fy + L.cell * 0.55, t0: now + 90, big: false, col: "#c9a8ff" });
-      if (cleanSlate) floaters.push({ text: "Clean slate", x: L.bx + L.bw / 2, y: L.by + L.bw / 2, t0: now + 200, big: true, col: "#ffc28a" });
+      if (n && G.streak > 1) floaters.push({ text: TX("Streak ", "Chuỗi ") + G.streak, x: fx, y: fy + L.cell * 0.55, t0: now + 90, big: false, col: "#c9a8ff" });
+      if (cleanSlate) floaters.push({ text: TX("Clean slate", "Sạch bàn"), x: L.bx + L.bw / 2, y: L.by + L.bw / 2, t0: now + 200, big: true, col: "#ffc28a" });
     }
     if (n) sndClear(n, G.streak); else sndPlace(v.cells.length);
     kick(1200);
@@ -813,12 +815,35 @@
     if (G && G.over) overTimer = setTimeout(showOver, 50);
     kick();
   }
+  const bestLine = () => TX("Best score " + save.best + ".", "Kỷ lục: " + save.best + ".");
+  // the words that are set from here and not written in the page, in the language now chosen
+  let keepPlaying = false;      // the button on the how-to panel reads "Keep playing" once a game is under way
+  function paintLang() {
+    $("btn-play").textContent = keepPlaying ? TX("Keep playing", "Chơi tiếp") : TX("Play", "Chơi");
+    $("intro-best").textContent = save.best > 0 ? bestLine() : "";
+    if (G) {
+      $("over-text").textContent = TX("None of your pieces fits anywhere on the lattice.", "Không còn khối nào đặt vừa trên bàn.");
+      $("over-best").textContent = G.score > 0 && G.score >= save.best ? TX("A new best score.", "Kỷ lục mới.") : bestLine();
+    }
+    const label = (id, en, vi, title, titleVi) => { $(id).setAttribute("aria-label", TX(en, vi)); if (title) $(id).title = TX(title, titleVi); };
+    label("game", "Lattice game board", "Bàn chơi Lattice");
+    label("btn-undo", "Undo the last move", "Hoàn tác nước vừa đi", "Undo", "Hoàn tác");
+    label("btn-new", "New game", "Ván mới", "New game", "Ván mới");
+    label("btn-help", "How to play", "Cách chơi", "How to play", "Cách chơi");
+    label("btn-mute", "Sound on or off", "Bật hoặc tắt âm thanh", "Sound", "Âm thanh");
+    loadCanvasFont();
+  }
+  if (window.PlayLang) window.PlayLang.onChange(paintLang);
+  // Google serves Space Grotesk in pieces, one for each group of alphabets, and words drawn on the canvas do
+  // not make the browser fetch the piece their letters are in. So ask for it, and draw again when it is here.
+  function loadCanvasFont() {
+    if (!document.fonts || !document.fonts.load) return;
+    document.fonts.load("700 16px 'Space Grotesk'", TX("Streak Clean slate", "Chuỗi Sạch bàn đơư")).then(() => kick(300)).catch(() => {});
+  }
   function showOver() {
     if (!G || !G.over || modal === "over") return;
-    $("over-text").textContent = "None of your pieces fits anywhere on the lattice.";
     $("over-score").textContent = G.score;
-    const isBest = G.score > 0 && G.score >= save.best;
-    $("over-best").textContent = isBest ? "A new best score." : "Best score " + save.best + ".";
+    paintLang();
     $("btn-over-undo").hidden = !canUndo();
     openPanel("over");
     sndOver();
@@ -853,8 +878,8 @@
   $("btn-new").addEventListener("click", () => { audio(); askNew(); });
   $("btn-help").addEventListener("click", () => {
     audio();
-    $("btn-play").textContent = "Keep playing";
-    $("intro-best").textContent = save.best > 0 ? "Best score " + save.best + "." : "";
+    keepPlaying = true;
+    paintLang();
     openPanel("intro");
   });
   $("btn-mute").addEventListener("click", () => { audio(); setMute(!save.mute); if (!save.mute) setTimeout(() => glass(note(5), 0, 0.12, 0.4), 60); });
@@ -881,10 +906,8 @@
   setMute(save.mute);
   layout();
   commit();
-  if (!resumed || !save.seen) {
-    $("intro-best").textContent = save.best > 0 ? "Best score " + save.best + "." : "";
-    openPanel("intro");
-  }
+  paintLang();
+  if (!resumed || !save.seen) openPanel("intro");
   requestAnimationFrame(frame);
 
   // ------------------------------------------------------------ test handle
