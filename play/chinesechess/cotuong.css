@@ -4,6 +4,13 @@
   src: url("../../assets/fonts/crimson-pro.woff2") format("woff2");
   font-weight: 200 900; font-style: normal; font-display: swap;
 }
+/* The characters on the pieces and the river: 18 glyphs cut from Noto Serif CJK SC Bold (SIL Open Font
+   License), so every phone and computer draws the same shapes. */
+@font-face {
+  font-family: "Xiangqi Pieces";
+  src: url("../../assets/fonts/xiangqi-pieces.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
 :root {
   --paper: #fffdf8; --ink: #3b3226; --gold: #8a6d3b; --line: rgba(138, 109, 59, 0.3); --card: rgba(255, 253, 248, 0.97);
   --wood: #f1e0b6; --rule: #6f5630; --red: #b3261e; --black: #2a231a; --disc: #fff8e8;
@@ -62,10 +69,8 @@ body.in-menu .app { filter: blur(2px); opacity: 0.4; pointer-events: none; }
 .side__turn { font-weight: 400; color: var(--gold); white-space: nowrap; }
 .tray { display: flex; align-items: center; min-width: 0; margin-left: auto; padding-left: 4px; overflow: hidden; }
 .mini {
-  width: 21px; height: 21px; flex: 0 0 21px; margin-left: -5px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
+  position: relative; width: 21px; height: 21px; flex: 0 0 21px; margin-left: -5px; border-radius: 50%;
   background: var(--disc); border: 1.5px solid var(--pcol); color: var(--pcol);
-  font: 700 12px/1 "Noto Serif CJK SC", "Songti SC", "STSong", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", serif;
 }
 .mini--r { --pcol: var(--red); } .mini--b { --pcol: var(--black); }
 .tray__adv { margin-left: 8px; font-size: 0.98rem; opacity: 0.8; font-variant-numeric: tabular-nums; }
@@ -79,7 +84,7 @@ body.in-menu .app { filter: blur(2px); opacity: 0.4; pointer-events: none; }
 .grid { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .grid path, .grid rect { fill: none; stroke: var(--rule); stroke-width: 0.35; stroke-linecap: round; }
 .grid .frame { stroke-width: 0.7; }
-.grid text { fill: var(--rule); fill-opacity: 0.55; font: 500 5.4px "Noto Serif CJK SC", "Songti SC", "STKaiti", "KaiTi", "PingFang SC", "Microsoft YaHei", serif; text-anchor: middle; dominant-baseline: central; letter-spacing: 3px; }
+.grid text { fill: var(--rule); fill-opacity: 0.5; font: 700 5.4px "Xiangqi Pieces", "Noto Serif CJK SC", "Songti SC", "STKaiti", "KaiTi", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", serif; text-anchor: middle; }
 .pieces, .marks { position: absolute; inset: 0; }
 .marks { pointer-events: none; }
 .pc, .mark { position: absolute; left: 0; top: 0; width: calc(100% / 9); height: 10%; display: flex; align-items: center; justify-content: center; }
@@ -90,15 +95,21 @@ body.in-menu .app { filter: blur(2px); opacity: 0.4; pointer-events: none; }
 .pc.is-drag .pc__disc { box-shadow: 0 8px 10px rgba(0, 0, 0, 0.4); }
 .pc.is-out { opacity: 0; }
 .pc__disc {
-  width: 88%; aspect-ratio: 1; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
+  position: relative; width: 88%; aspect-ratio: 1; border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #fffdf6, var(--disc) 60%, #f1e4c4);
   border: max(1.5px, calc(var(--cell) * 0.045)) solid var(--pcol); color: var(--pcol);
   box-shadow: inset 0 0 0 max(1.5px, calc(var(--cell) * 0.05)) var(--disc), inset 0 0 0 max(2.5px, calc(var(--cell) * 0.075)) var(--pcol), 0 2px 3px rgba(0, 0, 0, 0.3);
 }
 .pc--r { --pcol: var(--red); } .pc--b { --pcol: var(--black); }
-.pc__han { font: 700 calc(var(--cell) * 0.5)/1 "Noto Serif CJK SC", "Songti SC", "STKaiti", "KaiTi", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", serif; }
-.pc__abc { display: none; font: 700 calc(var(--cell) * 0.44)/1 "Crimson Pro", Georgia, serif; letter-spacing: -0.02em; }
+/* What is written on a piece. It is drawn as SVG text whose baseline is placed by hand (see face() in
+   cotuong.js), so the character sits in the middle of its disc whatever font a device ends up using.
+   Centring the line with CSS does not do that: it centres the font's line height, and for Chinese
+   characters that leaves the character about a twentieth of its size too low. */
+.face { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; overflow: visible; }
+.face text { fill: currentColor; text-anchor: middle; font-weight: 700; }
+.pc__han { font-family: "Xiangqi Pieces", "Noto Serif CJK SC", "Songti SC", "STKaiti", "KaiTi", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", serif; font-size: calc(var(--cell) * 0.5); }
+.pc__abc { display: none; font-family: "Crimson Pro", Georgia, serif; font-size: calc(var(--cell) * 0.44); }
+.mini .pc__han { font-size: 12px; } .mini .pc__abc { font-size: 11.5px; }
 body.style-abc .pc__han { display: none; }
 body.style-abc .pc__abc { display: block; }
 

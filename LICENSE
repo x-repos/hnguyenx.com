@@ -14,9 +14,10 @@ copyright holder, you may not:
   - use any part of it for commercial purposes.
 
 Material made by others keeps its own licence and is not covered by this
-notice. That includes the Crimson Pro typeface (SIL Open Font License), the
-Twemoji country flags font, and the libraries the site loads from public CDNs
-(three.js, GSAP, Lenis and KaTeX).
+notice. That includes the Crimson Pro typeface and the Chinese chess piece
+characters, which are taken from Noto Serif CJK (both under the SIL Open Font
+License), the Twemoji country flags font, and the libraries the site loads from
+public CDNs (three.js, GSAP, Lenis and KaTeX).
 
 THIS MATERIAL IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
 

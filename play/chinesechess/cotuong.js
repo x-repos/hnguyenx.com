@@ -158,14 +158,20 @@
         for (const dy of [-1, 1]) d += "M" + (x + dx * 1.1) + " " + (y + dy * 3) + "V" + (y + dy * 1.1) + "H" + (x + dx * 3);
       }
     }
-    $("grid").innerHTML = '<rect class="frame" x="3.4" y="3.4" width="83.2" height="93.2" rx="0.5"/><path d="' + d + '"/><text x="26" y="50.2">楚河</text><text x="64" y="50.2">漢界</text>';
+    $("grid").innerHTML = '<rect class="frame" x="3.4" y="3.4" width="83.2" height="93.2" rx="0.5"/><path d="' + d + '"/><text x="21.8" y="52.05">楚</text><text x="30.2" y="52.05">河</text><text x="59.8" y="52.05">漢</text><text x="68.2" y="52.05">界</text>';   // baseline 0.38 of the size below the middle of the river
   })();
 
   const letter = (pc) => ABC[PlayLang.get() === "vi" ? "vi" : "en"][pc & 7];
+  // What is written on a piece, in both styles; the stylesheet shows one. The text is SVG so its baseline can
+  // be set exactly: a Chinese character fills a square that reaches 0.88 of its size above the baseline and
+  // 0.12 below, so the middle of the character is 0.38 above the baseline. A capital letter in Crimson Pro is
+  // 0.587 tall, so its middle is 0.29 above.
+  const face = (pc) => '<svg class="face"><text class="pc__han" x="50%" y="50%" dy="0.38em">' + HAN[colorOf(pc)][pc & 7] +
+    '</text><text class="pc__abc" x="50%" y="50%" dy="0.29em">' + letter(pc) + "</text></svg>";
   function pieceEl(pc) {
     const el = document.createElement("div");
     el.className = "pc pc--" + colorOf(pc);
-    el.innerHTML = '<span class="pc__disc"><span class="pc__han">' + HAN[colorOf(pc)][pc & 7] + '</span><span class="pc__abc">' + letter(pc) + "</span></span>";
+    el.innerHTML = '<span class="pc__disc">' + face(pc) + "</span>";
     el._pc = pc;
     return el;
   }
@@ -226,7 +232,7 @@
     if (game.mode === "two") return c === "r" ? tr("Red", "Đỏ") : tr("Black", "Đen");
     return c === game.human ? tr("You", "Bạn") : game.mode === "online" ? tr("Friend", "Đối thủ") : tr("Computer", "Máy");
   }
-  const mini = (pc) => '<span class="mini mini--' + colorOf(pc) + '">' + (save.style === "abc" ? letter(pc) : HAN[colorOf(pc)][pc & 7]) + "</span>";
+  const mini = (pc) => '<span class="mini mini--' + colorOf(pc) + '">' + face(pc) + "</span>";
   function paintSides() {
     const bottom = flipped() ? "b" : "r", top = other(bottom);
     const taken = { r: [], b: [] };                  // pieces each colour has lost

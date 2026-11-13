@@ -4,6 +4,12 @@
   src: url("../assets/fonts/crimson-pro.woff2") format("woff2");
   font-weight: 200 900; font-style: normal; font-display: swap;
 }
+/* the characters on the Chinese Chess card: the same 18 glyphs the game uses (from Noto Serif CJK SC Bold) */
+@font-face {
+  font-family: "Xiangqi Pieces";
+  src: url("../assets/fonts/xiangqi-pieces.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
 * { box-sizing: border-box; }
 html { background: #05060b; }
 body {
