@@ -62,11 +62,12 @@
   // When the animation cannot run, fall back to the plain page and say why
   // in a small note, so a blank-looking page is never a mystery.
   function fallback(reason) {
-    document.body.classList.add("home-fallback");
+    document.body.classList.add("home-fallback", "home-fallback--" + reason);
     document.body.classList.remove("is-tunnel");
+    // (\u00a0 is a no-break space: it keeps the setting's name on one line)
     const TEXT = {
-      "reduced-motion": ["The animation is off because Reduce Motion is turned on in this device's settings.",
-                         "Hoạt ảnh đang tắt vì thiết bị này đang bật Giảm chuyển động."],
+      "reduced-motion": ["The animation is off because Reduce\u00a0Motion is turned on in this device's settings.",
+                         "Hoạt ảnh đang tắt vì thiết bị này đang bật Giảm\u00a0chuyển\u00a0động."],
       "webgl": ["The animation needs WebGL, which this browser has turned off or does not support.",
                 "Hoạt ảnh cần WebGL, nhưng trình duyệt này đã tắt hoặc không hỗ trợ."],
       "libs": ["The animation could not load its libraries. Check the connection or a content blocker, then reload.",
@@ -88,8 +89,158 @@
       });
       note.appendChild(btn);
     }
-    document.body.appendChild(note);
+    // under the call to action on the first page, in the page's flow, so it covers no text
+    (document.querySelector(".home-intro__words") || document.body).appendChild(note);
   }
+
+  // ----------------------------------------------------------
+  // Visitor country detection (best-effort, fails gracefully). This and the
+  // question form run before the checks below, so the still page has them too.
+  // Hello line localizes between EN ("Hello from X.") and VI
+  // ("Xin chào từ X."), and re-renders when the user toggles lang.
+  // ----------------------------------------------------------
+  (function lookupVisitor() {
+    const el = document.getElementById("home-visitor-country");
+    if (!el) return;
+    const flagEl  = el.querySelector(".home-visitors__flag");
+    const helloEl = el.querySelector(".home-visitors__hello");
+    if (!helloEl) return;
+
+    // Convert ISO 3166-1 alpha-2 to flag emoji
+    function flagFor(code) {
+      if (!code || code.length !== 2) return "🌍";
+      const A = 0x1F1E6;
+      return String.fromCodePoint(
+        A + code.toUpperCase().charCodeAt(0) - 65,
+        A + code.toUpperCase().charCodeAt(1) - 65
+      );
+    }
+
+    let detected = null; // { code, name } once we get a response
+    const original = helloEl.innerHTML;
+
+    // The country's name in Vietnamese, from the browser (ipapi.co's name is English), or null
+    function vietnameseName(code) {
+      try {
+        const names = new Intl.DisplayNames(["vi"], { type: "region" });
+        if (!/^vi\b/.test(names.resolvedOptions().locale)) return null;
+        const name = names.of(code);
+        return name && name !== code ? name : null;
+      } catch (e) { return null; }
+    }
+
+    function render() {
+      const lang = document.documentElement.getAttribute("lang") || "en";
+      if (!detected) {
+        // Keep the static greeting spans from HTML — they handle the
+        // pre-detection state in both languages.
+        return;
+      }
+      // No Vietnamese name: keep the page's own greeting rather than put an English name in Vietnamese
+      const vn = lang === "vi" ? vietnameseName(detected.code) : null;
+      if (lang === "vi" && !vn) { helloEl.innerHTML = original; return; }
+      const greet =
+        lang === "vi" ? "Xin chào từ " + vn + "." :
+                        "Hello from "  + detected.name + ".";
+      // Replace any existing children with a single localized text node,
+      // so the static EN/VI <span> placeholders get overwritten.
+      helloEl.textContent = greet;
+    }
+
+    fetch("https://ipapi.co/json/", { cache: "no-store" })
+      .then(r => (r.ok ? r.json() : Promise.reject()))
+      .then(d => {
+        if (!d || !d.country_code) return;
+        detected = { code: d.country_code, name: d.country_name || d.country_code };
+        if (flagEl) flagEl.textContent = flagFor(detected.code);
+        render();
+      })
+      .catch(() => { /* silent fallback — static greeting stays visible */ });
+
+    document.addEventListener("site:langchange", render);
+  })();
+
+  // ----------------------------------------------------------
+  // Anonymous question form — AJAX submit to FormSubmit.
+  // ----------------------------------------------------------
+  (function () {
+    const form = document.getElementById("home-ask-form");
+    if (!form) return;
+    const status = document.getElementById("home-ask-status");
+    const button = form.querySelector(".home-ask__send");
+
+    // Localize placeholders + status messages on lang change
+    function applyPlaceholders() {
+      const lang = document.documentElement.getAttribute("lang") || "en";
+      const key = "ph" + (lang === "vi" ? "Vi" : "En");
+      form.querySelectorAll("[data-ph-en]").forEach(function (el) {
+        el.placeholder = el.dataset[key] || el.placeholder;
+      });
+    }
+    applyPlaceholders();
+    document.addEventListener("site:langchange", applyPlaceholders);
+
+    function msg(en, vi) {
+      const lang = document.documentElement.getAttribute("lang") || "en";
+      return lang === "vi" ? vi : en;
+    }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (!status) return;
+
+      // Honeypot — silently drop bot submissions
+      const honey = form.querySelector(".home-ask__honey");
+      if (honey && honey.value) return;
+
+      status.hidden = false;
+      status.className = "home-ask__status";
+      status.textContent = msg("Sending…", "Đang gửi…");
+      if (button) button.disabled = true;
+
+      const action = form.getAttribute("action");
+      const ajaxUrl = action.replace(
+        "https://formsubmit.co/",
+        "https://formsubmit.co/ajax/"
+      );
+
+      const payload = {
+        message: form.message.value,
+        name:    form.name.value  || "(anonymous)",
+        email:   form.email.value || "(not provided)",
+        _subject: "Anonymous question from hnguyenx.com",
+        _captcha: "false"
+      };
+
+      fetch(ajaxUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept":       "application/json"
+        },
+        body: JSON.stringify(payload)
+      })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function () {
+          form.reset();
+          status.className = "home-ask__status is-success";
+          status.textContent = msg(
+            "Thanks, your message landed in my inbox.",
+            "Cảm ơn, tin nhắn của bạn đã đến hộp thư của tôi."
+          );
+        })
+        .catch(function () {
+          status.className = "home-ask__status is-error";
+          status.textContent = msg(
+            "Couldn't send right now. Try again, or email me directly.",
+            "Không gửi được lúc này. Hãy thử lại, hoặc email cho tôi trực tiếp."
+          );
+        })
+        .then(function () {
+          if (button) button.disabled = false;
+        });
+    });
+  })();
 
   if (!window.THREE || !window.gsap || !window.ScrollTrigger) {
     fallback("libs");
@@ -2082,7 +2233,7 @@
     planet: [   // seismology, ambient noise, full-waveform inversion
       "\\rho\\,\\frac{\\partial^2 u_i}{\\partial t^2} = \\frac{\\partial}{\\partial x_j}\\Big(c_{ijkl}\\,\\frac{\\partial u_k}{\\partial x_l}\\Big) + f_i",
       "\\chi(\\mathbf m) = \\tfrac12 \\sum_{s,r}\\int_0^T \\big\\| \\mathbf d_{\\mathrm{obs}}(\\mathbf x_r,t) - \\mathbf u(\\mathbf x_r,t;\\mathbf m) \\big\\|^2 dt",
-      "\\frac{\\partial \\chi}{\\partial m} = -\\int_0^T\\!\\!\\int_\\Omega \\mathbf u^{\\dagger}(\\mathbf x, T-t)\\cdot\\frac{\\partial \\mathcal L}{\\partial m}\\,\\mathbf u(\\mathbf x,t)\;d\\mathbf x\\,dt",
+      "\\frac{\\partial \\chi}{\\partial m} = -\\int_0^T\\!\\!\\int_\\Omega \\mathbf u^{\\dagger}(\\mathbf x, T-t)\\cdot\\frac{\\partial \\mathcal L}{\\partial m}\\,\\mathbf u(\\mathbf x,t)\\;d\\mathbf x\\,dt",
       "\\frac{d}{dt}\\,C_{AB}(t) \\propto -G_{AB}(t) + G_{AB}(-t)",
       "\\int_\\Omega \\rho\\,\\mathbf w\\cdot\\ddot{\\mathbf u}\\,d\\Omega + \\int_\\Omega \\nabla\\mathbf w : \\mathbf c : \\nabla\\mathbf u\\,d\\Omega = \\int_\\Omega \\mathbf w\\cdot\\mathbf f\\,d\\Omega",
       "\\mathbf m_{k+1} = \\mathbf m_k - \\alpha_k\\,\\mathbf H_k^{-1}\\,\\nabla_{\\mathbf m}\\chi(\\mathbf m_k)",
@@ -2454,138 +2605,4 @@
 
   // Nudge ScrollTrigger after fonts/images load (avoids miscalc)
   window.addEventListener("load", () => { ScrollTrigger.refresh(); measure(); });
-
-  // ----------------------------------------------------------
-  // Visitor country detection (best-effort, fails gracefully).
-  // Hello line localizes between EN ("Hello from X.") and VI
-  // ("Xin chào từ X."), and re-renders when the user toggles lang.
-  // ----------------------------------------------------------
-  (function lookupVisitor() {
-    const el = document.getElementById("home-visitor-country");
-    if (!el) return;
-    const flagEl  = el.querySelector(".home-visitors__flag");
-    const helloEl = el.querySelector(".home-visitors__hello");
-    if (!helloEl) return;
-
-    // Convert ISO 3166-1 alpha-2 to flag emoji
-    function flagFor(code) {
-      if (!code || code.length !== 2) return "🌍";
-      const A = 0x1F1E6;
-      return String.fromCodePoint(
-        A + code.toUpperCase().charCodeAt(0) - 65,
-        A + code.toUpperCase().charCodeAt(1) - 65
-      );
-    }
-
-    let detected = null; // { code, name } once we get a response
-
-    function render() {
-      const lang = document.documentElement.getAttribute("lang") || "en";
-      if (!detected) {
-        // Keep the static greeting spans from HTML — they handle the
-        // pre-detection state in both languages.
-        return;
-      }
-      const greet =
-        lang === "vi" ? "Xin chào từ " + detected.name + "." :
-                        "Hello from "  + detected.name + ".";
-      // Replace any existing children with a single localized text node,
-      // so the static EN/VI <span> placeholders get overwritten.
-      helloEl.textContent = greet;
-    }
-
-    fetch("https://ipapi.co/json/", { cache: "no-store" })
-      .then(r => (r.ok ? r.json() : Promise.reject()))
-      .then(d => {
-        if (!d || !d.country_code) return;
-        detected = { code: d.country_code, name: d.country_name || d.country_code };
-        if (flagEl) flagEl.textContent = flagFor(detected.code);
-        render();
-      })
-      .catch(() => { /* silent fallback — static greeting stays visible */ });
-
-    document.addEventListener("site:langchange", render);
-  })();
-
-  // ----------------------------------------------------------
-  // Anonymous question form — AJAX submit to FormSubmit.
-  // ----------------------------------------------------------
-  (function () {
-    const form = document.getElementById("home-ask-form");
-    if (!form) return;
-    const status = document.getElementById("home-ask-status");
-    const button = form.querySelector(".home-ask__send");
-
-    // Localize placeholders + status messages on lang change
-    function applyPlaceholders() {
-      const lang = document.documentElement.getAttribute("lang") || "en";
-      const key = "ph" + (lang === "vi" ? "Vi" : "En");
-      form.querySelectorAll("[data-ph-en]").forEach(function (el) {
-        el.placeholder = el.dataset[key] || el.placeholder;
-      });
-    }
-    applyPlaceholders();
-    document.addEventListener("site:langchange", applyPlaceholders);
-
-    function msg(en, vi) {
-      const lang = document.documentElement.getAttribute("lang") || "en";
-      return lang === "vi" ? vi : en;
-    }
-
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-      if (!status) return;
-
-      // Honeypot — silently drop bot submissions
-      const honey = form.querySelector(".home-ask__honey");
-      if (honey && honey.value) return;
-
-      status.hidden = false;
-      status.className = "home-ask__status";
-      status.textContent = msg("Sending…", "Đang gửi…");
-      if (button) button.disabled = true;
-
-      const action = form.getAttribute("action");
-      const ajaxUrl = action.replace(
-        "https://formsubmit.co/",
-        "https://formsubmit.co/ajax/"
-      );
-
-      const payload = {
-        message: form.message.value,
-        name:    form.name.value  || "(anonymous)",
-        email:   form.email.value || "(not provided)",
-        _subject: "Anonymous question from hnguyenx.com",
-        _captcha: "false"
-      };
-
-      fetch(ajaxUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept":       "application/json"
-        },
-        body: JSON.stringify(payload)
-      })
-        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
-        .then(function () {
-          form.reset();
-          status.className = "home-ask__status is-success";
-          status.textContent = msg(
-            "Thanks, your message landed in my inbox.",
-            "Cảm ơn, tin nhắn của bạn đã đến hộp thư của tôi."
-          );
-        })
-        .catch(function () {
-          status.className = "home-ask__status is-error";
-          status.textContent = msg(
-            "Couldn't send right now. Try again, or email me directly.",
-            "Không gửi được lúc này. Hãy thử lại, hoặc email cho tôi trực tiếp."
-          );
-        })
-        .then(function () {
-          if (button) button.disabled = false;
-        });
-    });
-  })();
 })();

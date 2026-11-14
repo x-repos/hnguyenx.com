@@ -1,7 +1,7 @@
 /* =====================================================================
    ProMachines: ONE transforming machine made of particles, for the wind
-   tunnel at the top of the Pro page. It drives, races, rolls into battle,
-   lifts off, flies and launches:
+   tunnel at the top of the Pro page. It drives, races, lifts off, flies
+   and launches:
 
      coupe -> f1 -> helicopter -> jet -> starship -> coupe
 

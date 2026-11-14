@@ -88,7 +88,7 @@
 })();
 
 /* ============================================================
-   Ben10 reveal — click the "Ben10" word in the hero, watch the
+   Ben reveal — click the "Ben" word in the hero, watch the
    Omnitrix flash, get the explanation that it's just a nickname.
    ============================================================ */
 (function () {
@@ -465,13 +465,14 @@
     overlay.innerHTML = `
       <div class="egg-card">
         <p class="egg-quote">
-          <span class="egg-quote__mark">“</span>What I cannot create,
-          I do not understand.<span class="egg-quote__mark">”</span>
+          <span class="egg-quote__mark">“</span><span lang="en">What I cannot create,
+          I do not understand.</span><span lang="vi">Điều gì tôi không thể tạo ra,
+          tôi&nbsp;không&nbsp;hiểu.</span><span class="egg-quote__mark">”</span>
         </p>
         <p class="egg-attrib">Richard Feynman</p>
-        <p class="egg-mini">π · you found it.</p>
+        <p class="egg-mini"><span lang="en">π · you found it.</span><span lang="vi">π · bạn đã tìm ra.</span></p>
       </div>
-      <p class="egg-hint">click anywhere to dismiss</p>
+      <p class="egg-hint"><span lang="en">click anywhere to dismiss</span><span lang="vi">bấm bất kỳ đâu để đóng</span></p>
     `;
     document.body.appendChild(overlay);
     // Force reflow so the transition runs
@@ -491,16 +492,20 @@
 /* =========================================================
    Top bar on phones: slide away while scrolling down, come
    back as soon as the page is scrolled up (the CSS only acts
-   on this class below 720px).
+   on this class below 720px). On the Pro page it also stays
+   on the wind tunnel and at the top of the portrait page
+   after it, where a swipe down turns back instead of
+   scrolling up.
    ========================================================= */
 (function () {
   var nav = document.querySelector("nav.home-topnav");
   if (!nav) return;
+  var intro = document.querySelector(".home-intro");
   var lastY = window.scrollY, anchor = lastY, ticking = false;
   function update() {
     ticking = false;
-    var y = window.scrollY;
-    if (nav.classList.contains("is-open") || y < 80) {
+    var y = window.scrollY, pageTop = intro ? intro.offsetHeight : 0;
+    if (nav.classList.contains("is-open") || y < pageTop + 80) {
       nav.classList.remove("is-hidden");
       anchor = y;
     } else if (y > lastY) {            // going down

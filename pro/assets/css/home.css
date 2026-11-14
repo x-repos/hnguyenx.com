@@ -120,7 +120,7 @@ html.home-immersive a { color: var(--home-accent); }
   transform: scale(1.08) rotate(-3deg);
   filter: brightness(1.2);
 }
-/* Primary inline links: Scholar, CV, Blog — pushed to the right edge */
+/* Primary inline links: Play, Blog — pushed to the right edge */
 .home-topnav__primary {
   display: flex;
   gap: 22px;
@@ -380,6 +380,10 @@ html.js #home-canvas.is-ready { opacity: 1; }
 #home-main {
   position: relative;
   z-index: 1;
+  /* The frosted backdrops behind the text reach a little past the screen's edge on tablets and
+     sideways phones. Clip that, so the page is never wider than the screen and cannot slide
+     sideways under a finger. (clip, unlike hidden, makes no scroll container.) */
+  overflow-x: clip;
 }
 
 .home-scene {
@@ -457,6 +461,10 @@ html.js #home-canvas.is-ready { opacity: 1; }
   margin: 0 0 18px;
   text-shadow: var(--home-textshadow);
 }
+/* the metre stays a lowercase m in the upper-case line */
+.home-scene__eyebrow .unit { text-transform: none; }
+/* a hyphenated word kept whole (a line may otherwise break after its hyphen) */
+.home-scene__eyebrow .nobr { white-space: nowrap; }
 
 .home-scene__title {
   font-family: var(--home-display);
@@ -468,6 +476,9 @@ html.js #home-canvas.is-ready { opacity: 1; }
   color: var(--home-fg);
   text-shadow: var(--home-textshadow);
 }
+/* a phrase kept on one line where it fits. Unlike no-break spaces it still wraps inside on the
+   narrowest screens, so a long one never runs past the column (into the scale ruler). */
+.home-scene__title .phrase { display: inline-block; }
 
 .home-scene__sub {
   font-family: var(--home-display);
@@ -576,7 +587,7 @@ html.js #home-canvas.is-ready { opacity: 1; }
 .home-figrow .home-figure { margin: 0; flex: 1 1 240px; max-width: 280px; }
 
 /* ---------- Per-scene tints (background gradients layered over canvas) ---------- */
-/* Narrative: qubits -> dft -> atoms (md) -> mantle -> planet -> outro */
+/* Narrative: qubits -> quantum -> dft -> md -> mantle -> planet -> solar -> galaxy -> outro */
 /* Pure black stage: the particle cloud carries all the colour. */
 .home-scene { background: transparent; }
 
@@ -780,6 +791,37 @@ html.is-turning, html.is-turning * { cursor: grabbing !important; -webkit-user-s
   .home-scale__label  { font-size: 13px; }
   .home-scale__caption { font-size: 9px; letter-spacing: 0.14em; }
 }
+/* A phone turned sideways (short and wide): the same compact ruler, under the top bar */
+@media (orientation: landscape) and (max-height: 500px) {
+  .home-scale {
+    right: 10px;
+    top: 76px;
+    transform: none;
+    gap: 6px;
+    font-size: 10px;
+  }
+  .home-scale__rail   { width: 2px; height: 180px; }
+  .home-scale__dot    { width: 9px;  height: 9px; right: -4px; }
+  .home-scale__label  { font-size: 13px; }
+  .home-scale__caption { font-size: 9px; letter-spacing: 0.14em; }
+  .home-scale__hit { left: -36px; right: -10px; }
+}
+/* Below the desktop layout the text keeps clear of the ruler: the research scenes leave a right margin
+   as wide as its label and caption ("THANG ĐO" and "1 qubit" are the widest), and the centred closing
+   section about as much on both sides (with its box's own padding). Tablets have the full ruler, which
+   reaches about 97px in from the edge; phones, upright or sideways, the compact one (65px), so the
+   second rule overrides the first for them. The fallback page and the page without scripts have no
+   ruler. */
+@media (max-width: 959px) {
+  html.js body:not(.home-fallback) .home-scene:not(.home-scene--hero):not(.home-scene--outro) { padding-right: 110px; }
+  html.js body:not(.home-fallback) .home-scene--outro { padding-left: 70px; padding-right: 70px; }
+}
+@media (max-width: 720px), (orientation: landscape) and (max-height: 500px) {
+  html.js body:not(.home-fallback) .home-scene:not(.home-scene--hero):not(.home-scene--outro) { padding-right: 70px; }
+  html.js body:not(.home-fallback) .home-scene--outro { padding-left: 38px; padding-right: 38px; }
+  /* the portrait page's eyebrow stays centred and wraps before the ruler */
+  html.js body:not(.home-fallback) .home-scene--hero .home-scene__eyebrow { padding-left: 66px; padding-right: 66px; }
+}
 
 /* ---------- Outro / about ---------- */
 /* The About paragraph is justified (flush on both sides, like Ctrl+J in a
@@ -836,6 +878,12 @@ html.is-turning, html.is-turning * { cursor: grabbing !important; -webkit-user-s
   color: var(--home-muted);
 }
 .home-outro__contact a { color: var(--home-fg); text-decoration: none; border-bottom: 1px solid var(--home-accent); padding-bottom: 2px; }
+/* The narrowest phones: the address, smaller, fits the column on a line of its own. It may also wrap
+   anywhere, so that it never sets the column's narrowest width and widens it towards the ruler. */
+@media (max-width: 340px) {
+  .home-outro__contact { font-size: 12px; }
+  .home-outro__contact a { overflow-wrap: anywhere; }
+}
 /* the copyright line at the very end of the page, as on the other pages */
 .home-outro__rights {
   margin: 26px 0 0;
@@ -945,8 +993,8 @@ html.js body:not(.home-fallback) .home-scene--hero:not(.is-arrived) .hero-portra
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero-portrait-flip,
-  .hero-portrait-flip__inner { animation: none; transition: none; }
+  html:not(.motion-ok) .hero-portrait-flip,
+  html:not(.motion-ok) .hero-portrait-flip__inner { animation: none; transition: none; }
 }
 
 /* ---------- "Ben" word in the hero — bright ↔ doom pulse ---------- */
@@ -988,7 +1036,7 @@ html.js body:not(.home-fallback) .home-scene--hero:not(.is-arrived) .hero-portra
   border-radius: 4px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero-ben10 { animation: none; color: #d8ffd8; }
+  html:not(.motion-ok) .hero-ben10 { animation: none; color: #d8ffd8; }
 }
 
 /* ---------- Anonymous question box ---------- */
@@ -1105,7 +1153,7 @@ html.js body:not(.home-fallback) .home-scene--hero:not(.is-arrived) .hero-portra
 .home-ask__status.is-success { color: #4dd28a; }
 .home-ask__status.is-error   { color: #ff9270; }
 
-/* ---------- Visitor stats ---------- */
+/* ---------- Visitor greeting ---------- */
 .home-visitors {
   margin-top: 24px;
   display: flex;
@@ -1144,9 +1192,9 @@ html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-stopped { overflow: hidden; }
 
 /* ---------- The first page: the wind tunnel ----------
-   A page of its own, one screen tall, on black: its canvas (intro.js) moves
-   with it, so scrolling carries the whole page away and uncovers the portrait
-   page underneath. The machine and its wake fill the upper part; the words
+   A page of its own, one screen tall, on black, with its own canvas
+   (intro.js); a scroll turns to the portrait page below in one step
+   (home.js). The machine and its wake fill the upper part; the words
    sit underneath (bottom left on a computer, across the bottom on a phone);
    a small readout names the form and what is being solved. */
 .home-intro {
@@ -1208,8 +1256,9 @@ html.lenis, html.lenis body { height: auto; }
   margin-top: 22px;
   gap: 12px;
 }
-/* the hint names the gesture of the device: click and drag, or tap */
-.flow-cta-touch { display: none; }
+/* the hint names the gesture of the device: click and drag, or tap (only scrolling on the still page below) */
+.flow-cta-touch,
+.flow-cta-plain { display: none; }
 @media (hover: none) and (pointer: coarse) {
   .flow-cta-fine { display: none; }
   .flow-cta-touch { display: inline; }
@@ -1316,20 +1365,64 @@ body.is-tunnel .home-scale,
 body.is-tunnel .home-scale__rail,
 body.is-tunnel .home-scale__hit { pointer-events: none; }
 
-/* Without the animation the wind tunnel is just its words, on a shorter page */
-.home-fallback .home-intro { height: auto; padding: 100px 32px 60px; }
+/* Without the animation (the fallback page: home.js sets .home-fallback on body) the wind tunnel is
+   just its words, on a shorter page. The hint only says to scroll, and a swipe on the words scrolls
+   the page; with WebGL off home.js still turns it like a page, so there the swipe stays its own. */
+.home-fallback .home-intro { height: auto; padding: 100px 32px 60px; cursor: auto; }
+.home-fallback:not(.home-fallback--webgl) .home-intro { touch-action: auto; }
 .home-fallback .home-intro__canvas,
-.home-fallback .flow-readout { display: none; }
-@media (prefers-reduced-motion: reduce) {
-  .home-intro { height: auto; padding: 100px 32px 60px; }
-  .home-intro__canvas, .flow-readout { display: none; }
+.home-fallback .flow-readout,
+.home-fallback .flow-cta-fine,
+.home-fallback .flow-cta-touch { display: none; }
+.home-fallback .flow-cta-plain { display: inline; }
+@media (max-width: 720px) {
+  .home-fallback .home-intro { padding-left: 22px; padding-right: 22px; }
+}
+/* the still page below it: no canvas, sections at their natural height, no scale ruler or progress
+   bar (nothing moves them), and no gestures named on the portrait page (nothing reacts there) */
+.home-fallback #home-canvas,
+.home-fallback .home-scale,
+.home-fallback .home-progress,
+.home-fallback .home-scene--hero .home-scene__cta { display: none; }
+.home-fallback .home-scene { min-height: auto; padding: 60px 32px; }
+
+/* ---------- Scripts off ----------
+   Nothing runs (the head script never swapped no-js for js), so it is the same still page, and a swipe
+   on the wind tunnel's words scrolls it. */
+html.no-js .home-intro { height: auto; padding: 100px 32px 60px; touch-action: auto; cursor: auto; }
+html.no-js .home-intro__canvas,
+html.no-js .flow-readout,
+html.no-js .flow-cta-fine,
+html.no-js .flow-cta-touch,
+html.no-js #home-canvas,
+html.no-js .home-scale,
+html.no-js .home-progress,
+html.no-js .home-scene--hero .home-scene__cta { display: none; }
+html.no-js .flow-cta-plain { display: inline; }
+html.no-js .home-scene { min-height: auto; padding: 60px 32px; }
+@media (max-width: 720px) {
+  html.no-js .home-intro { padding-left: 22px; padding-right: 22px; }
 }
 
-/* ---------- Reduced motion / fallback ---------- */
+/* ---------- Reduced motion ----------
+   The same still page from the first paint on (home.js adds .home-fallback once it runs), unless the
+   visitor asked to play it anyway: then the head script has marked <html> .motion-ok. */
 @media (prefers-reduced-motion: reduce) {
-  #home-canvas { display: none; }
-  .home-scene { min-height: auto; padding: 60px 32px; }
-  .home-scroll-cue::after { animation: none; transform: none; }
+  html:not(.motion-ok) .home-intro { height: auto; padding: 100px 32px 60px; touch-action: auto; cursor: auto; }
+  html:not(.motion-ok) .home-intro__canvas,
+  html:not(.motion-ok) .flow-readout,
+  html:not(.motion-ok) .flow-cta-fine,
+  html:not(.motion-ok) .flow-cta-touch,
+  html:not(.motion-ok) #home-canvas,
+  html:not(.motion-ok) .home-scale,
+  html:not(.motion-ok) .home-progress,
+  html:not(.motion-ok) .home-scene--hero .home-scene__cta { display: none; }
+  html:not(.motion-ok) .flow-cta-plain { display: inline; }
+  html:not(.motion-ok) .home-scene { min-height: auto; padding: 60px 32px; }
+  html:not(.motion-ok) .home-scroll-cue::after { animation: none; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) and (max-width: 720px) {
+  html:not(.motion-ok) .home-intro { padding-left: 22px; padding-right: 22px; }
 }
 
 /* Note shown when the animation cannot run, saying why */
@@ -1361,19 +1454,19 @@ body.is-tunnel .home-scale__hit { pointer-events: none; }
   font: inherit;
   cursor: pointer;
 }
-
-/* Show static images inline if WebGL isn't running (JS sets this class on body) */
-.home-fallback #home-canvas { display: none; }
-.home-fallback .home-scene { min-height: auto; padding: 60px 32px; }
-.home-fallback .home-scene--hero::before {
-  content: "";
-  display: block;
-  width: 200px; height: 200px;
-  margin: 0 auto 28px;
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at 25% 30%, #b48bff 0%, transparent 35%),
-    radial-gradient(circle at 75% 70%, #6cc7ff 0%, transparent 35%),
-    #0a0820;
-  box-shadow: 0 0 80px rgba(180,139,255,0.35);
+/* home.js puts it under the call to action on the first page, in the page's flow, so it covers nothing */
+.home-intro__words .home-fallback-note {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  transform: none;
+  z-index: auto;
+  width: auto;
+  max-width: 560px;
+  margin-top: 24px;
+  text-align: left;
 }
+/* the gap before "Play it anyway" closes the text instead of opening the button, so a button that
+   wraps to a line of its own starts flush with the text */
+.home-intro__words .home-fallback-note > span[lang] { margin-right: 8px; }
+.home-intro__words .home-fallback-note button { margin-left: 0; }

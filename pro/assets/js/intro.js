@@ -6,11 +6,11 @@
    car again (the forms and the transformations come from machines.js and
    the files after it). The air is a 2D fluid solved on the GPU around the
    machine's own silhouette (flow.js); engines and the rotor's downwash
-   blow into it. Between two machines the particles fly apart, swirl and
-   settle into the next one, as they do between the scales further down.
-   This page is separate from the rest of Pro Mode: its own canvas, which
-   moves with the page, so scrolling carries the whole page away to the
-   portrait page underneath (home.js snaps between the two).
+   blow into it. Between two machines the particles reshape from front to
+   back into the next one (no explosion).
+   This page is separate from the rest of Pro Mode: its own canvas; a
+   scroll, a key or a swipe turns to the portrait page below in one step
+   (home.js).
    ========================================================= */
 (function () {
   "use strict";
@@ -89,7 +89,10 @@
   // ====================================================
   // THE MACHINE
   // ====================================================
-  const N = isMobile ? 18000 : 64000;
+  // a touch tablet draws the machine about twice as wide as a phone does, so it gets more points (phones,
+  // sideways ones too, keep 18000)
+  const tablet = window.matchMedia("(pointer: coarse) and (hover: none)").matches && Math.min(window.innerWidth, window.innerHeight) >= 600;
+  const N = isMobile ? (tablet ? 48000 : 18000) : 64000;
   const LABEL = {
     coupe: ["Sports car", "Xe thể thao"], f1: ["F1 car", "Xe đua F1"], tank: ["Battle tank", "Xe tăng chiến đấu"],
     helicopter: ["Light helicopter", "Trực thăng hạng nhẹ"], jet: ["Stealth fighter", "Tiêm kích tàng hình"],
@@ -115,8 +118,9 @@
     const halfH = Math.tan(camera.fov * Math.PI / 360) * zBase, halfW = halfH * aspect;
     const wide = smooth(0.75, 1.35, aspect);            // 0 = a phone held upright, 1 = a computer screen
     const fw = FRAME.x1 - FRAME.x0, fh = FRAME.y1 - FRAME.y0;
-    let s = Math.min(lerp(0.98, 0.58, wide) * 2 * halfW / fw, lerp(0.5, 0.46, wide) * 2 * halfH / fh);
-    let nx = lerp(0, -0.24, wide), ny = lerp(0.36, 0.3, wide);      // the middle of the frame, in -1..1
+    // (upright screens: a margin on both sides, the machine a little left of the middle so its wake has room)
+    let s = Math.min(lerp(0.86, 0.58, wide) * 2 * halfW / fw, lerp(0.5, 0.46, wide) * 2 * halfH / fh);
+    let nx = lerp(-0.06, -0.24, wide), ny = lerp(0.36, 0.3, wide);  // the middle of the frame, in -1..1
     if (side) {                                                      // sideways phone: right of the words
       s = 0.9 * Math.min(side.fx * 2 * halfW / fw, side.fy * 2 * halfH / fh);
       nx = side.cx; ny = side.cy;
@@ -275,8 +279,8 @@
     };
     if (!M || typeof M.make !== "function") return cylinder();
     const D = M.DURATION || { dwell: 5 };
-    // the machines shown, in this order (the owner's choice: no tank and no Starship; the helicopter is
-    // a light one like the EC120 in the owner's photo); any of them that is missing is skipped
+    // the machines shown, in this order (the owner's choice: no tank; the helicopter is a light one like
+    // the EC120 in the owner's photo); any of them that is missing is skipped
     const all = (Array.isArray(M.CYCLE) && M.CYCLE.length ? M.CYCLE : (M.NAMES || []).map((name) => ({ name, dwell: D.dwell })))
       .filter((c) => c && c.name).map((c) => ({ name: c.name, dwell: +c.dwell > 0 ? +c.dwell : D.dwell || 5 }));
     // the owner's line-up: the sports coupe (a Porsche-911-like car), the F1 car, the light helicopter,
@@ -287,7 +291,7 @@
     if (!cycle.length) return cylinder();
     const names = cycle.map((c) => c.name), built = {};
     const get = (k) => built[names[k]] || (built[names[k]] = M.make(names[k], N, 11));
-    // ?machine=tank in the address starts at that machine, and &stay holds it until a click;
+    // ?machine=f1 in the address starts at that machine, and &stay holds it until a click;
     // &morph=0.4 holds the change into the next machine at that point (for looking at it closely)
     let cur = 0, stay = false, hold = -1, liftHold = -1;
     try {

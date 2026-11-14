@@ -19,13 +19,14 @@
   <meta property="og:image" content="https://hnguyenx.com/pro/images/earth-og.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="675">
-  <meta property="og:image:alt" content="Earth from space, the planetary scale of the site&apos;s scroll journey">
+  <meta property="og:image:alt" content="Earth split open to show its crust, mantle and core">
 
   <!-- Twitter / X card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Hoang Anh (Ben) Nguyen: Computational Scientist">
   <meta name="twitter:description" content="SciML · Quantum Computing · Earth &amp; Planetary Science">
   <meta name="twitter:image" content="https://hnguyenx.com/pro/images/earth-og.jpg">
+  <meta name="twitter:image:alt" content="Earth split open to show its crust, mantle and core">
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -39,12 +40,16 @@
   <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon-pro.png?v=2">
   <meta name="theme-color" content="#000000">
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-  <link rel="stylesheet" href="assets/css/home.css?v=35">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+  <link rel="stylesheet" href="assets/css/home.css?v=36">
 
   <script>
     document.documentElement.className =
       document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+    // "Play it anyway" (home.js) asked for the animation in spite of Reduce Motion
+    try { if (localStorage.getItem('pro-motion') === '1') document.documentElement.className += ' motion-ok'; } catch (e) {}
+    // the saved language before the first paint (nav.js does the rest)
+    try { const lang = localStorage.getItem('site-lang'); if (lang === 'en' || lang === 'vi') document.documentElement.setAttribute('lang', lang); } catch (e) {}
   </script>
 </head>
 
@@ -84,7 +89,7 @@
     </div>
   </nav>
 
-  <!-- Single canvas that all WebGL scenes render into -->
+  <!-- The canvas of the portrait page and the scales below it (the wind tunnel has its own, #intro-canvas) -->
   <canvas id="home-canvas" aria-hidden="true"></canvas>
 
   <!-- Scroll progress indicator -->
@@ -92,7 +97,7 @@
 
   <!-- Scale ruler -->
   <aside class="home-scale" aria-hidden="true">
-    <span class="home-scale__caption">Scale</span>
+    <span class="home-scale__caption"><span lang="en">Scale</span><span lang="vi">Thang đo</span></span>
     <span class="home-scale__label" id="home-scale-label">1 qubit</span>
     <div class="home-scale__rail"><div class="home-scale__dot" id="home-scale-dot"></div></div>
   </aside>
@@ -107,7 +112,7 @@
 <section class="home-intro" id="intro" aria-label="Wind tunnel">
   <canvas class="home-intro__canvas" id="intro-canvas" aria-hidden="true"></canvas>
   <div class="flow-readout" aria-hidden="true">
-    <span class="flow-readout__live"><span lang="en">Live wind tunnel</span><span lang="vi">Ống gió trực tiếp</span></span>
+    <span class="flow-readout__live"><span lang="en">Live wind tunnel</span><span lang="vi">Hầm gió trực tiếp</span></span>
     <span class="flow-readout__name" id="flow-name"><span lang="en">Sports car</span><span lang="vi">Xe thể thao</span></span>
     <span class="flow-readout__solver"><span lang="en">Navier–Stokes, solved on the GPU</span><span lang="vi">Navier–Stokes, giải trên GPU</span></span>
     <span class="flow-readout__eq" id="flow-eq">ρ(∂u/∂t + (u·∇)u) = −∇p + ∇·τ + f</span>
@@ -122,8 +127,8 @@
       <span lang="vi">Dạy máy móc<br>các định luật vật lý.</span>
     </p>
     <p class="home-scene__cta">
-      <span lang="en"><span class="flow-cta-fine">Scroll to meet me · click to transform · drag to turn</span><span class="flow-cta-touch">Scroll to meet me · tap to transform</span></span>
-      <span lang="vi"><span class="flow-cta-fine">Cuộn xuống để gặp tôi · nhấp để biến hình · kéo để xoay</span><span class="flow-cta-touch">Cuộn xuống để gặp tôi · chạm để biến hình</span></span>
+      <span lang="en"><span class="flow-cta-fine">Scroll to meet me · click&nbsp;to&nbsp;transform · drag&nbsp;to&nbsp;turn</span><span class="flow-cta-touch">Scroll to meet me · tap&nbsp;to&nbsp;transform</span><span class="flow-cta-plain">Scroll to meet me</span></span>
+      <span lang="vi"><span class="flow-cta-fine">Cuộn xuống để gặp tôi · nhấp&nbsp;để&nbsp;biến&nbsp;hình · kéo&nbsp;để&nbsp;xoay</span><span class="flow-cta-touch">Cuộn xuống để gặp tôi · chạm&nbsp;để&nbsp;biến&nbsp;hình</span><span class="flow-cta-plain">Cuộn xuống để gặp tôi</span></span>
       <span class="home-scroll-cue" aria-hidden="true"></span>
     </p>
   </div>
@@ -163,25 +168,25 @@
       <span lang="vi">Từ một qubit đến cả một hành tinh.<br>Hành trình qua các thang đo tôi nghiên cứu.</span>
     </p>
     <p class="home-scene__cta">
-      <span lang="en">Scroll to zoom out · move, click and drag, everything reacts</span>
-      <span lang="vi">Cuộn xuống để lùi ra xa · di chuột, nhấp và kéo, mọi thứ đều phản ứng</span>
+      <span lang="en"><span class="flow-cta-fine">Scroll to zoom out · move, click and drag, everything reacts</span><span class="flow-cta-touch">Scroll to zoom out · tap&nbsp;and&nbsp;everything&nbsp;reacts</span></span>
+      <span lang="vi"><span class="flow-cta-fine">Cuộn xuống để lùi ra xa · di chuột, nhấp và kéo, mọi thứ đều phản ứng</span><span class="flow-cta-touch">Cuộn xuống để lùi ra xa · chạm&nbsp;vào, mọi&nbsp;thứ đều&nbsp;phản&nbsp;ứng</span></span>
       <span class="home-scroll-cue" aria-hidden="true"></span>
     </p>
   </div>
 </section>
 
 <!-- =====================================================
-     Scene 2 — Quantum computing (same qubit visual as hero)
+     Scene 2 — Quantum computing (a Bloch sphere)
      ===================================================== -->
 <section class="home-scene home-scene--quantum" id="scene-quantum" data-scene="quantum">
   <div class="home-scene__inner">
     <p class="home-scene__eyebrow">
-      <span lang="en">Quantum computing · annealing · gate-based · hybrid</span>
-      <span lang="vi">Tính toán lượng tử · ủ lượng tử · dựa trên cổng · lai</span>
+      <span lang="en">Quantum computing&nbsp;· annealing&nbsp;· <span class="nobr">gate-based</span>&nbsp;·&nbsp;hybrid</span>
+      <span lang="vi">Tính toán lượng&nbsp;tử&nbsp;· ủ&nbsp;lượng&nbsp;tử&nbsp;· dựa&nbsp;trên&nbsp;cổng&nbsp;·&nbsp;lai</span>
     </p>
     <h2 class="home-scene__title">
-      <span lang="en">Inverting seismic waves with qubits.</span>
-      <span lang="vi">Nghịch đảo sóng địa chấn bằng qubit.</span>
+      <span lang="en">Inverting <span class="phrase">seismic waves</span> with&nbsp;qubits.</span>
+      <span lang="vi">Nghịch đảo <span class="phrase">sóng địa&nbsp;chấn</span> bằng&nbsp;qubit.</span>
     </h2>
     <p class="home-scene__body">
       <span lang="en">
@@ -212,12 +217,12 @@
 <section class="home-scene home-scene--dft" id="scene-dft" data-scene="dft">
   <div class="home-scene__inner">
     <p class="home-scene__eyebrow">
-      <span lang="en">~10<sup>−10</sup> m · Density functional theory</span>
-      <span lang="vi">~10<sup>−10</sup> m · Lý thuyết phiếm hàm mật độ</span>
+      <span lang="en">~10<sup>−10</sup> <span class="unit">m</span> · Density functional&nbsp;theory</span>
+      <span lang="vi">~10<sup>−10</sup> <span class="unit">m</span> · Lý thuyết phiếm&nbsp;hàm mật&nbsp;độ</span>
     </p>
     <h2 class="home-scene__title">
       <span lang="en">Electron clouds.</span>
-      <span lang="vi">Đám mây điện tử.</span>
+      <span lang="vi">Đám mây điện&nbsp;tử.</span>
     </h2>
     <p class="home-scene__body">
       <span lang="en">
@@ -244,12 +249,12 @@
 <section class="home-scene home-scene--atoms" id="scene-md" data-scene="md">
   <div class="home-scene__inner">
     <p class="home-scene__eyebrow">
-      <span lang="en">~10<sup>−9</sup> m · Molecular dynamics</span>
-      <span lang="vi">~10<sup>−9</sup> m · Động lực học phân tử</span>
+      <span lang="en">~10<sup>−9</sup> <span class="unit">m</span> · Molecular dynamics</span>
+      <span lang="vi">~10<sup>−9</sup> <span class="unit">m</span> · Động lực học phân&nbsp;tử</span>
     </p>
     <h2 class="home-scene__title">
       <span lang="en">Atoms find their neighbours.</span>
-      <span lang="vi">Các nguyên tử tìm thấy nhau.</span>
+      <span lang="vi">Các nguyên tử <span class="phrase">tìm&nbsp;thấy nhau.</span></span>
     </h2>
     <p class="home-scene__body">
       <span lang="en">
@@ -276,12 +281,12 @@
 <section class="home-scene home-scene--mantle" id="scene-mantle" data-scene="mantle">
   <div class="home-scene__inner">
     <p class="home-scene__eyebrow">
-      <span lang="en">~10<sup>6</sup> m · Inside a rocky planet</span>
-      <span lang="vi">~10<sup>6</sup> m · Bên trong một hành tinh đá</span>
+      <span lang="en">~10<sup>6</sup> <span class="unit">m</span> · Inside a rocky&nbsp;planet</span>
+      <span lang="vi">~10<sup>6</sup> <span class="unit">m</span> · Bên trong một hành&nbsp;tinh&nbsp;đá</span>
     </p>
     <h2 class="home-scene__title">
-      <span lang="en">Over a hundred gigapascals. Thousands of kelvin.</span>
-      <span lang="vi">Hơn một trăm gigapascal. Hàng nghìn kelvin.</span>
+      <span lang="en">Over a hundred gigapascals. Thousands of&nbsp;kelvin.</span>
+      <span lang="vi">Hơn một trăm gigapascal. <span class="phrase">Hàng&nbsp;nghìn kelvin.</span></span>
     </h2>
     <p class="home-scene__body">
       <span lang="en">
@@ -305,12 +310,12 @@
 <section class="home-scene home-scene--planet" id="scene-planet" data-scene="planet">
   <div class="home-scene__inner">
     <p class="home-scene__eyebrow">
-      <span lang="en">~10<sup>7</sup> m · Earth & planetary science</span>
-      <span lang="vi">~10<sup>7</sup> m · Khoa học Trái Đất & Hành tinh</span>
+      <span lang="en">~10<sup>7</sup> <span class="unit">m</span> · Earth & planetary&nbsp;science</span>
+      <span lang="vi">~10<sup>7</sup> <span class="unit">m</span> · Khoa học Trái&nbsp;Đất &amp;&nbsp;Hành&nbsp;tinh</span>
     </p>
     <h2 class="home-scene__title">
-      <span lang="en">And out comes the planet.</span>
-      <span lang="vi">Và hành tinh hiện ra.</span>
+      <span lang="en">And out comes the&nbsp;planet.</span>
+      <span lang="vi">Và hành tinh hiện&nbsp;ra.</span>
     </h2>
     <p class="home-scene__body">
       <span lang="en">
@@ -335,12 +340,12 @@
 <section class="home-scene home-scene--solar" id="scene-solar" data-scene="solar">
   <div class="home-scene__inner">
     <p class="home-scene__eyebrow">
-      <span lang="en">~10<sup>11</sup> m · One star, a few rocky worlds</span>
-      <span lang="vi">~10<sup>11</sup> m · Một ngôi sao, vài thế giới đá</span>
+      <span lang="en">~10<sup>11</sup> <span class="unit">m</span> · One star, a few rocky&nbsp;worlds</span>
+      <span lang="vi">~10<sup>11</sup> <span class="unit">m</span> · Một ngôi sao, vài thế&nbsp;giới&nbsp;đá</span>
     </p>
     <h2 class="home-scene__title">
-      <span lang="en">A pale blue dot, in context.</span>
-      <span lang="vi">Một chấm xanh nhạt, nhìn trong toàn cảnh.</span>
+      <span lang="en">A pale blue dot, in&nbsp;context.</span>
+      <span lang="vi">Một chấm xanh&nbsp;nhạt, nhìn trong toàn&nbsp;cảnh.</span>
     </h2>
     <p class="home-scene__body">
       <span lang="en">
@@ -365,12 +370,12 @@
 <section class="home-scene home-scene--galaxy" id="scene-galaxy" data-scene="galaxy">
   <div class="home-scene__inner">
     <p class="home-scene__eyebrow">
-      <span lang="en">~10<sup>21</sup> m · One galaxy, ~10<sup>11</sup> stars</span>
-      <span lang="vi">~10<sup>21</sup> m · Một thiên hà, ~10<sup>11</sup> ngôi sao</span>
+      <span lang="en">~10<sup>21</sup> <span class="unit">m</span> · One galaxy, ~10<sup>11</sup>&nbsp;stars</span>
+      <span lang="vi">~10<sup>21</sup> <span class="unit">m</span> · Một thiên hà, ~10<sup>11</sup>&nbsp;ngôi&nbsp;sao</span>
     </p>
     <h2 class="home-scene__title">
-      <span lang="en">Zoom out a bit more.</span>
-      <span lang="vi">Lùi ra thêm một chút.</span>
+      <span lang="en">Zoom out a&nbsp;bit&nbsp;more.</span>
+      <span lang="vi">Lùi ra thêm một&nbsp;chút.</span>
     </h2>
     <p class="home-scene__body">
       <span lang="en">
@@ -398,7 +403,7 @@
     </p>
     <h2 class="home-scene__title">
       <span lang="en">Many scales.</span>
-      <span lang="vi">Nhiều thang đo.</span>
+      <span lang="vi">Nhiều thang&nbsp;đo.</span>
     </h2>
     <p class="home-scene__body">
       <span lang="en">
@@ -461,22 +466,26 @@
       </p>
       <form id="home-ask-form" class="home-ask__form" method="POST"
             action="https://formsubmit.co/hoanganh_nguyen@mines.edu">
-        <!-- FormSubmit config: subject, no captcha, table-style email -->
+        <!-- FormSubmit config: subject, no captcha, box-style email -->
         <input type="hidden" name="_subject" value="Anonymous question from hnguyenx.com">
         <input type="hidden" name="_captcha" value="false">
         <input type="hidden" name="_template" value="box">
         <!-- honeypot for bots -->
         <input type="text" name="_honey" class="home-ask__honey" tabindex="-1" autocomplete="off">
 
+        <!-- the placeholders are English for a page without scripts; home.js puts in the page's language -->
         <textarea name="message" rows="4" required
+          placeholder="Type your question or thought…"
           data-ph-en="Type your question or thought…"
           data-ph-vi="Nhập câu hỏi hoặc suy nghĩ của bạn…"></textarea>
 
         <div class="home-ask__row">
           <input type="text" name="name"
+            placeholder="Name (optional)"
             data-ph-en="Name (optional)"
             data-ph-vi="Tên (tùy chọn)">
           <input type="email" name="email"
+            placeholder="Email (optional)"
             data-ph-en="Email (optional)"
             data-ph-vi="Email (tùy chọn)">
         </div>
@@ -487,10 +496,11 @@
         </button>
         <p class="home-ask__status" id="home-ask-status" role="status" hidden></p>
       </form>
+      <script>try{if(document.documentElement.lang==="vi")document.querySelectorAll("#home-ask-form [data-ph-vi]").forEach(function(e){e.placeholder=e.getAttribute("data-ph-vi")})}catch(e){}</script>
     </section>
 
-    <!-- Visitor stats -->
-    <div class="home-visitors" aria-label="Visitor stats">
+    <!-- Visitor greeting -->
+    <div class="home-visitors">
       <p class="home-visitors__hello-line" id="home-visitor-country">
         <span class="home-visitors__flag" aria-hidden="true">🌍</span>
         <span class="home-visitors__hello">
@@ -500,27 +510,27 @@
       </p>
     </div>
 
-    <p class="home-outro__rights">© 2026 Hoang Anh (Ben) Nguyen · All rights reserved · hnguyenx.com</p>
+    <p class="home-outro__rights">© 2026 Hoang Anh (Ben) Nguyen · <span lang="en">All&nbsp;rights&nbsp;reserved</span><span lang="vi">Bảo&nbsp;lưu&nbsp;mọi&nbsp;quyền</span> · hnguyenx.com</p>
   </div>
 </section>
 
   </main>
 
-  <!-- Three.js + GSAP -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-  <script src="assets/js/machines.js?v=12" defer></script>
+  <!-- Libraries (three.js, GSAP, Lenis, KaTeX), then the page's own scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js" integrity="sha384-qOkzR5Ke/XkQxuGVJ9hpFEpDlcoLtWwVYhnJf06cLIZa2vaIptSqaubivErzmD5O" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" integrity="sha384-Z3REaz79l2IaAZqJsSABtTbhjgOUYyV3p90XNnAPCSHg3EMTz1fouunq9WZRtj3d" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js" integrity="sha384-B2WBjDzEjJpYvhmi2UyEn7rektqkf5suS6sNoyyrf0EBAwBHdkiXxIlU0V5Ru2ed" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+  <script src="assets/js/machines.js?v=13" defer></script>
   <script src="assets/js/machines-f1.js?v=5" defer></script>
-  <script src="assets/js/machines-ground.js?v=12" defer></script>
+  <script src="assets/js/machines-ground.js?v=13" defer></script>
   <script src="assets/js/machines-sky.js?v=7" defer></script>
   <script src="assets/js/machines-space.js?v=4" defer></script>
   <script src="assets/js/machines-coupe.js?v=3" defer></script>
   <script src="assets/js/flow.js?v=10" defer></script>
-  <script src="assets/js/intro.js?v=35" defer></script>
-  <script src="assets/js/home.js?v=44" defer></script>
-  <script src="assets/js/nav.js?v=6" defer></script>
+  <script src="assets/js/intro.js?v=36" defer></script>
+  <script src="assets/js/home.js?v=45" defer></script>
+  <script src="assets/js/nav.js?v=8" defer></script>
 </body>
 </html>

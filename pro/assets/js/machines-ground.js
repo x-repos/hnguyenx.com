@@ -740,7 +740,7 @@
   // DB for tail2 and, before PH0, DA for tail1), the shroud ring round the duct (radius), and the weights
   // of the duct's wall, its lips, the stabiliser, the step bar and the front cross tube.
   const K = { C1: 0.969, C2: 2.427, C3: 3.991, CB: 5.538, C4: 8.0, AT: 0.695, AB: 1.665, AL: 2.101, RB: 1.641, BT1: 0.685, BT: 1.1, BB: 1.934, BB1: 2.041,
-    AF: 0.942, RM: 2.694, PH0: 4.322, PH1: 5.164, AN: 0.442, DW: 0.1, LW: 3.5, SW: 0.3, DA: 0.673, DB: 1.251, XJ: 4.589, XT1: 6.926, XT2: 7.124,
+    AF: 0.942, RM: 2.694, PH0: 4.322, PH1: 5.164, AN: 0.442, DW: 0.1, LW: 8, SW: 0.3, DA: 0.673, DB: 1.251, XJ: 4.589, XT1: 6.926, XT2: 7.124,
     GS: 0.68, GC: 0.962 };
   const { C1, C2, C3, CB, C4, AT, AB, AL, RB, BT1, BT, BB, BB1, AF } = K;
   function heliParts(S, H) {
