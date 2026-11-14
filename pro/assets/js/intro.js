@@ -672,10 +672,25 @@
   // ENGINES — jets of air behind engines and under a rotor
   // ====================================================
   const fa = new THREE.Vector3(), fb = new THREE.Vector3();
+  // The turn the visitor gives the machine by dragging, as placed() gives it to the particles (about
+  // the pivot: yaw, then pitch), so the engines, rotors and fans blow from where they are on screen
+  // (the owner saw the jet's exhaust stay put while the jet turned)
+  function dragTurn(o) {
+    const yw = U.uYaw.value, pt = U.uPitch.value;
+    if (Math.abs(yw) < 1e-5 && Math.abs(pt) < 1e-5) return;
+    const P = U.uPivot.value, cy = Math.cos(yw), sy = Math.sin(yw), cp = Math.cos(pt), sp = Math.sin(pt);
+    let x = o.x - P.x, y = o.y - P.y, z = o.z - P.z;
+    let x1 = cy * x + sy * z, z1 = -sy * x + cy * z;
+    o.x = x1 + P.x; o.y = cp * y - sp * z1 + P.y; o.z = sp * y + cp * z1 + P.z;
+    x = o.dx; y = o.dy; z = o.dz;
+    x1 = cy * x + sy * z; z1 = -sy * x + cy * z;
+    o.dx = x1; o.dy = cp * y - sp * z1; o.dz = sp * y + cp * z1;
+  }
   function effects() {
     if (air) {
       for (let i = 0; i < nJets; i++) {
         const e = jets[i];
+        dragTurn(e);
         if (e.r > 0 && e.swirl && typeof air.jet === "function") {
           // a ducted fan seen face-on: its air comes out sideways and the wind sweeps it straight back,
           // so from the side it streams off the fin behind the fan, weaving with the fan's swirl, with a
@@ -706,24 +721,31 @@
           fb.set(e.x + e.dx * 0.3, e.y + e.dy * 0.3, e.z + e.dz * 0.3).project(camera);
           const ddx = fb.x - cx0, ddy = fb.y - cy0;
           const hj = e.heat < 0 ? e.power : e.heat * e.power;
-          air.jet(cx0, cy0, ddx, ddy, e.speed * e.power, rN * 1.2, hj);
+          // only the part of the jet that lies in the screen's plane pushes the 2D air: turned toward or
+          // away from the viewer, an engine blows mostly out of the picture
+          const inPlane = Math.min(1, Math.hypot(e.dx, e.dy) / Math.max(1e-6, Math.hypot(e.dx, e.dy, e.dz)));
+          const sp = e.speed * e.power * inPlane;
+          air.jet(cx0, cy0, ddx, ddy, sp, rN * 1.2, hj);
           fb.set(e.x + e.dx * nz * 2.6, e.y + e.dy * nz * 2.6, e.z + e.dz * nz * 2.6).project(camera);
-          air.jet(fb.x, fb.y, ddx, ddy, e.speed * e.power, rN * 1.35, hj * 0.7);
+          air.jet(fb.x, fb.y, ddx, ddy, sp, rN * 1.35, hj * 0.7);
           fb.set(e.x + e.dx * nz * 5.5, e.y + e.dy * nz * 5.5, e.z + e.dz * nz * 5.5).project(camera);
-          air.jet(fb.x, fb.y, ddx, ddy, e.speed * e.power * 0.9, rN * 1.5, hj * 0.4);
+          air.jet(fb.x, fb.y, ddx, ddy, sp * 0.9, rN * 1.5, hj * 0.4);
           continue;
         }
         if (e.r > 0) {
           // a rotor: its disc seen edge-on, from tip to tip across the shaft; the air is driven
           // down along the shaft across the whole disc and the wind sweeps the wash back
           if (typeof air.rotor !== "function") continue;
+          // only the part of the shaft's push that lies in the screen's plane drives the 2D air (a rotor
+          // turned toward the viewer blows mostly out of the picture)
           const dl = Math.hypot(e.dx, e.dy) || 1, tx = -e.dy / dl * e.r, ty = e.dx / dl * e.r;
+          const inPlane = Math.min(1, dl / Math.max(1e-6, Math.hypot(e.dx, e.dy, e.dz)));
           fa.set(e.x - tx, e.y - ty, e.z).project(camera);
           fb.set(e.x + tx, e.y + ty, e.z).project(camera);
           const ax = fa.x, ay = fa.y, bx = fb.x, by = fb.y;
           fa.set(e.x, e.y, e.z).project(camera);
           fb.set(e.x + e.dx * 0.3, e.y + e.dy * 0.3, e.z + e.dz * 0.3).project(camera);
-          air.rotor(ax, ay, bx, by, fb.x - fa.x, fb.y - fa.y, e.power);
+          air.rotor(ax, ay, bx, by, fb.x - fa.x, fb.y - fa.y, e.power * inPlane);
           continue;
         }
         fa.set(e.x, e.y, e.z).project(camera);
