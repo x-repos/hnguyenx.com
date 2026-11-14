@@ -1227,41 +1227,29 @@ html.lenis, html.lenis body { height: auto; }
 }
 .home-intro__canvas.is-ready { opacity: 1; }
 
-/* While the page loads, a soft picture of the tunnel stands in for it, so the first screen is never
-   blank: inlined here, it shows with the first paint; it sits under the canvas and goes once the live
-   tunnel has faded in over it (intro.js marks the section .is-live). One picture per layout of
-   intro.js, each taken at the far end of that layout's shapes (the narrowest upright screen, the
-   widest computer screen, the shortest phone held sideways), so that "cover" scales it the way
-   intro.js scales the machine (by the width, the height and the width), and placed where that layout
-   puts the machine. They are small and blurred already: little to load, nothing to draw. (Made from
-   the live page at 360x840, 2400x1000 and 667x375, text hidden, 1.5 s after the first frame; scaled
-   to a quarter, an eighth and a quarter, blurred 1.4 px, WebP. Re-make them if the first machine or
-   intro.js's layout changes.) */
+/* While the page loads, the π mark sits in the middle of the black screen, breathing softly, so
+   the first screen is never blank. It shows with the first paint (inlined here) and fades once the
+   live tunnel is up (intro.js marks the section .is-live). */
 .home-intro::before {
   content: "";
   position: absolute;
-  inset: 0;
+  left: 50%;
+  top: 50%;
+  width: 96px;
+  height: 96px;
+  margin: -48px 0 0 -48px;
   z-index: -1;
   pointer-events: none;
-  background: url("data:image/webp;base64,UklGRtICAABXRUJQVlA4IMYCAABQFgCdASpaANIAPqlSok2mJKMiJvDouMAVCWNu3V7SlYiJpT+X4lAsVhL1Ofjz0MNxB+z/67e+T54t9JeTspPhnZlHbHAImhQdgY26D90Hb8DtSicsrqIeMOvfbujH/ke9fNJOR9n13mjPCig0C0BbFK1IA3DJW72CNNkxpM5ERTg2Ikox0x2DxRrLorpl5nWN7immBnomLWzAeXAYZ0aNSyjzn3WQhsTHBxph6YmODjTD0xMcHGmHpiGAAP75UwCW2cMtcTIV7SxBA+KdktS+lhkgAjA+wfQX2+l0LOhzq0zfJGNUcxHN8fk6F7eGLWIzvxxvBdRoDdcF7V3fB1kKD3z7+3DYYNhc89z8iMaLADfb+h7eiTUFmGVtU2QXT7ULjSwQlY9+W3Tc4gPoA+EeB3a8TjYdgvlx9n4BmJPBA77sFdrzVIHXtILMVWm26Uj2aPA3Nk1eeJIVQ08xJj2qXzT/jo6ymzBALUraUFiUjsnZKHtoETDN4eRrkLXl8/LmHg28f3GA9FOX/JKJhxxp9Zu7p44vrAed+OuY6amqPnXUtPeZ618Vj9Yrn8GNuSKaKE4TCyxucLsaRsovv5A+rmM7v9RNAbnTr4Iu+BwQi8oFuvl6S7uW+CKuDboKBMFQo/9MGGtNAAzSusy1IQlSl9P5f3/z6mdMNqk/9d1fKyCpuThcg4FVWN8HsYYFKTrf+ZRwSE+hq4XxQ2U19psaDa+DTSeekBiOWkTckHIwP+GQ8A8LgPC/8npokUTkXzm64St6dqc0mkgI0oMi2NWnnFPjh7cYD8llCSRYwlRhricQhWzGbsJOEHf3m0PLV+YtgFdxZwDxovHdztveKxGQqFGMO0jQekgqZ6KIX6cFbSxSpOlznVbSROg8hxHRBPg/Ls9kfCTRi4QkjG618d47p+hHrnzdYdMw4AQogAAAAAAAAAAAAA==") 50% 32% / cover no-repeat;
-  transition: opacity 1.1s ease-in 0.15s, visibility 0s linear 1.25s;
+  background: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9Ii0xNDEuOSAtMTY1LjEgMTE1MCAxMTUwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMCIgeTE9IjAiIHgyPSI5MzMiIHkyPSI4ODciPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzhmZDZmZiIvPjxzdG9wIG9mZnNldD0iLjYiIHN0b3AtY29sb3I9IiNjOWE4ZmYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNmZmMyOGEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cGF0aCBmaWxsPSJ1cmwoI2cpIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0gMCA3OSBMIDAgMTU4IDkwLjU4NSAxNTggTCAxODEuMTcxIDE1OCAxODAuNzAyIDMyMy43NTAgQyAxODAuMTg5IDUwNS41ODUsIDE3OS44OTMgNTE1LjQzOSwgMTczLjkyMSA1NTAgQyAxNjcuMDk5IDU4OS40NzMsIDE0OC4yMzQgNjM5LjA5MiwgMTI1LjcwNSA2NzYuODE5IEMgMTE5LjAyNiA2ODguMDAzLCAxMDMuNjQ1IDcwOC44NDksIDg1LjA4NSA3MzEuODcxIEMgNzguNzEzIDczOS43NzUsIDY3LjEwMyA3NTQuMTc1LCA1OS4yODQgNzYzLjg3MSBDIDUxLjQ2NSA3NzMuNTY3LCA0NC4yNjUgNzgzLjAwNiwgNDMuMjg0IDc4NC44NDYgTCA0MS41MDAgNzg4LjE5MiA0NiA3OTIuMTYyIEMgNjcuNzc5IDgxMS4zNzUsIDE2MC4yMTkgODg3LCAxNjEuOTI2IDg4NyBDIDE2NC40MDYgODg3LCAyMDMuNDIyIDgzOS41NzAsIDIzNS4xMzYgNzk4IEMgMjgwLjIzMCA3MzguODkzLCAzMTMuMzE0IDY2My40NzcsIDMyOS40NTQgNTgzIEMgMzM3LjM5MiA1NDMuNDIyLCAzMzcuODIxIDUzMS44OTcsIDMzOC45OTEgMzI3IEMgMzM5LjUxMyAyMzUuNDI1LCAzMzkuOTU0IDE2MC4xNjAsIDMzOS45NzEgMTU5Ljc0NCBDIDMzOS45ODcgMTU5LjMyOSwgMzc4LjM2MiAxNTkuMTA0LCA0MjUuMjUwIDE1OS4yNDQgTCA1MTAuNTAwIDE1OS41MDAgNTEwLjU4NyAzOTAuNTAwIEMgNTEwLjY3MyA2MTguODM3LCA1MTEuMTk4IDY4My40NDAsIDUxMy4xMDMgNzAwIEMgNTIzLjIwNyA3ODcuODYxLCA1ODIuOTU1IDg1Ni41OTMsIDY2OC4yMjUgODc4LjQ0NyBDIDY5Ni41NDUgODg1LjcwNiwgNzMzLjU4MiA4ODUuNzE0LCA3NjYuNTAwIDg3OC40NjkgQyA4MjAuOTY5IDg2Ni40ODEsIDg3NC4zOTkgODIzLjkwNiwgOTAwLjc0MCA3NzEuNTAwIEMgOTE0Ljk5NCA3NDMuMTQzLCA5MTguNDU4IDcyOC42MDAsIDkyOC4wMDMgNjU3LjA0NiBDIDkzMy44MjAgNjEzLjQ0MywgOTMzLjY5NCA2MTUuMzg4LCA5MzAuNzUwIDYxNC42NjMgQyA5MjIuMzExIDYxMi41ODMsIDc4OS42MDMgNTk1LCA3ODIuMzUxIDU5NSBMIDc3Ny4xNDIgNTk1IDc3Ni4wNzQgNjAwLjI1MCBDIDc3NS40ODYgNjAzLjEzOCwgNzcyLjU0NyA2MjIuODI1LCA3NjkuNTQzIDY0NCBDIDc2Mi4zMzIgNjk0LjgzMCwgNzU5LjcyMCA3MDMuNzk1LCA3NDkuNTAzIDcxMi43ODggQyA3NDMuNDAxIDcxOC4xNjAsIDczMS40MDEgNzIzLjkzOSwgNzIzLjU2NSA3MjUuMjgyIEMgNzA1LjA0NCA3MjguNDU0LCA2ODQuNTEzIDcxNi45MjEsIDY3NSA2OTguMDAxIEwgNjcxIDY5MC4wNDQgNjcxIDQyNC41MjIgTCA2NzEgMTU5IDcwOC44MzUgMTU5IEMgNzI5LjY0NSAxNTksIDc3MC4zNzAgMTU4LjcwMSwgNzk5LjMzNSAxNTguMzM2IEwgODUyIDE1Ny42NzMgODUyIDc4LjgzNiBMIDg1MiAwIDQyNiAwIEwgMCAwIDAgNzkiLz48L3N2Zz4=") center / contain no-repeat;
+  animation: pro-pi-breathe 1.8s ease-in-out infinite alternate;
+  transition: opacity 0.6s ease, visibility 0s linear 0.6s;
 }
-@media (orientation: landscape) {
-  .home-intro::before {
-    background-image: url("data:image/webp;base64,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");
-    background-position: 38% 35%;
-  }
-}
-@media (orientation: landscape) and (max-height: 500px) {
-  .home-intro::before {
-    background-image: url("data:image/webp;base64,UklGRswDAABXRUJQVlA4IMADAAAQGwCdASqnAF4APqlMoEqmOCMhrRXpowAVCWIA0BCdUeF/ul5QDvRy/1b/oDe2+a37bveN85e+mnHeqhnBAFqEaGAT3UB1bjhom7iS40Z0s6OeGRtWLoj2DUF1e9E27Lgslc64BlZdBTQ7jhrZf6s/p7Jf6VxUQnWlznWjUH6B+5YaijQQuv7DO+fUf66Uw76Mb2KORiAGlQnIXFzYhbmk7qZZvvw+izZzcwleksemMJPzCR/CjT3e5Dz+UMTIbUPvEip+VFHwSETftgW/0Yi2PdLBbvLCPnv+j6V2Re1bVcAA/vn7A2q8qOEDxdqOBU0fSMeS10H839sq9fgXszJ1uNuzRtC35H65T5D8wL+09xdZHf7m5yraBerSrp7zXMxHiwPvsgAFeEVVNM/zB/VgrmwVLhPc6m5FN3vBq8ITvXDhzBwEyb0I5uo/HnkPREfECkoGpr0Cwy5LgK5pLpCd9tEBxhV1FwNU4b1Nut4TNxyeerAJd12vHbHsBg+F4bhE8iQ5qDNnmpMwOQ9xq5I57N2hkjYWYntTjIuEmFUUtLwMtXw4tLMRAPmzwtrWscamT7byhPRpHsE7mF+OLXOTgAyvR4lORem8VwzZMlCfYeI7FrUlnV80qNIYimxmeJKXD1LF9F7o0cUU9oMD0459LzEJ69BVme0/N+dKFfHCFhVxFtjmTlil9+x74dU590tEtxNdp/dev76dyE2SQDYAl+gIpLLBGF4uIHFxp3wdc3X6kDdBzErw6YH/3DbWNBqhX8TUAWRBtZuB68BJZDFLKTV/skehgNuEKBaloOS3gTxQlKDskwtBUXTSds/zXiYdxXeMeRNxoLwKSdzxKwn17ClNeBTiFx57fW6pmqIuQ+UaO+H7KHKsqxHsbkAW6tReEVAa49Id9RlH6yzQDJXpIAZlfdS0GJ7vSn8uPohwVb7jEt0gIlGsqDNUodWdLNmurshP3N0o9nSu9QiMC4czOzYbMG5siHE4zy5cas33XCqwQMZdEs30LX/P74p0p+fPN1CRrOX3+OgrAdJPXDJt5/fCvbfbsC2/+ZIKp7nwbLe3L6V+pRLz+MeIhf/mffLa4/vulRdYTaSg3/+O7vCiSYLQc/YprK53V5whnssKgKW8j1xNIV4i2a4JJddFKvCzqQzWelOco/aVHyIxRH7XlVXUa3QHKI8DEFWZrlXpcj9nMficnCJlc/2avKl0BYHpYu3YvafTnD47J7xzIqmuvrTSc/U+e3Jal/lyGRnJ2Xhejq0+hOtnz1ohlrsAAAA=");
-    background-position: 70% 53%;
-  }
-}
-.home-intro.is-live::before { opacity: 0; visibility: hidden; }
+@keyframes pro-pi-breathe { from { opacity: 0.35; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
+.home-intro.is-live::before { animation: none; opacity: 0; visibility: hidden; }
 /* no tunnel after all (no WebGL, no three.js): home.js's still page replaces the picture (.home-fallback
    below); this fade only clears it if home.js never comes */
 .home-intro.is-off::before {
+  animation: none;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.8s ease 4s, visibility 0s linear 4.8s;
