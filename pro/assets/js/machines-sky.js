@@ -271,10 +271,13 @@
     name: "jet", kind: "vehicle", yaw: 0.4, dwell: J_DWELL,
     parts: function () { return jetParts(); },
     animate: function (A, t, age, aim, H_) {
-      const g = 0.55 + 0.08 * Math.sin(t * 9.1) * Math.sin(t * 5.3);
+      // the afterburner: the nozzle burns hot and flickers
+      const g = 0.8 + 0.12 * Math.sin(t * 9.1) * Math.sin(t * 5.3);
       A.glow("tail3", g).glow("tail4", g);
     },
-    exhaust: [{ part: "tail4", at: [0.25, 0, 0], dir: [1, 0, 0], power: 0.6 }],
+    // the engine's jet: a fast, hot stream from the nozzle (afterburner), flickering a little
+    exhaust: [{ part: "tail4", at: [0.25, 0, 0], dir: [1, 0, 0], speed: 3.6, nozzle: 0.14, heat: 1,
+      power: (age, t) => 0.92 + 0.08 * Math.sin(t * 23.0) * Math.sin(t * 7.0) }],
   });
 
   /* ==================================================================

@@ -72,7 +72,7 @@
   // ====================================================
   const N = isMobile ? 18000 : 64000;
   const LABEL = {
-    hypercar: ["Hypercar", "Siêu xe"], f1: ["F1 car", "Xe đua F1"], tank: ["Battle tank", "Xe tăng chiến đấu"],
+    suv: ["Hybrid SUV", "SUV hybrid"], hypercar: ["Hypercar", "Siêu xe"], f1: ["F1 car", "Xe đua F1"], tank: ["Battle tank", "Xe tăng chiến đấu"],
     helicopter: ["Light helicopter", "Trực thăng hạng nhẹ"], jet: ["Stealth fighter", "Tiêm kích tàng hình"],
     bomber: ["Stealth bomber", "Máy bay ném bom tàng hình"],
     starship: ["Starship", "Tàu vũ trụ Starship"], cylinder: ["Cylinder", "Hình trụ"],
@@ -111,16 +111,20 @@
 
   // Engine jets and rotor downwash of this frame, in world coordinates, for the air.
   const FX_MAX = 8;
-  const jets = Array.from({ length: FX_MAX }, () => ({ x: 0, y: 0, z: 0, dx: 0, dy: 0, dz: 0, power: 0, r: 0 }));
+  const jets = Array.from({ length: FX_MAX }, () => ({ x: 0, y: 0, z: 0, dx: 0, dy: 0, dz: 0, power: 0, r: 0, swirl: 0, speed: 0, heat: -1, noz: 0 }));
   let nJets = 0;
-  function pushJet(e) {
+  function pushJet(e, yOff) {
     if (nJets >= FX_MAX || !e || !e.pos || !e.dir) return;
     const o = jets[nJets++], p = e.pos, d = e.dir, s = place.s;
     const cy = Math.cos(place.yaw), sy = Math.sin(place.yaw);
-    o.x = (cy * p[0] + sy * p[2]) * s + place.ox; o.y = p[1] * s + place.oy; o.z = (-sy * p[0] + cy * p[2]) * s;
+    o.x = (cy * p[0] + sy * p[2]) * s + place.ox; o.y = (p[1] + (yOff || 0)) * s + place.oy; o.z = (-sy * p[0] + cy * p[2]) * s;
     o.dx = cy * d[0] + sy * d[2]; o.dy = d[1]; o.dz = -sy * d[0] + cy * d[2];
     o.power = clamp01(+e.power || 0);
-    o.r = Math.max(0, +e.radius || 0) * s;      // > 0: a rotor disc of this radius
+    o.r = Math.max(0, +e.radius || 0) * s;      // > 0: a rotor disc of this radius (with swirl: a fan's duct)
+    o.swirl = +e.swirl || 0;                     // a fan seen face-on: its air leaves turning this way
+    o.speed = Math.max(0, +e.speed || 0);        // > 0: an engine's jet at this speed, x the inflow
+    o.heat = e.heat == null ? -1 : clamp01(+e.heat);
+    o.noz = Math.max(0, +e.nozzle || 0) * s;     // the nozzle's radius
   }
   const pointer = { x: 9, y: 9, active: 0, speed: 0 };
 
@@ -164,8 +168,8 @@
   // scaled and moved into place.
   const srcA = new Float32Array(N * 3), srcHeatA = new Float32Array(N);
   const srcB = new Float32Array(N * 3), srcHeatB = new Float32Array(N);
-  function writeSet(src, srcHeat, yaw, map, pos, heat, posAttr, heatAttr) {
-    const c = Math.cos(yaw) * place.s, sn = Math.sin(yaw) * place.s, s = place.s, ox = place.ox, oy = place.oy;
+  function writeSet(src, srcHeat, yaw, map, pos, heat, posAttr, heatAttr, yOff) {
+    const c = Math.cos(yaw) * place.s, sn = Math.sin(yaw) * place.s, s = place.s, ox = place.ox, oy = place.oy + (yOff || 0) * place.s;
     for (let k = 0; k < N; k++) {
       const m = map[k], x = src[m * 3], y = src[m * 3 + 1], z = src[m * 3 + 2];
       pos[k * 3] = c * x + sn * z + ox;
@@ -221,11 +225,16 @@
   const MORPH_TIME = 2.6;     // seconds from one machine to the next
   const FULL_BAND = [0.02, 0.98];   // the wind fills the whole tunnel (the owner asked for wind everywhere)
   const GROUND = -1.3;              // the machines' ground line, in their own frame (the cars stand on it)
-  const GROUNDED = { hypercar: 1, f1: 1, tank: 1 };   // the machines that stand on the floor
+  const GROUNDED = { suv: 1, hypercar: 1, f1: 1, tank: 1 };   // the machines that stand on the floor
+  // the machines that take off when they follow a car (the owner asked for the helicopter to come from
+  // the ground): they form standing on the floor, wait a moment, then climb to their flying height in
+  // this many seconds while the floor sinks away below the screen
+  const LIFTOFF = { helicopter: 2.8 };
   let morphing = false, yawA = 0.35, yawB = 0.35;
+  let yOffA = 0, yOffB = 0;     // machine A and B lowered by this much (their own units): on the floor
   function writeParticles() {
-    writeSet(srcA, srcHeatA, yawA, mapA, posA, heatA, posAttrA, heatAttrA);
-    if (morphing) writeSet(srcB, srcHeatB, yawB, mapB, posB, heatB, posAttrB, heatAttrB);
+    writeSet(srcA, srcHeatA, yawA, mapA, posA, heatA, posAttrA, heatAttrA, yOffA);
+    if (morphing) writeSet(srcB, srcHeatB, yawB, mapB, posB, heatB, posAttrB, heatAttrB, yOffB);
   }
 
   // The cycle of machines. Without machines.js: a cylinder across the stream, which sheds a vortex street.
@@ -244,10 +253,12 @@
     if (!M || typeof M.make !== "function") return cylinder();
     const D = M.DURATION || { dwell: 5 };
     // the machines shown, in this order (the owner's choice: no tank and no Starship; the helicopter is
-    // a Chinook-like tandem-rotor one); any of them that is missing is skipped
-    const SHOW = ["hypercar", "f1", "helicopter", "jet"];
+    // a light one like the EC120 in the owner's photo); any of them that is missing is skipped
     const all = (Array.isArray(M.CYCLE) && M.CYCLE.length ? M.CYCLE : (M.NAMES || []).map((name) => ({ name, dwell: D.dwell })))
       .filter((c) => c && c.name).map((c) => ({ name: c.name, dwell: +c.dwell > 0 ? +c.dwell : D.dwell || 5 }));
+    // the first car: the SUV (a Lexus-RX-like hybrid, the owner's choice), or the old hypercar until it exists
+    const FIRST = ["suv", "hypercar"].find((n) => all.some((c) => c.name === n)) || "suv";
+    const SHOW = [FIRST, "f1", "helicopter", "jet"];
     const shown = SHOW.map((n) => all.find((c) => c.name === n)).filter(Boolean);
     const cycle = shown.length ? shown : all;
     if (!cycle.length) return cylinder();
@@ -255,12 +266,14 @@
     const get = (k) => built[names[k]] || (built[names[k]] = M.make(names[k], N, 11));
     // ?machine=tank in the address starts at that machine, and &stay holds it until a click;
     // &morph=0.4 holds the change into the next machine at that point (for looking at it closely)
-    let cur = 0, stay = false, hold = -1;
+    let cur = 0, stay = false, hold = -1, liftHold = -1;
     try {
       const q = new URLSearchParams(location.search);
       cur = Math.max(0, names.indexOf(q.get("machine")));
       stay = q.has("stay");
       if (q.has("morph")) { hold = Math.min(1, Math.max(0, parseFloat(q.get("morph")) || 0)); stay = true; }
+      // &lift=0.5 holds a machine that takes off at that point of its climb (for looking at it closely)
+      if (q.has("lift")) { liftHold = Math.min(1, Math.max(0, parseFloat(q.get("lift")) || 0)); stay = true; }
     } catch (e) { cur = 0; }
     try { get(cur); } catch (e) { return cylinder(); }
     writeSolid(built[names[cur]], mapA, solidA, solidAttrA);
@@ -272,6 +285,21 @@
       later(() => { try { get((cur0 + k) % names.length); } catch (e) { /* that machine is left out */ } buildRest(k + 1); });
     })(1);
     const yawOf = (m) => (m && typeof m.yaw === "number" ? m.yaw : 0.35);
+    // the lowest point of a machine at rest, in its own frame: what stands on the floor
+    const lowY = {};
+    const lowOf = (k) => {
+      const n = names[k];
+      if (lowY[n] === undefined) {
+        const b = built[n].base;
+        let m = Infinity;
+        for (let i = 1; i < b.length; i += 3) if (b[i] < m) m = b[i];
+        lowY[n] = isFinite(m) ? m : GROUND;
+      }
+      return lowY[n];
+    };
+    // a take-off: how far below its flying height the machine started (its own units), and where it is now
+    let climbDrop = 0, floorFrom = 0;
+    if (liftHold >= 0 && LIFTOFF[names[cur]]) climbDrop = GROUND - lowOf(cur);
     // cur: the machine standing in the tunnel; to: the one it is turning into (-1 while it stands)
     let to = -1, since = null, kick = false, lastAge = 0;
     const nextBuilt = () => {
@@ -286,13 +314,16 @@
           const k = nextBuilt();
           if (k >= 0) {
             kick = false; to = k; since = t;
+            floorFrom = tunnel.floorK;
+            // a machine that takes off forms standing on the floor where the car stood
+            yOffB = GROUNDED[names[cur]] && LIFTOFF[names[to]] ? GROUND - lowOf(to) : 0;
             // where the next machine's points are now (placed as it will be shown), matched to the particles
             const b = built[names[to]], yb = yawOf(b) + 0.04 * Math.sin(t * 0.21);
             srcHeatB.set(b.heat); b.pose(t, srcB, 0, srcHeatB, null);
             const c = Math.cos(yb) * place.s, sn = Math.sin(yb) * place.s;
             for (let i = 0; i < N; i++) {
               const x = srcB[i * 3], y = srcB[i * 3 + 1], z = srcB[i * 3 + 2];
-              tmpB[i * 3] = c * x + sn * z + place.ox; tmpB[i * 3 + 1] = y * place.s + place.oy; tmpB[i * 3 + 2] = -sn * x + c * z;
+              tmpB[i * 3] = c * x + sn * z + place.ox; tmpB[i * 3 + 1] = (y + yOffB) * place.s + place.oy; tmpB[i * 3 + 2] = -sn * x + c * z;
             }
             matchShapes();
             writeSolid(b, mapB, solidB, solidAttrB);
@@ -302,6 +333,7 @@
         if (to >= 0 && t - since >= MORPH_TIME && hold < 0) {
           cur = to; to = -1; since = t; lastAge = 0;
           const keep = mapA; mapA = mapB; mapB = keep;      // the particles now show the new machine
+          climbDrop = yOffB; yOffA = yOffB; yOffB = 0;      // on the floor: it climbs from there
           writeSolid(built[names[cur]], mapA, solidA, solidAttrA);
         }
         const a = built[names[cur]], sway = 0.04 * Math.sin(t * 0.21);
@@ -317,10 +349,11 @@
           U.uMorph.value = Math.min(1, Math.max(0, u));
           tunnel.name = names[u < 0.5 ? cur : to];
           tunnel.grounded = !!GROUNDED[tunnel.name];
-          // a car turning into the jet takes off: the floor drops away below the screen as it rises;
-          // the jet turning into a car lands: the floor comes back up to meet it
-          const f0 = GROUNDED[names[cur]] ? 1 : 0, f1 = GROUNDED[names[to]] ? 1 : 0, e = Math.min(1, Math.max(0, u));
-          tunnel.floorK = f0 + (f1 - f0) * e * e * (3 - 2 * e);
+          // a car turning into a flying machine: the floor drops away below the screen as it rises (but
+          // one that takes off forms on the floor and climbs afterwards); the jet turning into a car
+          // lands: the floor comes back up to meet it
+          const f1 = GROUNDED[names[to]] || yOffB !== 0 ? 1 : 0, e = Math.min(1, Math.max(0, u));
+          tunnel.floorK = floorFrom + (f1 - floorFrom) * e * e * (3 - 2 * e);
         } else {
           // a machine that holds plays its own animation (wheels, tracks, rotors, flaps, engines);
           // no weapons: nothing aims at the cursor and nothing fires
@@ -329,14 +362,23 @@
           const age = Math.min(t - since, cycle[cur].dwell);
           srcHeatA.set(a.heat);
           a.pose(t, srcA, age, srcHeatA, null);
-          if (typeof a.exhaust === "function") {
-            const ex = a.exhaust(age);
-            if (ex) for (let i = 0; i < ex.length; i++) pushJet(ex[i]);
-          }
           lastAge = age;
           tunnel.name = names[cur];
           tunnel.grounded = !!GROUNDED[tunnel.name];
           tunnel.floorK = tunnel.grounded ? 1 : 0;
+          // take-off: a moment on the floor with the rotor turning, then the climb to flying height
+          // while the floor sinks away below the screen (the elevation the owner asked for)
+          if (climbDrop !== 0) {
+            const L = LIFTOFF[names[cur]] || 2.5;
+            const x = liftHold >= 0 ? liftHold : Math.min(1, Math.max(0, (t - since - 0.6) / L)), e = x * x * (3 - 2 * x);
+            yOffA = climbDrop * (1 - e);
+            tunnel.floorK = 1 - e;
+            if (x >= 1 && liftHold < 0) { climbDrop = 0; yOffA = 0; }
+          } else yOffA = 0;
+          if (typeof a.exhaust === "function") {
+            const ex = a.exhaust(age);
+            if (ex) for (let i = 0; i < ex.length; i++) pushJet(ex[i], yOffA);
+          }
         }
       },
       poke() { if (to < 0) kick = true; },
@@ -602,6 +644,36 @@
     if (air) {
       for (let i = 0; i < nJets; i++) {
         const e = jets[i];
+        if (e.r > 0 && e.swirl && typeof air.jet === "function") {
+          // a ducted fan seen face-on: its air comes out sideways and the wind sweeps it straight back,
+          // so from the side it streams off the fin behind the fan, weaving with the fan's swirl, with a
+          // light tint so it can be seen
+          fa.set(e.x, e.y, e.z).project(camera);
+          const cy0 = fa.y;
+          fb.set(e.x, e.y + e.r, e.z).project(camera);
+          const rN = Math.abs(fb.y - cy0), wv = 0.35 * Math.sin(t * 9.0) * (e.swirl > 0 ? 1 : -1);
+          fa.set(e.x + e.r * 1.9, e.y, e.z).project(camera);
+          fb.set(e.x + e.r * 1.9 + 0.3, e.y + 0.3 * wv, e.z).project(camera);
+          air.jet(fa.x, fa.y, fb.x - fa.x, fb.y - fa.y, (e.speed || 1.4) * e.power, rN * 0.7, e.heat < 0 ? 0.4 : e.heat);
+          continue;
+        }
+        if (e.speed > 0 && !(e.r > 0) && typeof air.jet === "function") {
+          // an engine's jet: a fast, hot stream from the nozzle, pushed three times (at the nozzle and
+          // further down the stream) so it leaves with its full push and burns hot for a while
+          fa.set(e.x, e.y, e.z).project(camera);
+          const cx0 = fa.x, cy0 = fa.y, nz = Math.max(e.noz, 0.01);
+          fb.set(e.x, e.y + nz, e.z).project(camera);
+          const rN = Math.abs(fb.y - cy0);
+          fb.set(e.x + e.dx * 0.3, e.y + e.dy * 0.3, e.z + e.dz * 0.3).project(camera);
+          const ddx = fb.x - cx0, ddy = fb.y - cy0;
+          const hj = e.heat < 0 ? e.power : e.heat * e.power;
+          air.jet(cx0, cy0, ddx, ddy, e.speed * e.power, rN * 1.2, hj);
+          fb.set(e.x + e.dx * nz * 2.6, e.y + e.dy * nz * 2.6, e.z + e.dz * nz * 2.6).project(camera);
+          air.jet(fb.x, fb.y, ddx, ddy, e.speed * e.power, rN * 1.35, hj * 0.7);
+          fb.set(e.x + e.dx * nz * 5.5, e.y + e.dy * nz * 5.5, e.z + e.dz * nz * 5.5).project(camera);
+          air.jet(fb.x, fb.y, ddx, ddy, e.speed * e.power * 0.9, rN * 1.5, hj * 0.4);
+          continue;
+        }
         if (e.r > 0) {
           // a rotor: its disc seen edge-on, from tip to tip across the shaft; the air is driven
           // down along the shaft across the whole disc and the wind sweeps the wash back

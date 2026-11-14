@@ -26,6 +26,10 @@
  *                                     air is driven along (dx, dy), the shaft,
  *                                     up to the wash speed, and the stream
  *                                     sweeps the wash back.  Called every frame.
+ *   flow.jet(x, y, dx, dy, speed, radius[, heat])  NDC; an engine's jet at (x, y)
+ *                                     blowing along (dx, dy) at speed x the
+ *                                     inflow, radius in NDC heights; heat 0..1
+ *                                     tints it.  Called every frame.
  *   flow.pulse(x, y, power)           NDC; a blast: a ring wave that runs out
  *                                     through the smoke, a puff of expanding
  *                                     gas, and a hot flash carried off by the
@@ -849,7 +853,7 @@ void main() {
       display: null,
       stats: { gridW: 0, gridH: 0, dyeW: 0, dyeH: 0, iterations: 0, levels: 0, maskW: 0, maskH: 0, passes: 0, steps: 0, blasts: 0 },
       params: null,
-      resize: noop, step: noop, warmup: noop, stir: noop, rotor: noop, pulse: noop, setOpacity: noop, dispose: noop,
+      resize: noop, step: noop, warmup: noop, stir: noop, rotor: noop, jet: noop, pulse: noop, setOpacity: noop, dispose: noop,
     };
     if (!T || !renderer || typeof renderer.getContext !== "function") return flow;
 
@@ -880,8 +884,10 @@ void main() {
       stirMax: 2.2,              // fastest jet, x the inflow
       stirGrip: 0.6,             // share of the gap to the jet speed closed per step
       stirHeat: 0.7,             // heat of an engine's jet (a stir held in place), unless the call says
-      rotorWash: 0.9,            // a rotor's wash speed at power 1, x the inflow
-      rotorGrip: 0.2,            // share of the gap to the wash speed closed per 60 Hz step
+      rotorWash: 1.2,            // a rotor's wash speed at power 1, x the inflow
+      rotorGrip: 0.3,            // share of the gap to the wash speed closed per 60 Hz step
+      jetMax: 3.6,               // an engine's fastest jet, x the inflow
+      jetGrip: 0.85,             // share of the gap to the jet's speed closed per step
       rotorThick: 0.012,         // half-thickness of the band the disc drives, of the grid's longer side
       blastSpeed: 0.8,           // ring speed, screen heights per second
       blastPush: 1.6,            // ring's peak speed, x its own speed, at power 1
@@ -1629,6 +1635,41 @@ void main() {
       rotA[i].set(ax, ay, bx, by);
       rotB[i].set(vx / m * V, vy / m * V, Math.max(0, Math.min(0.99, P.rotorGrip)), Math.max(0.75, P.rotorThick * Math.max(W, H)));
       if (i === rotorN) rotorN++;
+    };
+
+    // an engine's jet: a slot of the jets (merged with the nearest when they are all taken)
+    function addJet(cx, cy, vx, vy, r, grip, lim) {
+      if (stirN >= MAX_STIRS) {
+        let i = 0, best = Infinity;
+        for (let k = 0; k < MAX_STIRS; k++) {
+          const e = Math.hypot(stirA[k].x - cx, stirA[k].y - cy);
+          if (e < best) { best = e; i = k; }
+        }
+        const a = stirA[i];
+        let sx = a.z + vx, sy = a.w + vy;
+        const sm = Math.hypot(sx, sy);
+        if (sm > lim) { sx *= lim / sm; sy *= lim / sm; }
+        a.set((a.x + cx) * 0.5, (a.y + cy) * 0.5, sx, sy);
+      } else {
+        stirA[stirN].set(cx, cy, vx, vy);
+        stirB[stirN].set(1 / (r * r), grip, 0, 0);
+        stirN++;
+      }
+    }
+    flow.jet = function (x, y, dx, dy, speed, radius, heat) {
+      if (!W) return;
+      x = +x; y = +y; dx = +dx || 0; dy = +dy || 0; speed = +speed || 0; radius = +radius || 0;
+      if (![x, y, dx, dy, speed, radius].every(isFinite)) return;
+      if (Math.abs(x) > 1.5 || Math.abs(y) > 1.5 || speed <= 0) return;
+      const ux = dx * 0.5 * W, uy = dy * 0.5 * H, m = Math.hypot(ux, uy);
+      if (!(m > 0)) return;
+      const U = Math.max(baseU(), 1), lim = Math.max(0.1, P.jetMax) * U, V = Math.min(speed * U, lim);
+      const r = Math.max(1.2, radius * 0.5 * H);
+      const cx = cellX(x), cy = cellY(y);
+      addJet(cx, cy, ux / m * V, uy / m * V, r, Math.max(0, Math.min(1, P.jetGrip)), lim);
+      if (curN < MAX_STIRS) { curX[curN] = cx; curY[curN] = cy; curN++; }
+      const hh = heat === undefined ? 0 : Math.max(0, Math.min(1, +heat || 0));
+      if (hh > 0) addHeat(cx + ux / m * r * 0.8, cy + uy / m * r * 0.8, r * 1.1, hh);
     };
 
     flow.pulse = function (x, y, strength) {

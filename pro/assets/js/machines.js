@@ -155,7 +155,9 @@
                  power: function (age, t) { return 0.8; } }],  // optional
        (an exhaust entry with radius: R is a rotor disc of that radius
        centred at "at", its shaft along dir: the wind tunnel drives the air
-       along the shaft across the whole disc)
+       along the shaft across the whole disc; with swirl: +1 / -1 too it is a
+       ducted fan seen face-on, whose air leaves turning that way; speed: k
+       (x the inflow) with nozzle: r and heat: h is an engine's jet)
      into: { jet: { ...choreography... } },      // optional, see TRANSFORMATIONS
    });
    Part entry: { shape, at: pivot [x,y,z] in the machine frame, rot, parent,
@@ -279,8 +281,10 @@
      ------------------------------------------------------------------ */
   const PI = Math.PI, TAU = 2 * Math.PI;
   const GROUND = -1.3;
-  const ORDER = ["hypercar", "f1", "helicopter", "jet", "starship"];   // the tank was taken out (the owner asked)
-  const DWELL = { hypercar: 4.5, f1: 4.0, tank: 5.0, helicopter: 5.0, jet: 4.5, starship: 5.0 };
+  // the tank was taken out (the owner asked); the SUV replaces the hypercar (the hypercar stays listed
+  // only until the SUV exists)
+  const ORDER = ["suv", "hypercar", "f1", "helicopter", "jet", "starship"];
+  const DWELL = { suv: 4.5, hypercar: 4.5, f1: 4.0, tank: 5.0, helicopter: 5.0, jet: 4.5, starship: 5.0 };
   const DURATION = { dwell: 4.5, transform: 2.2 };
   const JITTER = 0.003;
   const EMPTY = Object.freeze([]);
@@ -1424,7 +1428,10 @@
     // shots / exhaust scratch (reused, never reallocated per call)
     this._ev = md.events.map(() => ({ type: "", pos: [0, 0, 0], dir: [0, 0, 0], power: 0, age: 0 }));
     this._evOut = [];
-    this._ex = md.exh.map((e) => ({ pos: [0, 0, 0], dir: [0, 0, 0], power: 0, radius: +e.radius > 0 ? +e.radius : 0 }));
+    this._ex = md.exh.map((e) => ({
+      pos: [0, 0, 0], dir: [0, 0, 0], power: 0, radius: +e.radius > 0 ? +e.radius : 0, swirl: +e.swirl || 0,
+      speed: +e.speed > 0 ? +e.speed : 0, nozzle: +e.nozzle > 0 ? +e.nozzle : 0, heat: e.heat == null ? null : +e.heat,
+    }));
     this._exOut = this._ex.slice();
   }
   const MP = Machine.prototype;

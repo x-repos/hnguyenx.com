@@ -693,14 +693,15 @@
       const a = k * TAU / 8, rm = (EC.fhub + EC.duct) / 2;
       fan.push(S.box(EC.duct - EC.fhub - 0.012, 0.075, 0.012, { at: [FC[0] + rm * Math.cos(a), FC[1] + rm * Math.sin(a), 0.035], rot: mm3(RZ(a), RX(0.55)) }));
     }
-    put("tail4", [FC[0], FC[1], 0], null, fan, S.cyl(EC.fhub, 0.11, { axis: "z", at: [FC[0], FC[1], -0.02], caps: false }),
+    // the air goes through the duct between the fan blades and the stators (solid 0), turning with the fan
+    put("tail4", [FC[0], FC[1], 0], null, S.tag(fan, { solid: 0 }), S.cyl(EC.fhub, 0.11, { axis: "z", at: [FC[0], FC[1], -0.02], caps: false }),
       S.ellipsoid(EC.fhub, 0.045, EC.fhub, { at: [FC[0], FC[1], 0.09], theta: [0, PI / 2], rot: RX(PI / 2) }));
     const stat = [];
     for (let k = 0; k < 10; k++) {
       const a = (k + 0.5) * TAU / 10, rm = (EC.fhub + EC.duct) / 2;
       stat.push(S.box(EC.duct - EC.fhub - 0.01, 0.05, 0.01, { at: [FC[0] + rm * Math.cos(a), FC[1] + rm * Math.sin(a), -0.07], rot: RZ(a + 0.12) }));
     }
-    put("tail2", [FC[0], FC[1], -0.06], null, stat, S.cyl(EC.fhub * 0.92, 0.12, { axis: "z", at: [FC[0], FC[1], -0.12], caps: false }),
+    put("tail2", [FC[0], FC[1], -0.06], null, S.tag(stat, { solid: 0 }), S.cyl(EC.fhub * 0.92, 0.12, { axis: "z", at: [FC[0], FC[1], -0.12], caps: false }),
       S.disc(0, EC.fhub * 0.92, { axis: "-z", at: [FC[0], FC[1], -0.12] }),
       // the tail bumper under the fin extension, an antenna under the boom, the beacon on the fin's top
       S.tag(S.join(strut(S, [8.70, 0.96, 0], [9.06, 0.67, 0], 0.022), S.sphere(0.022, { at: [9.06, 0.67, 0] }),
@@ -792,6 +793,9 @@
       // the rotor: radius makes it a rotor disc for the page's air (the wash is driven down across the
       // whole disc and the wind sweeps it back), centred on the shaft just under the blade plane
       { part: "head", at: rel([EC.hubX, EC.hubY - 0.05, 0], [3.3, 2.6, 0]), dir: [0.1, -1, 0], power: 1, radius: EC.R * HK },
+      // the ducted tail fan, seen face-on: its air comes out sideways and the wind sweeps it back, so
+      // the page streams it off the fin behind the fan, weaving with the fan's turn, lightly tinted
+      { part: "tail4", at: [0, 0, 0], dir: [0, 0, 1], power: 1, radius: EC.duct * HK, swirl: 1, speed: 1.6, heat: 0.5 },
       // the engine exhaust on the right side, aft and a little up and out
       { part: "jaw", at: rel([4.74, 2.53, -0.33], [4.7, 2.3, 0]), dir: [1, 0.08, -0.5], power: 0.15 },
     ],
