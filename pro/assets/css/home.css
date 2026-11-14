@@ -798,7 +798,7 @@ html.is-turning, html.is-turning * { cursor: grabbing !important; -webkit-user-s
   text-align: left;
 }
 @media (min-width: 720px) {
-  /* two cards (Games, Blog): compact and centred */
+  /* two cards (Play, Blog): compact and centred */
   .home-outro__grid { grid-template-columns: repeat(2, minmax(0, 240px)); justify-content: center; }
 }
 .home-outro__card {
