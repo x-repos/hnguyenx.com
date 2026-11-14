@@ -31,27 +31,31 @@
    on the ground line. Every shape is written in metres in the machine's
    orientation and handed to the rig with world: true.
 
-   Role of each rig part:
-     chest      bonnet (and the front fenders' tops)
-     jaw        the spindle grille
-     scapL/R    front bumper corners: headlamps, fog-lamp bezels
+   Role of each rig part (the parts' areas follow the other machines'
+   shares, so every part has about the same density of points):
+     chest      bonnet with its creases and front edge
+     jaw        the spindle grille: its face, frame and slats
+     scapL/R    front bumper corners: headlamps with their LED strip,
+                fog-lamp bezels
      neck       windscreen and cowl
      belly      roof
-     head       the floor under the body (and the front air dam)
-     hips       tailgate: rear glass, the hatch and its lip
-     maneL1/R1  front fender sides
-     maneL2/R2  front doors
-     maneL3/R3  rear doors
-     flankL/R   rear quarters with the black D-pillar glass
-     back1/3    the glass house of each side: side glass and pillars
-     back2      the rear bumper's face
-     haunchL/R  rear bumper corners: the tail lamps
-     *_up       arch cladding and wheel-well liners (the sill cladding
-                rides with the rear ones)
-     *_lo       rims: ten twisted spokes, hub, brake disc
-     *_paw      tyres
-     tail1      the lower front bumper and air dam
-     tail2      rear diffuser and the chrome outlet trims
+     hips       tailgate: rear glass, the hatch, the roof's end under the
+                spoiler
+     head       the floor under the body
+     maneL1/R1  front fenders, the A-pillar and the mirror sail
+     flankL/R   front doors
+     maneL2/R2  rear doors
+     maneL3/R3  rear quarters with the black D-pillar glass
+     back1/3    the glass house of each side: side glass, B- and C-pillars,
+                the chrome round the glass, the rear door's shoulder
+     back2      the rear bumper's face and lower corners
+     haunchL/R  the rear corners with the tail lamps
+     *_up       arch cladding, wheel-well liners and brake calipers (the
+                sill cladding rides with the rear ones)
+     *_lo       rims: ten twisted spokes, hub (front: the brake disc)
+     *_paw      tyres (rear: the brake disc)
+     tail1      the lower front bumper, air dam and the floor under the nose
+     tail2      the rear bumper's lower face, the chrome outlet trims
      tail3      roof rails and the roof spoiler
      tail4      door mirrors
    ===================================================================== */
@@ -125,7 +129,7 @@
     0.946, 0.946, 0.946, 0.946, 0.946, 0.949, 0.949, 0.949, 0.949, 0.949, 0.952, 0.952, 0.952, 0.952, 0.95, 0.949, 0.949, 0.949, 0.946, 0.946, 0.946, 0.944, 0.943,
     0.943, 0.943, 0.946, 0.949, 0.952, 0.952, 0.952, 0.952, 0.952, 0.952, 0.952, 0.952, 0.952, 0.949, 0.949, 0.949, 0.949, 0.949, 0.947, 0.946, 0.934, 0.925, 0.916,
     0.91, 0.9, 0.888, 0.875, 0.854, 0.822, 0.763, 0.68, 0.542, 0.424, 0.272];
-  const XF = 1.078, XR = 3.870, WY = 0.382;          // axles (wheelbase 2.792), wheel centre height (the tyre on the ground)
+  const XF = 1.078, XR = 3.870, WY = 0.386;          // axles (wheelbase 2.792), wheel centre height (the tyre just on the ground)
   const TR = 0.382, TW = 0.245, RIM = 0.2715;        // 235/55 R20: tyre radius, width (with the bulge), rim flange radius
   const TZ = 0.8126;                                 // track 1.625: wheel centre planes at z = +-0.8126
 
@@ -337,7 +341,7 @@
      ------------------------------------------------------------------ */
   const XG = 0.11, XFB = 0.58, XD1 = 1.585, XD2 = 2.675, XD3 = 3.47, XQ = 4.32, XT = 4.72;   // grille, bumper corner, doors, quarter, rear face
   const XCOWL = 1.25, XHDR = 2.05, XRR = 4.33;                                                 // windscreen foot and header, rear glass top
-  const YLB = 0.42, YRB = 0.72;                                                                // lower front bumper line, rear bumper top
+  const YLB = 0.42, YLF = 0.60, YRB = 0.72;                                                    // lower front bumper lines, rear bumper top
   // the side glass: tops of the front and rear door glass, the black D-pillar glass's top
   const DLOF = curve([[1.62, 1.19], [1.70, 1.255], [1.78, 1.31], [1.87, 1.355], [1.96, 1.40], [2.05, 1.44], [2.14, 1.48], [2.24, 1.515], [2.33, 1.54],
     [2.42, 1.553], [2.51, 1.56], [2.58, 1.552], [2.635, 1.535]]);
@@ -347,6 +351,8 @@
   const SEC = (k) => (x) => sec(x)[k];
   const ybelt = SEC(4), yroof = SEC(6), yshd = SEC(2), ybot = SEC(0);
   const GLASS = { w: 0.18, heat: 0.04, glow: 0 }, BLACK = { w: 0.4, glow: 0 };
+  // the bumper's top on the rear face (where the last sections are lower than it, just under their shoulder)
+  const yrb = (x) => Math.min(YRB, sec(x)[2] - 0.002);
 
   function suvParts(S, H) {
     const Kt = kit(S), P = {};
@@ -355,6 +361,8 @@
       const m = toM(at);
       P[name] = Object.assign({ at: m, world: true, shape: S.place(S.place(S.join(shapes), OFF, null, K), [-m[0], -m[1], -m[2]]) }, extra || {});
     };
+    // more shapes (metres) for a part already put
+    const addTo = (name, shapes) => { const e = P[name]; e.shape = e.shape.concat(S.place(S.place(S.join(shapes), OFF, null, K), [-e.at[0], -e.at[1], -e.at[2]])); };
     const both = (f) => [f(1), f(-1)];
     const mx = (a, b) => (x) => Math.max(fx(a, x), fx(b, x));
 
@@ -368,9 +376,9 @@
     ]);
     put("belly", [3.0, 1.64, 0], both((s) => Kt.band(XHDR, 3.95, 3, 0, 1, s)));
     put("hips", [4.7, 1.1, 0], [
-      both((s) => Kt.band(XRR, X1, 3, 0.05, 1, s, GLASS)), both((s) => Kt.band(XRR, X1, 3, 0, 0.05, s)),
+      both((s) => Kt.band(XRR, X1, 3, 0.05, 1, s, { w: 0.25, heat: 0.04, glow: 0 })), both((s) => Kt.band(XRR, X1, 3, 0, 0.05, s)),
       both((s) => Kt.band(4.47, X1, 2, 0, 1, s)), both((s) => Kt.band(XT, X1, 1, 0, 1, s)),
-      both((s) => Kt.bandY(XT, X1, YRB, yshd, s)),
+      both((s) => Kt.bandY(XT, X1, yrb, yshd, s)),
       both((s) => Kt.band(3.95, XRR, 3, 0, 1, s)),                                    // the roof's end, under the spoiler
     ]);
 
@@ -391,18 +399,20 @@
     put("flankL", [2.1, 0.75, 0.95], [Kt.bandY(XD1, XD2, mx(CLAD, ybot), yshd, 1), Kt.band(XD1, XD2, 1, 0, 1, 1)]);
     put("maneL2", [3.05, 0.75, 0.95], [Kt.bandY(XD2, XD3, mx(CLAD, ybot), yshd, 1)]);
     put("maneL3", [3.9, 1.1, 0.9], [
-      Kt.bandY(XD3, XQ, mx(CLAD, ybot), yshd, 1), Kt.band(XD3, XQ, 1, 0, 1, 1),
-      Kt.bandY(3.60, 4.47, ybelt, mx(ybelt, DTOP), 1, { w: 0.35, glow: 0 }), Kt.bandY(3.60, 4.47, mx(ybelt, DTOP), yroof, 1),
+      Kt.bandY(XD3, XQ, mx(CLAD, 0.62), yshd, 1), Kt.band(XD3, XQ, 1, 0, 1, 1),
+      Kt.bandY(3.60, 4.47, ybelt, mx(ybelt, DTOP), 1, GLASS), Kt.bandY(3.60, 4.47, mx(ybelt, DTOP), yroof, 1),
     ]);
-    put("haunchL", [4.55, 0.95, 0.85], [Kt.bandY(XQ, XT, YRB, yshd, 1), Kt.band(XQ, XT, 1, 0, 1, 1)]);
-    put("scapL", [0.3, 0.75, 0.75], [Kt.bandY(XG, XFB, mx(YLB, ybot), yshd, 1), Kt.band(XG, XFB, 1, 0, 1, 1)]);
+    put("haunchL", [4.55, 1.05, 0.85], [Kt.bandY(XQ, XT, 0.95, yshd, 1), Kt.band(XQ, XT, 1, 0, 1, 1)]);
+    put("scapL", [0.3, 0.8, 0.75], [Kt.bandY(XG, XFB, mx(YLF, ybot), yshd, 1), Kt.band(XG, XFB, 1, 0, 1, 1)]);
 
     // ---- the nose: the spindle grille (jaw) ----
     put("jaw", [0.05, 0.65, 0], [
-      both((s) => Kt.bandY(0, XG, mx(YLB, ybot), yshd, s)),
+      both((s) => Kt.bandY(0, XG, mx(YLF, ybot), yshd, s)),
     ]);
     // ---- the tail: the rear bumper's face (back2) ----
-    put("back2", [4.7, 0.6, 0], [both((s) => Kt.bandY(XT, X1, 0.60, YRB, s)), Kt.bandY(XQ, XT, mx(CLAD, ybot), YRB, 1), Kt.bandY(XQ, XT, mx(CLAD, ybot), YRB, -1)]);
+    // the rear arch's cladding, the rear quarter's lower part and the rear corners under the lamps (back2)
+    put("back2", [4.0, 0.62, 0], [both((s) => Kt.bandY(3.415, 4.315, ybot, mx(CLAD, ybot), s)), both((s) => Kt.bandY(XD3, XQ, mx(CLAD, ybot), mx(CLAD, 0.62), s)),
+      both((s) => Kt.bandY(XQ, XT, YRB, 0.95, s))]);
     // the nose's very tip (the grille's centre) and the tail's last section, closed flat
     const cap = (x, ya, yb, sx) => both((s) => Kt.P((u, v, q) => {
       const sc = sec(x), y = ya + (yb - ya) * v; q[0] = x; q[1] = y; q[2] = u * zAt(x, Math.min(sc[7] - 1e-4, Math.max(sc[0] + 1e-4, y))) * s;
@@ -418,7 +428,7 @@
     }, Math.round((x1 - x0) * 12) + 2, 8, FLOOR);
     put("head", [2.45, 0.24, 0], [floor(0.672, 1.488, 0.66), floor(1.488, 3.428, null), floor(3.428, 4.308, 0.66)]);
     // the lower front bumper and air dam with the floor under the nose (tail1)
-    put("tail1", [0.25, 0.33, 0], [both((s) => Kt.bandY(0, XFB, ybot, mx(YLB, ybot), s)), floor(0.002, 0.672, null)]);
+    put("tail1", [0.25, 0.4, 0], [both((s) => Kt.bandY(0, XFB, ybot, mx(YLF, ybot), s)), floor(0.002, 0.672, null)]);
 
     // ---- arches: the black cladding round the openings and along the sills, the wheel-well liners and the
     // brake calipers (front: fl_up; rear: hl_up with the sill cladding) ----
@@ -427,7 +437,7 @@
     }, 60, 3, { w: 0.6, glow: 0 });
     const caliper = (xc) => S.box(0.09, 0.13, 0.05, { at: [xc + 0.16, WY + 0.06, TZ - 0.05], rot: [0, 0, 0.35] });
     put("fl_up", [XF, 0.75, 0.9], [Kt.bandY(0.575, 1.545, ybot, mx(CLAD, ybot), 1), liner(0.668, 1.492), caliper(XF)]);
-    put("hl_up", [XR, 0.75, 0.9], [Kt.bandY(3.415, 4.315, ybot, mx(CLAD, ybot), 1), liner(3.428, 4.302), caliper(XR),
+    put("hl_up", [XR, 0.75, 0.9], [liner(3.428, 4.302), caliper(XR),
       Kt.bandY(1.545, 3.415, ybot, mx(CLAD, ybot), 1)]);
 
     // ---- wheels: 235/55 R20 tyres (paw) and twisted ten-spoke rims with the brake discs (lo) ----
@@ -438,7 +448,7 @@
       return [
         S.cyl(TR, TW - 2 * SH, { axis: "z", at: [xc, WY, ZI + SH], caps: false }),
         S.tag(S.torus(TR - SH, SH, { at: [xc, WY, ZO - SH], tube: [0, PI / 2] }), { w: 0.8 }), S.tag(S.torus(TR - SH, SH, { at: [xc, WY, ZI + SH], tube: [-PI / 2, 0] }), { w: 0.6 }),
-        S.tag(S.disc(RIM + 0.006, TR - SH, { at: [xc, WY, ZO] }), { w: 0.25 }), S.tag(S.disc(RIM + 0.006, TR - SH, { at: [xc, WY, ZI], axis: "-z" }), { w: wi }),
+        S.tag(S.disc(RIM + 0.006, TR - SH, { at: [xc, WY, ZO] }), { w: 0.35 }), S.tag(S.disc(RIM + 0.006, TR - SH, { at: [xc, WY, ZI], axis: "-z" }), { w: wi }),
       ];
     };
     const rimShape = (xc) => {
@@ -489,12 +499,15 @@
       Kt.P((u, v, q) => { const x = XRR + (4.395 - XRR) * u, z = 0.6 * (1 - v); q[0] = x; q[1] = TOP(Math.min(x, 4.35)) - 0.012 * v * v - 0.02 * u * u; q[2] = z * s; }, 6, 8, { flip: s < 0 }),
       Kt.P((u, v, q) => { const x = XRR + (4.395 - XRR) * u, z = 0.6 * (1 - v); q[0] = x; q[1] = 1.53 + 0.035 * u; q[2] = z * s; }, 6, 8, { flip: s > 0 }),
     ];
-    put("tail3", [3.2, 1.62, 0], [both(rails), both(spoiler)]);
+    put("tail3", [3.1, 1.66, 0], [both(rails)]);
+    addTo("hips", [both(spoiler)]);
 
     // ---- the rear bumper's lower part with the chrome outlet trims in its corners (tail2) ----
     put("tail2", [4.85, 0.45, 0], [
-      both((s) => Kt.bandY(XT, X1, ybot, 0.60, s)), floor(4.308, X1 - 0.002, null),
-      both((s) => Kt.rearZY(0.46, 0.78, 0.415, 0.485, s, { w: 1.4, heat: 0.08 }, 0.008)),
+      both((s) => Kt.bandY(XT, X1, ybot, yrb, s)), Kt.bandY(XQ, XT, mx(CLAD, ybot), YRB, 1), Kt.bandY(XQ, XT, mx(CLAD, ybot), YRB, -1),
+      floor(4.308, X1 - 0.002, null),
+      both((s) => Kt.rearZY(0.46, 0.78, 0.415, 0.485, s, { w: 2.0, heat: 0.08 }, 0.008)),
+      both((s) => Kt.rearLine([[0.46, 0.415], [0.78, 0.415], [0.78, 0.485], [0.46, 0.485], [0.46, 0.415]], s, 0.006, { w: 2.4 })),
     ]);
 
     // ---- lamps (glowing lenses on the skin) ----
@@ -502,14 +515,18 @@
     // headlamp (front view [z, y], round the corner onto the fender top in the side view)
     const HLU = chain([[0.45, 0.792], [0.502, 0.839], [0.543, 0.908], [0.606, 0.934], [0.675, 0.948], [0.739, 0.962], [0.808, 0.978], [0.88, 1.004]]);
     const HLL = chain([[0.45, 0.792], [0.52, 0.801], [0.589, 0.811], [0.658, 0.820], [0.727, 0.830], [0.797, 0.839], [0.814, 0.869], [0.864, 0.914], [0.88, 0.97]]);
-    const HEAD = { heat: -0.22, glow: 1, w: 2.6 }, TAIL = { heat: 0.5, glow: 1, w: 2.2 };
+    const HEAD = { heat: -0.22, glow: 1, w: 2.0 }, TAIL = { heat: 0.5, glow: 1, w: 1.8 };
     P.scapL.shape = P.scapL.shape.concat(S.place(S.place(S.join(
       Kt.noseZY(0.45, 0.88, HLL, HLU, 1, HEAD, 0.006),
+      // the lamp's tail running back along the fender (side view)
+      Kt.bandY(0.58, 0.785, chain([[0.58, 0.945], [0.64, 0.96], [0.71, 0.98], [0.785, 1.005]]), chain([[0.58, 0.99], [0.63, 0.995], [0.71, 1.0], [0.785, 1.008]]), 1, HEAD, 3),
       // the fog-lamp bezel (an arrow head) and the headlamp's outline
       Kt.noseLine([[0.828, 0.716], [0.791, 0.703], [0.756, 0.689], [0.722, 0.671], [0.688, 0.650], [0.707, 0.630], [0.742, 0.610], [0.776, 0.591], [0.810, 0.582],
         [0.779, 0.605], [0.797, 0.620], [0.827, 0.631], [0.840, 0.660], [0.835, 0.694], [0.828, 0.716]], 1, 0.008, { w: 2.6 }),
       Kt.noseLine([[0.45, 0.792], [0.502, 0.839], [0.543, 0.908], [0.606, 0.934], [0.675, 0.948], [0.739, 0.962], [0.808, 0.978], [0.88, 1.004],
-        [0.888, 0.983], [0.864, 0.914], [0.814, 0.869], [0.797, 0.839], [0.727, 0.830], [0.658, 0.820], [0.589, 0.811], [0.52, 0.801], [0.45, 0.792]], 1, 0.007, { w: 2.4, heat: -0.15 }),
+        [0.888, 0.983], [0.864, 0.914], [0.814, 0.869], [0.797, 0.839], [0.727, 0.830], [0.658, 0.820], [0.589, 0.811], [0.52, 0.801], [0.45, 0.792]], 1, 0.007, { w: 2.0, heat: -0.15 }),
+      Kt.noseLine([[0.46, 0.797], [0.52, 0.805], [0.589, 0.815], [0.658, 0.824], [0.727, 0.834], [0.797, 0.843], [0.814, 0.872], [0.864, 0.917], [0.884, 0.975]], 1, 0.007,
+        { w: 2.2, heat: -0.25, glow: 1 }),
     ), OFF, null, K), [-P.scapL.at[0], -P.scapL.at[1], -P.scapL.at[2]]));
     // tail lamps: the side part (side view [x, y]) and the rear part (rear view [z, y])
     const TLU = chain([[4.28, 1.16], [4.37, 1.17], [4.45, 1.18], [4.54, 1.19], [4.63, 1.18], [4.70, 1.165]]);
@@ -518,12 +535,13 @@
     const TRL = chain([[0.351, 1.078], [0.417, 1.012], [0.481, 0.989], [0.550, 0.989], [0.619, 0.989], [0.689, 0.989], [0.758, 0.989], [0.80, 1.01]]);
     P.haunchL.shape = P.haunchL.shape.concat(S.place(S.place(S.join(
       Kt.bandY(4.28, 4.70, TLL, TLU, 1, TAIL, 6), Kt.rearZY(0.351, 0.80, TRL, TRU, 1, TAIL, 0.006),
+      Kt.sideLine([[4.70, 0.99], [4.65, 0.99], [4.56, 1.02], [4.48, 1.06], [4.39, 1.09], [4.31, 1.12], [4.28, 1.16], [4.37, 1.17], [4.45, 1.18], [4.54, 1.19], [4.63, 1.18], [4.70, 1.165]], 1, 0.006, { w: 1.6, heat: 0.45 }),
+      Kt.rearLine([[0.80, 1.01], [0.758, 0.989], [0.619, 0.989], [0.481, 0.989], [0.417, 1.012], [0.351, 1.078], [0.414, 1.100], [0.556, 1.130], [0.694, 1.165], [0.763, 1.181], [0.80, 1.17]], 1, 0.006, { w: 1.6, heat: 0.45 }),
     ), OFF, null, K), [-P.haunchL.at[0], -P.haunchL.at[1], -P.haunchL.at[2]]));
 
     // ---- lines: the chrome round the side glass, door shut lines, creases, the grille's outline ----
-    const addTo = (name, shapes) => { const e = P[name]; e.shape = e.shape.concat(S.place(S.place(S.join(shapes), OFF, null, K), [-e.at[0], -e.at[1], -e.at[2]])); };
     const along = (f, x0, x1, n, dy) => { const o = []; for (let i = 0; i <= n; i++) { const x = x0 + (x1 - x0) * i / n; o.push([x, f(x) + (dy || 0)]); } return o; };
-    const CHROME = { w: 2.6 }, SEAM = { w: 2.0, glow: 0 };
+    const CHROME = { w: 2.1 }, SEAM = { w: 1.6, glow: 0 };
     // the upper chrome: along the front glass's top, over the B-pillar, the rear glass's top and the D-pillar glass
     const upper = along(DLOF, 1.62, 2.6, 14).concat([[2.70, 1.574]], along(DLOR, 2.785, 3.39, 8), along(DTOP, 3.45, 4.47, 12));
     addTo("back1", [Kt.sideLine(upper, 1, 0.007, CHROME), Kt.sideLine(along(ybelt, 1.60, 4.47, 40, 0.004), 1, 0.007, CHROME),
@@ -539,6 +557,11 @@
       Kt.sideLine([[2.7, 0.548], [2.81, 0.56], [2.97, 0.56]], 1, 0.005, SEAM),
       Kt.sideLine([[2.7, 0.445], [2.82, 0.48], [2.95, 0.51], [3.09, 0.54], [3.23, 0.57], [3.38, 0.60]], 1, 0.005, SEAM),
       Kt.sideLine([[3.49, 1.22], [3.48, 1.0], [3.47, 0.86]], 1, 0.005, SEAM)]);
+    // door handles (a grip in a shallow recess, just above the shoulder line), the rear door's rear edge round the C-pillar's foot
+    const handle = (x0, x1) => { const y = (x) => sec(x)[2] + 0.04; return [Kt.sideLine([[x0, y(x0)], [(x0 + x1) / 2, y((x0 + x1) / 2) + 0.012], [x1, y(x1)]], 1, 0.009, { w: 1.6 }),
+      Kt.sideLine([[x0 - 0.01, y(x0) - 0.012], [(x0 + x1) / 2, y((x0 + x1) / 2) - 0.022], [x1 + 0.01, y(x1) - 0.012]], 1, 0.004, SEAM)]; };
+    addTo("flankL", [handle(2.45, 2.64)]); addTo("maneL2", [handle(3.38, 3.56)]);
+    addTo("maneL3", [Kt.sideLine([[3.60, 1.268], [3.645, 1.18], [3.67, 1.07], [3.66, 0.95], [3.62, 0.87]], 1, 0.005, SEAM)]);
     addTo("maneL3", [Kt.sideLine([[4.20, 0.80], [4.27, 0.83], [4.34, 0.86], [4.39, 0.90], [4.45, 0.90], [4.52, 0.95], [4.57, 1.01]], 1, 0.005, SEAM)]);
     addTo("chest", both((s) => Kt.sideLine(along(ybelt, 0.81, 1.25, 10, 0.002), s, 0.005, SEAM)));
     // the shoulder's character line, from behind the headlamp to the tail lamp (where the side rolls in)
@@ -552,8 +575,11 @@
     const SPINDLE = [[0.0, 0.925], [0.50, 0.924], [0.53, 0.92], [0.465, 0.915], [0.43, 0.885], [0.375, 0.83], [0.337, 0.787], [0.362, 0.749], [0.409, 0.68],
       [0.454, 0.611], [0.48, 0.60], [0.515, 0.605], [0.54, 0.573], [0.583, 0.504], [0.618, 0.434], [0.56, 0.446], [0.533, 0.429], [0.505, 0.406], [0.47, 0.404], [0.0, 0.403]];
     const spw = curve([[0.403, 0.48], [0.434, 0.60], [0.504, 0.575], [0.573, 0.53], [0.611, 0.445], [0.68, 0.40], [0.749, 0.355], [0.787, 0.33], [0.83, 0.37], [0.885, 0.42], [0.915, 0.46]]);
-    addTo("jaw", [both((s) => Kt.noseLine(SPINDLE, s, 0.011, { w: 2.6 })),
-      both((s) => [0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.89].map((y) => Kt.noseLine([[0, y], [spw(y) * 0.5, y], [spw(y) - 0.02, y]], s, 0.0045, { w: 1.4 })))]);
+    addTo("jaw", [both((s) => Kt.noseLine(SPINDLE, s, 0.011, { w: 2.2 })),
+      both((s) => [0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.89].map((y) => Kt.noseLine([[0, y], [spw(y) * 0.5, y], [spw(y) - 0.02, y]], s, 0.0045, { w: 1.0 })))]);
+    // the bonnet's two creases, from the windscreen's foot to the grille's upper corners
+    const topLine = (pts, sd) => Kt.tube(pts.map((p) => { const sc = sec(p[0]), r = Math.min(1, p[1] / Math.max(0.01, sc[5])); return [p[0], sc[7] - (sc[7] - sc[6]) * Math.pow(r, NROOF) + 0.004, p[1] * sd]; }), 0.006, SEAM);
+    addTo("chest", both((s) => topLine([[1.2, 0.56], [0.9, 0.545], [0.6, 0.525], [0.35, 0.50], [0.17, 0.47]], s)));
     // the bonnet's front edge above the grille and along the headlamps' tops
     addTo("chest", both((s) => Kt.noseLine([[0, 0.94], [0.3, 0.94], [0.5, 0.938], [0.6, 0.952], [0.74, 0.975], [0.88, 1.016]], s, 0.006, SEAM)));
 
