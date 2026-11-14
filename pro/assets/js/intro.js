@@ -58,6 +58,19 @@
   // SIZE — the canvas is as big as its page
   // ====================================================
   let W = 0, H = 0, zBase = 6.5;
+  // A phone turned sideways (a short, wide screen): the words keep a column on the left (home.css,
+  // 38vw wide), and the machine fills the space between that column, the bar and the right edge.
+  const sideways = window.matchMedia("(orientation: landscape) and (max-height: 500px)");
+  let side = null;
+  function sidewaysBox(w, h) {
+    if (!sideways.matches) return null;
+    const cs = getComputedStyle(section), bar = document.querySelector(".home-topnav");
+    const barB = bar ? bar.getBoundingClientRect().bottom : 64;
+    const left = (parseFloat(cs.paddingLeft) || 24) + 0.38 * w + 24, right = w - (parseFloat(cs.paddingRight) || 24);
+    // (room underneath: seen from the camera, the near wheels and skids hang below the frame's floor)
+    const top = Math.min(90, Math.max(48, barB)) + 8, bottom = h - 40;
+    return { fx: Math.max(0.3, (right - left) / w), fy: Math.max(0.4, (bottom - top) / h), cx: (left + right) / w - 1, cy: 1 - (top + bottom) / h };
+  }
   function resize() {
     const w = canvas.clientWidth || window.innerWidth, h = canvas.clientHeight || window.innerHeight;
     if (w === W && h === H) return false;
@@ -68,7 +81,8 @@
     U.uAspect.value = w / h;
     // narrow portrait screens: pull back until a 3.4-unit-wide object fits, as the rest of Pro Mode does
     zBase = Math.max(6.5, 3.4 / (0.828 * camera.aspect));
-    if (air) { air.resize(w, h, PR); paintGrid(); }
+    if (air) air.resize(w, h, PR);
+    side = sidewaysBox(w, h);
     return true;
   }
 
@@ -101,8 +115,12 @@
     const halfH = Math.tan(camera.fov * Math.PI / 360) * zBase, halfW = halfH * aspect;
     const wide = smooth(0.75, 1.35, aspect);            // 0 = a phone held upright, 1 = a computer screen
     const fw = FRAME.x1 - FRAME.x0, fh = FRAME.y1 - FRAME.y0;
-    const s = Math.min(lerp(0.98, 0.58, wide) * 2 * halfW / fw, lerp(0.5, 0.46, wide) * 2 * halfH / fh);
-    const nx = lerp(0, -0.24, wide), ny = lerp(0.36, 0.3, wide);    // the middle of the frame, in -1..1
+    let s = Math.min(lerp(0.98, 0.58, wide) * 2 * halfW / fw, lerp(0.5, 0.46, wide) * 2 * halfH / fh);
+    let nx = lerp(0, -0.24, wide), ny = lerp(0.36, 0.3, wide);      // the middle of the frame, in -1..1
+    if (side) {                                                      // sideways phone: right of the words
+      s = 0.9 * Math.min(side.fx * 2 * halfW / fw, side.fy * 2 * halfH / fh);
+      nx = side.cx; ny = side.cy;
+    }
     const midY = (FRAME.y0 + FRAME.y1) / 2;
     place.s = s; place.ox = nx * halfW; place.oy = ny * halfH - midY * s;
     place.yaw = yaw; place.c = Math.cos(yaw) * s; place.sn = Math.sin(yaw) * s;
@@ -584,13 +602,6 @@
     }
   }
   if (!air) still();
-  const gridEl = document.getElementById("flow-grid");
-  function paintGrid() {
-    const st = air && air.stats;
-    if (!gridEl || !st || !st.gridW) return;
-    const g = st.gridW + " × " + st.gridH;
-    gridEl.innerHTML = '<span lang="en">Grid ' + g + '</span><span lang="vi">Lưới ' + g + "</span>";
-  }
 
   // ====================================================
   // READOUT — the form's name, in both languages
@@ -869,6 +880,5 @@
   if ("ResizeObserver" in window) new ResizeObserver(() => { dirty = true; }).observe(canvas);
   else window.addEventListener("resize", () => { dirty = true; });
   resize();
-  paintGrid();
   update();
 })();

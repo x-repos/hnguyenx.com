@@ -1253,9 +1253,7 @@ html.lenis, html.lenis body { height: auto; }
   color: var(--home-fg);
   margin: 2px 0 1px;
 }
-.flow-readout__solver,
-.flow-readout__grid { opacity: 0.72; letter-spacing: 0.1em; }
-.flow-readout__grid { font-variant-numeric: tabular-nums; }
+.flow-readout__solver { opacity: 0.72; letter-spacing: 0.1em; }
 /* the Navier–Stokes equation under the solver line (KaTeX, intro.js): not upper-cased */
 .flow-readout__eq {
   font-size: 13px;
@@ -1270,8 +1268,7 @@ html.lenis, html.lenis body { height: auto; }
 /* no air on this device (the GPU cannot run it): only the form is named */
 .flow-readout.is-still .flow-readout__live,
 .flow-readout.is-still .flow-readout__solver,
-.flow-readout.is-still .flow-readout__eq,
-.flow-readout.is-still .flow-readout__grid { display: none; }
+.flow-readout.is-still .flow-readout__eq { display: none; }
 
 /* medium screens: the readout moves to the top left, under the bar */
 @media (max-width: 959px) {
@@ -1294,6 +1291,20 @@ html.lenis, html.lenis body { height: auto; }
   .flow-readout__name { font-size: 17px; }
   .flow-readout__eq { font-size: 11.5px; }
   .home-intro__words::before { background: radial-gradient(ellipse at 40% 60%, rgba(0, 0, 0, 0.66) 0%, rgba(0, 0, 0, 0.4) 50%, rgba(0, 0, 0, 0) 76%); }
+}
+/* a phone turned sideways (short and wide): the words keep a narrow column on the left, the readout
+   at its top and the title at its foot, and the machine takes the space to their right (intro.js) */
+@media (orientation: landscape) and (max-height: 500px) {
+  .home-intro { padding: 64px 24px 14px; }
+  .home-intro__words { max-width: 38vw; }
+  .home-intro__words::before { inset: -18% -10% -14% -12%; }
+  .home-intro .home-scene__eyebrow { font-size: 10px; letter-spacing: 0.14em; margin-bottom: 6px; }
+  .flow-title { font-size: clamp(1.25rem, 7vh, 1.9rem); line-height: 1.05; margin-bottom: 4px; }
+  .home-intro .home-scene__cta { margin-top: 10px; gap: 8px; font-size: 10px; letter-spacing: 0.14em; }
+  .home-intro .home-scroll-cue { display: none; }
+  .flow-readout { left: 24px; top: 72px; font-size: 9.5px; gap: 2px; }
+  .flow-readout__name { font-size: 15px; margin: 1px 0 0; }
+  .flow-readout__eq { font-size: 10.5px; }
 }
 html.is-turning .home-intro { cursor: grabbing; }
 
