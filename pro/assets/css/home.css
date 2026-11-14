@@ -1256,9 +1256,21 @@ html.lenis, html.lenis body { height: auto; }
 .flow-readout__solver,
 .flow-readout__grid { opacity: 0.72; letter-spacing: 0.1em; }
 .flow-readout__grid { font-variant-numeric: tabular-nums; }
+/* the Navier–Stokes equation under the solver line (KaTeX, intro.js): not upper-cased */
+.flow-readout__eq {
+  font-size: 13px;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  color: var(--home-fg);
+  opacity: 0.86;
+  margin: 1px 0 2px;
+}
+.flow-readout__eq .katex { font-size: 1.12em; }
 /* no air on this device (the GPU cannot run it): only the form is named */
 .flow-readout.is-still .flow-readout__live,
 .flow-readout.is-still .flow-readout__solver,
+.flow-readout.is-still .flow-readout__eq,
 .flow-readout.is-still .flow-readout__grid { display: none; }
 
 /* medium screens: the readout moves to the top left, under the bar */
@@ -1280,6 +1292,7 @@ html.lenis, html.lenis body { height: auto; }
   .home-intro .home-scene__cta { margin-top: 16px; letter-spacing: 0.2em; }
   .flow-readout { left: 22px; top: 74px; font-size: 10px; gap: 3px; }
   .flow-readout__name { font-size: 17px; }
+  .flow-readout__eq { font-size: 11.5px; }
   .home-intro__words::before { background: radial-gradient(ellipse at 40% 60%, rgba(0, 0, 0, 0.66) 0%, rgba(0, 0, 0, 0.4) 50%, rgba(0, 0, 0, 0) 76%); }
 }
 html.is-turning .home-intro { cursor: grabbing; }

@@ -595,6 +595,16 @@
   // ====================================================
   // READOUT — the form's name, in both languages
   // ====================================================
+  // Under the solver's name: the Navier–Stokes momentum equation in its general form (velocity u,
+  // pressure p, viscous stress tensor τ, body force f), typeset by KaTeX; the page holds a plain
+  // copy in case KaTeX did not load.
+  const eqEl = document.getElementById("flow-eq");
+  if (eqEl && window.katex) {
+    try {
+      window.katex.render("\\rho\\left(\\frac{\\partial\\mathbf{u}}{\\partial t}+(\\mathbf{u}\\cdot\\nabla)\\,\\mathbf{u}\\right)=-\\nabla p+\\nabla\\cdot\\boldsymbol{\\tau}+\\mathbf{f}",
+        eqEl, { throwOnError: false });
+    } catch (e) { /* the plain copy stays */ }
+  }
   const nameEl = document.getElementById("flow-name");
   let shownName = null;
   function paintName() {
