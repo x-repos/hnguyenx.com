@@ -34,7 +34,7 @@
   // SAVE
   // ====================================================
   const SAVE_KEY = "pair-path-v1";
-  const LEVEL_COUNT = 100;     // the game had 12 levels at first; saves from then load unchanged
+  const LEVEL_COUNT = 1000;    // the game had 12 levels at first, then 100; saves from then load unchanged
   const save = { mute: false, unlocked: 1, cleared: 0, stars: 0, best: 0, total: LEVEL_COUNT, levels: {} };
   try {
     const raw = JSON.parse(localStorage.getItem(SAVE_KEY) || "{}");
@@ -597,12 +597,20 @@
     { s: 10, l: 14, kinds: [32, 24, 22, 24, 24, 26, 32, 26, 32, 32, 32] }      // 90 to 100
   ];
   for (const r of ROUNDS) MODES.forEach((mode, k) => LEVELS.push({ s: r.s, l: r.l, kinds: r.kinds[k], mode }));
+  // Levels 101 to 1000 go on in rounds of eleven the same way. A bigger board would not fit a phone, so
+  // the rounds take turns among the last four boards above (whose numbers of kinds were measured), and
+  // the levels get harder through the clock, the hints and the shuffles instead.
+  for (let n = 101, r = 0; n <= LEVEL_COUNT; r++) {
+    const R = ROUNDS[4 + (r % 4)];
+    for (let k = 0; k < MODES.length && n <= LEVEL_COUNT; k++, n++) LEVELS.push({ s: R.s, l: R.l, kinds: R.kinds[k], mode: MODES[k] });
+  }
   // Seconds allowed for each pair on the board: from 8.2 on level 1 down to 6.55 on level 12, as it
-  // always was, and from there more slowly down to 5 on level 100.
-  const secondsPerPair = (n) => (n <= 12 ? 8.2 - 0.15 * (n - 1) : 6.55 - 1.55 * (n - 12) / 88);
-  // Hints and shuffles a level starts with. The last two rounds give one hint less, the last round one shuffle less.
-  const hintsFor = (n) => (n >= 79 ? 3 : n >= 7 ? 4 : 3);
-  const shufflesFor = (n) => (n >= 90 ? 2 : n >= 9 ? 3 : 2);
+  // always was, from there more slowly down to 5 on level 100, and down to 4 on level 1000.
+  const secondsPerPair = (n) => (n <= 12 ? 8.2 - 0.15 * (n - 1) : n <= 100 ? 6.55 - 1.55 * (n - 12) / 88 : 5 - (n - 100) / 900);
+  // Hints and shuffles a level starts with. The last two rounds of the first hundred give one hint
+  // less, the last round one shuffle less; from level 500 one hint less again, from 750 one shuffle less.
+  const hintsFor = (n) => (n >= 500 ? 2 : n >= 79 ? 3 : n >= 7 ? 4 : 3);
+  const shufflesFor = (n) => (n >= 750 ? 1 : n >= 90 ? 2 : n >= 9 ? 3 : 2);
   const COMBO_WINDOW = 4;      // seconds allowed between matches to keep a combo
   const PER_PAGE = 20;         // levels the menu shows at a time
 
