@@ -884,11 +884,11 @@ void main() {
       stirMax: 2.2,              // fastest jet, x the inflow
       stirGrip: 0.6,             // share of the gap to the jet speed closed per step
       stirHeat: 0.7,             // heat of an engine's jet (a stir held in place), unless the call says
-      rotorWash: 1.2,            // a rotor's wash speed at power 1, x the inflow
-      rotorGrip: 0.3,            // share of the gap to the wash speed closed per 60 Hz step
+      rotorWash: 2.2,            // a rotor's wash speed at power 1, x the inflow (the owner asked to see it push the air down)
+      rotorGrip: 0.5,            // share of the gap to the wash speed closed per 60 Hz step
       jetMax: 3.6,               // an engine's fastest jet, x the inflow
       jetGrip: 0.85,             // share of the gap to the jet's speed closed per step
-      rotorThick: 0.012,         // half-thickness of the band the disc drives, of the grid's longer side
+      rotorThick: 0.02,          // half-thickness of the band the disc drives, of the grid's longer side
       blastSpeed: 0.8,           // ring speed, screen heights per second
       blastPush: 1.6,            // ring's peak speed, x its own speed, at power 1
       blastLife: 1.4,            // s
