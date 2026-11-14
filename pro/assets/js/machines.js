@@ -3,16 +3,17 @@
    tunnel at the top of the Pro page. It drives, races, rolls into battle,
    lifts off, flies and launches:
 
-     hypercar -> f1 -> helicopter -> jet -> starship -> hypercar
+     coupe -> f1 -> helicopter -> jet -> starship -> coupe
 
    Plain browser script, no dependencies, no THREE. It defines
    ProMachines on window (or on globalThis, so it also loads in Node).
    This file is the framework. The modes live in their own files, which
    load after this one and call ProMachines.defineMode:
-     machines-cars.js     hypercar
+     machines-coupe.js    coupe (a Porsche-911-like sports car)
      machines-f1.js       f1
-     machines-ground.js   tank, helicopter
-     machines-sky.js      jet (an F-35-like stealth fighter), starship
+     machines-ground.js   helicopter (an EC120-like light helicopter), tank
+     machines-sky.js      jet (an F-35-like stealth fighter), an older starship
+     machines-space.js    starship (the measured one; it replaces the older)
    A missing file just leaves its modes out of the cycle. (Parts of the
    guide below still describe the leopard, lion and robot of an earlier
    design; their specs are kept outside the site as examples.)
@@ -281,10 +282,9 @@
      ------------------------------------------------------------------ */
   const PI = Math.PI, TAU = 2 * Math.PI;
   const GROUND = -1.3;
-  // the tank was taken out (the owner asked); the SUV replaces the hypercar (the hypercar stays listed
-  // only until the SUV exists)
-  const ORDER = ["coupe", "suv", "hypercar", "f1", "helicopter", "jet", "starship"];
-  const DWELL = { coupe: 4.5, suv: 4.5, hypercar: 4.5, f1: 4.0, tank: 5.0, helicopter: 5.0, jet: 4.5, starship: 5.0 };
+  // the owner's line-up: the tank, the hypercar and the SUV were taken out (they asked)
+  const ORDER = ["coupe", "f1", "helicopter", "jet", "starship"];
+  const DWELL = { coupe: 4.5, f1: 4.0, tank: 5.0, helicopter: 5.0, jet: 4.5, starship: 5.0 };
   const DURATION = { dwell: 4.5, transform: 2.2 };
   const JITTER = 0.003;
   const EMPTY = Object.freeze([]);
@@ -1806,9 +1806,11 @@
 
   /* ==================================================================
      11. THE MODES live in their own files, which load after this one:
-         machines-cars.js    hypercar, f1
-         machines-ground.js  tank, helicopter
-         machines-sky.js     bomber, starship
+         machines-coupe.js   coupe
+         machines-f1.js      f1
+         machines-ground.js  helicopter, tank
+         machines-sky.js     jet, an older starship
+         machines-space.js   starship
      (Examples of complete mode specs from an earlier design, a leopard, a
      lion and a robot, are kept outside the site for reference.)
      ================================================================== */

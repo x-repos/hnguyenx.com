@@ -72,7 +72,7 @@
   // ====================================================
   const N = isMobile ? 18000 : 64000;
   const LABEL = {
-    coupe: ["Sports car", "Xe thể thao"], suv: ["Hybrid SUV", "SUV hybrid"], hypercar: ["Hypercar", "Siêu xe"], f1: ["F1 car", "Xe đua F1"], tank: ["Battle tank", "Xe tăng chiến đấu"],
+    coupe: ["Sports car", "Xe thể thao"], f1: ["F1 car", "Xe đua F1"], tank: ["Battle tank", "Xe tăng chiến đấu"],
     helicopter: ["Light helicopter", "Trực thăng hạng nhẹ"], jet: ["Stealth fighter", "Tiêm kích tàng hình"],
     bomber: ["Stealth bomber", "Máy bay ném bom tàng hình"],
     starship: ["Spaceship", "Tàu vũ trụ"], cylinder: ["Cylinder", "Hình trụ"],
@@ -225,7 +225,7 @@
   const MORPH_TIME = 2.6;     // seconds from one machine to the next
   const FULL_BAND = [0.02, 0.98];   // the wind fills the whole tunnel (the owner asked for wind everywhere)
   const GROUND = -1.3;              // the machines' ground line, in their own frame (the cars stand on it)
-  const GROUNDED = { coupe: 1, suv: 1, hypercar: 1, f1: 1, tank: 1 };   // the machines that stand on the floor
+  const GROUNDED = { coupe: 1, f1: 1, tank: 1 };   // the machines that stand on the floor
   // the machines that take off when they follow a car (the owner asked for the helicopter to come from
   // the ground): they form standing on the floor, wait a moment, then climb to their flying height in
   // this many seconds while the floor sinks away below the screen
@@ -256,10 +256,9 @@
     // a light one like the EC120 in the owner's photo); any of them that is missing is skipped
     const all = (Array.isArray(M.CYCLE) && M.CYCLE.length ? M.CYCLE : (M.NAMES || []).map((name) => ({ name, dwell: D.dwell })))
       .filter((c) => c && c.name).map((c) => ({ name: c.name, dwell: +c.dwell > 0 ? +c.dwell : D.dwell || 5 }));
-    // the cars first: the sports coupe (a Porsche-911-like car) and then the SUV (a Lexus-RX-like hybrid),
-    // both the owner's choice; whichever exists (the old hypercar only if neither does)
-    const CARS = ["coupe", "suv"].filter((n) => all.some((c) => c.name === n));
-    const SHOW = (CARS.length ? CARS : ["hypercar"]).concat(["f1", "helicopter", "jet", "starship"]);
+    // the owner's line-up: the sports coupe (a Porsche-911-like car), the F1 car, the light helicopter,
+    // the stealth fighter and the spaceship (the SUV was taken out, as they asked)
+    const SHOW = ["coupe", "f1", "helicopter", "jet", "starship"];
     const shown = SHOW.map((n) => all.find((c) => c.name === n)).filter(Boolean);
     const cycle = shown.length ? shown : all;
     if (!cycle.length) return cylinder();
