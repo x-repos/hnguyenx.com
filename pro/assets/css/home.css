@@ -1227,32 +1227,48 @@ html.lenis, html.lenis body { height: auto; }
 }
 .home-intro__canvas.is-ready { opacity: 1; }
 
-/* While the page loads, the π mark sits in the middle of the black screen, breathing softly, so
-   the first screen is never blank. It shows with the first paint (inlined here) and fades once the
-   live tunnel is up (intro.js marks the section .is-live). */
-.home-intro::before {
+/* While the page loads, the whole screen is black with only the π logo in the middle, breathing
+   softly. It shows with the first paint (inlined here) and lifts once the live tunnel is up (intro.js
+   marks the section .is-live), or when home.js shows its still page instead (.home-fallback). It
+   lifts by itself after 4 s if the tunnel gave up (.is-off) and after 8 s whatever happens. */
+html.js body.home-body::before,
+html.js body.home-body::after {
   content: "";
-  position: absolute;
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  transition: opacity 0.6s ease, visibility 0s linear 0.6s;
+}
+html.js body.home-body::before {
+  inset: 0;
+  background: #000;
+  animation: pro-cover-off 0.6s ease 8s forwards;
+}
+html.js body.home-body::after {
   left: 50%;
   top: 50%;
   width: 96px;
   height: 96px;
   margin: -48px 0 0 -48px;
-  z-index: -1;
-  pointer-events: none;
   background: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9Ii0xNDEuOSAtMTY1LjEgMTE1MCAxMTUwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMCIgeTE9IjAiIHgyPSI5MzMiIHkyPSI4ODciPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzhmZDZmZiIvPjxzdG9wIG9mZnNldD0iLjYiIHN0b3AtY29sb3I9IiNjOWE4ZmYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNmZmMyOGEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cGF0aCBmaWxsPSJ1cmwoI2cpIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0gMCA3OSBMIDAgMTU4IDkwLjU4NSAxNTggTCAxODEuMTcxIDE1OCAxODAuNzAyIDMyMy43NTAgQyAxODAuMTg5IDUwNS41ODUsIDE3OS44OTMgNTE1LjQzOSwgMTczLjkyMSA1NTAgQyAxNjcuMDk5IDU4OS40NzMsIDE0OC4yMzQgNjM5LjA5MiwgMTI1LjcwNSA2NzYuODE5IEMgMTE5LjAyNiA2ODguMDAzLCAxMDMuNjQ1IDcwOC44NDksIDg1LjA4NSA3MzEuODcxIEMgNzguNzEzIDczOS43NzUsIDY3LjEwMyA3NTQuMTc1LCA1OS4yODQgNzYzLjg3MSBDIDUxLjQ2NSA3NzMuNTY3LCA0NC4yNjUgNzgzLjAwNiwgNDMuMjg0IDc4NC44NDYgTCA0MS41MDAgNzg4LjE5MiA0NiA3OTIuMTYyIEMgNjcuNzc5IDgxMS4zNzUsIDE2MC4yMTkgODg3LCAxNjEuOTI2IDg4NyBDIDE2NC40MDYgODg3LCAyMDMuNDIyIDgzOS41NzAsIDIzNS4xMzYgNzk4IEMgMjgwLjIzMCA3MzguODkzLCAzMTMuMzE0IDY2My40NzcsIDMyOS40NTQgNTgzIEMgMzM3LjM5MiA1NDMuNDIyLCAzMzcuODIxIDUzMS44OTcsIDMzOC45OTEgMzI3IEMgMzM5LjUxMyAyMzUuNDI1LCAzMzkuOTU0IDE2MC4xNjAsIDMzOS45NzEgMTU5Ljc0NCBDIDMzOS45ODcgMTU5LjMyOSwgMzc4LjM2MiAxNTkuMTA0LCA0MjUuMjUwIDE1OS4yNDQgTCA1MTAuNTAwIDE1OS41MDAgNTEwLjU4NyAzOTAuNTAwIEMgNTEwLjY3MyA2MTguODM3LCA1MTEuMTk4IDY4My40NDAsIDUxMy4xMDMgNzAwIEMgNTIzLjIwNyA3ODcuODYxLCA1ODIuOTU1IDg1Ni41OTMsIDY2OC4yMjUgODc4LjQ0NyBDIDY5Ni41NDUgODg1LjcwNiwgNzMzLjU4MiA4ODUuNzE0LCA3NjYuNTAwIDg3OC40NjkgQyA4MjAuOTY5IDg2Ni40ODEsIDg3NC4zOTkgODIzLjkwNiwgOTAwLjc0MCA3NzEuNTAwIEMgOTE0Ljk5NCA3NDMuMTQzLCA5MTguNDU4IDcyOC42MDAsIDkyOC4wMDMgNjU3LjA0NiBDIDkzMy44MjAgNjEzLjQ0MywgOTMzLjY5NCA2MTUuMzg4LCA5MzAuNzUwIDYxNC42NjMgQyA5MjIuMzExIDYxMi41ODMsIDc4OS42MDMgNTk1LCA3ODIuMzUxIDU5NSBMIDc3Ny4xNDIgNTk1IDc3Ni4wNzQgNjAwLjI1MCBDIDc3NS40ODYgNjAzLjEzOCwgNzcyLjU0NyA2MjIuODI1LCA3NjkuNTQzIDY0NCBDIDc2Mi4zMzIgNjk0LjgzMCwgNzU5LjcyMCA3MDMuNzk1LCA3NDkuNTAzIDcxMi43ODggQyA3NDMuNDAxIDcxOC4xNjAsIDczMS40MDEgNzIzLjkzOSwgNzIzLjU2NSA3MjUuMjgyIEMgNzA1LjA0NCA3MjguNDU0LCA2ODQuNTEzIDcxNi45MjEsIDY3NSA2OTguMDAxIEwgNjcxIDY5MC4wNDQgNjcxIDQyNC41MjIgTCA2NzEgMTU5IDcwOC44MzUgMTU5IEMgNzI5LjY0NSAxNTksIDc3MC4zNzAgMTU4LjcwMSwgNzk5LjMzNSAxNTguMzM2IEwgODUyIDE1Ny42NzMgODUyIDc4LjgzNiBMIDg1MiAwIDQyNiAwIEwgMCAwIDAgNzkiLz48L3N2Zz4=") center / contain no-repeat;
-  animation: pro-pi-breathe 1.8s ease-in-out infinite alternate;
-  transition: opacity 0.6s ease, visibility 0s linear 0.6s;
+  animation: pro-pi-breathe 1.8s ease-in-out infinite alternate, pro-cover-off 0.6s ease 8s forwards;
 }
 @keyframes pro-pi-breathe { from { opacity: 0.35; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
-.home-intro.is-live::before { animation: none; opacity: 0; visibility: hidden; }
-/* no tunnel after all (no WebGL, no three.js): home.js's still page replaces the picture (.home-fallback
-   below); this fade only clears it if home.js never comes */
-.home-intro.is-off::before {
+@keyframes pro-cover-off { to { opacity: 0; visibility: hidden; } }
+html.js body.home-body:has(.home-intro.is-live)::before,
+html.js body.home-body:has(.home-intro.is-live)::after,
+html.js body.home-body.home-fallback::before,
+html.js body.home-body.home-fallback::after { animation: none; opacity: 0; visibility: hidden; }
+html.js body.home-body:has(.home-intro.is-off)::before,
+html.js body.home-body:has(.home-intro.is-off)::after {
   animation: none;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.8s ease 4s, visibility 0s linear 4.8s;
+  transition: opacity 0.6s ease 4s, visibility 0s linear 4.6s;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.js:not(.motion-ok) body.home-body::before,
+  html.js:not(.motion-ok) body.home-body::after { display: none; }
 }
 .home-intro__words {
   position: relative;
