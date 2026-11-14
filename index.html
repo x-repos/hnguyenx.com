@@ -18,7 +18,7 @@
   <meta name="twitter:title" content="Ben">
   <meta name="twitter:description" content="SciML · Quantum Computing · Earth &amp; Planetary Science">
   <meta name="twitter:image" content="https://hnguyenx.com/assets/og-card.png">
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="style.css?v=3">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=3">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=3">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png?v=3">
@@ -32,7 +32,7 @@
       <a href="#talks">Talks</a>
       <a href="#projects">Projects</a>
       <a href="#contact">Contact</a>
-      <a class="pro-button" href="pro/"><span class="pro-star">✦</span> Pro Mode</a>
+      <a class="pro-button" translate="no" href="pro/"><span class="pro-star">✦</span> Pro Mode</a>
     </nav>
   </header>
 
@@ -76,9 +76,9 @@
       </li>
       <li>
         <strong>Nguyen, H. A.</strong>, Tura, A. (2026).
-        <em>Quantum simulation of dissipative acoustic and elastic waves by Schrödingerisation: absorbing boundaries and explicit polynomial-size circuits.</em> arXiv preprint.
-        <a href="https://arxiv.org/abs/2611.02357" aria-label="arXiv preprint on quantum simulation of dissipative acoustic and elastic waves by Schrödingerisation">[arXiv]</a>
-        <a href="https://arxiv.org/pdf/2611.02357" aria-label="PDF of the Schrödingerisation dissipative waves paper">[PDF]</a>
+        <em>Quantum simulation of dissipative acoustic and elastic waves by Schrödingerization: absorbing boundaries and explicit polynomial-size circuits.</em> arXiv preprint.
+        <a href="https://arxiv.org/abs/2611.02357" aria-label="arXiv preprint on quantum simulation of dissipative acoustic and elastic waves by Schrödingerization">[arXiv]</a>
+        <a href="https://arxiv.org/pdf/2611.02357" aria-label="PDF of the Schrödingerization dissipative waves paper">[PDF]</a>
       </li>
       <li>
         <strong>Nguyen, H. A.</strong>, Manu-Marfo, D., Aoudia, A. (2026).
@@ -141,7 +141,7 @@
         <strong>IMAGE 2026</strong> (oral) — <em>Full waveform inversion with hybrid quantum finite-basis physics-informed neural network.</em> Houston, TX · Aug 2026
       </li>
       <li>
-        <strong>IASPEI–IAGA 2025</strong> (poster) — <em>Ambient noise tomography beneath the Banda basin reveals new insights into the arc-continent collision zone.</em> Lisbon, Portugal · Sep 2025
+        <strong>IAGA–IASPEI 2025</strong> (poster) — <em>Ambient noise tomography beneath the Banda basin reveals new insights into the arc-continent collision zone.</em> Lisbon, Portugal · Sep 2025
       </li>
       <li>
         <strong>IMAGE 2025</strong> (oral, workshop) — <em>Optimization with quantum annealing method.</em> Houston, TX · Aug 2025
@@ -157,7 +157,7 @@
     <ul class="entries">
       <li>
         <span class="project-name">quFWI</span> —
-        Hybrid quantum–classical full-waveform inversion with FBPINNs in JAX; companion code to the arXiv preprint above.
+        Hybrid quantum–classical full-waveform inversion with FBPINNs in JAX; companion code to <a href="https://arxiv.org/abs/2606.01110">arXiv:2606.01110</a> above.
         <a href="https://github.com/x-repos/quFWI" aria-label="GitHub repository for quFWI">[GitHub]</a>
       </li>
       <li>
@@ -166,9 +166,9 @@
         <a href="https://github.com/x-repos/tomoQA" aria-label="GitHub repository for tomoQA">[GitHub]</a>
       </li>
       <li>
-        <span class="project-name">hEspesso</span> —
+        <span class="project-name">hEspresso</span> —
         DFT studies of catalyst-induced destabilisation in Mg-based hydrogen-storage hydrides.
-        <a href="https://github.com/x-repos/hEspesso" aria-label="GitHub repository for hEspesso">[GitHub]</a>
+        <a href="https://github.com/x-repos/hEspresso" aria-label="GitHub repository for hEspresso">[GitHub]</a>
       </li>
     </ul>
   </section>
@@ -208,9 +208,14 @@
     var api = "https://hnguyenx-visits.hnguyenx.workers.dev";
     var regionNames;
     try { regionNames = new Intl.DisplayNames(["en"], { type: "region" }); } catch (e) {}
-    var counted = sessionStorage.getItem("counted");
+    // only the live site counts a visit (once per tab session); previews, copies
+    // and browsers that block site data just read the totals
+    var counted = true;
+    if (/^(www\.)?hnguyenx\.com$/.test(location.hostname)) {
+      try { counted = sessionStorage.getItem("counted"); } catch (e) {}
+    }
     fetch(api + (counted ? "/counts" : "/hit"), counted ? {} : { method: "POST" })
-      .then(function (r) { sessionStorage.setItem("counted", "1"); return r.json(); })
+      .then(function (r) { try { sessionStorage.setItem("counted", "1"); } catch (e) {} return r.json(); })
       .then(function (counts) {
         var entries = Object.keys(counts)
           .filter(function (c) { return c !== "XX"; })

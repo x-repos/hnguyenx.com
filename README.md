@@ -12,13 +12,14 @@ reused, redistributed or used commercially without written permission. See
 
 ## Structure
 
-- `index.html` — the whole main page (about, publications, projects, contact)
-- `style.css` — all styling (Crimson Pro, self-hosted in `assets/fonts/`)
+- `index.html` — the whole main page (about, research interests, publications, talks, projects, contact, Pi)
+- `style.css` — styling of the main page and the blog (Crimson Pro, self-hosted in `assets/fonts/`)
 - `pro/` — animated "Pro Mode" homepage (three.js/GSAP, ported from the old site)
 - `blog/` — blog index and posts
-- `play/` — games: a chooser page and one folder per game (`pi/` Pi Flight, `chess/` Chess, `caro/` Caro, `chinesechess/` Chinese Chess (`cotuong/` is the old address and redirects), `qubit/` Qubit, `blocks/` Lattice, `orbit/` Orbit Sling, `run/` Pi Run, `link/` Pair Path); no assets, no build step
-- `files/` — public PDFs (CV, etc.)
-- `assets/` — photo, CV, favicon, fonts
+- `pi/` — the Pi Collection page and its SVG/PNG downloads
+- `play/` — games: a chooser page and one folder per game (`pi/` Pi Flight, `chess/` Chess, `caro/` Caro, `chinesechess/` Chinese Chess (`cotuong/` is the old address and redirects), `qubit/` Qubit, `blocks/` Lattice, `orbit/` Orbit Sling, `run/` Pi Run, `link/` Pair Path); link-preview pictures in `og/`, no build step
+- `files/` — public PDFs (papers and other documents)
+- `assets/` — photo, CV (`cv.pdf`), favicon, link-preview card, fonts
 - `counter-worker/` — Cloudflare Worker that tallies visits by country (KV-backed)
 - `chess-worker/` — Cloudflare Worker that pairs two players for online chess, caro and Chinese chess and passes their moves along (Durable Objects, WebSockets)
 - `CNAME` — custom domain for GitHub Pages
@@ -42,9 +43,9 @@ python3 -m http.server 8123   # http://localhost:8123
 
 Notes for my own use, in case the site ever has to be set up again.
 
-Two pieces deploy independently: the **static site** (GitHub Pages) and an
-optional **visitor counter** (Cloudflare Worker). You can ship the site without
-the counter.
+Three pieces deploy independently: the **static site** (GitHub Pages), an
+optional **visitor counter** and an optional **game relay** (both Cloudflare
+Workers). You can ship the site without either worker.
 
 ### 1. Static site on GitHub Pages
 
@@ -52,7 +53,7 @@ the counter.
    You do **not** need a `<user>.github.io` repo; the custom domain is served
    straight from this project repo.
 2. Add the static files (`index.html`, `style.css`, `assets/`, `pro/`, `blog/`,
-   `files/`). There is no build step.
+   `play/`, `pi/`, `files/`). There is no build step.
 3. Push to `main`.
 4. **Settings → Pages → Build and deployment** → Source: **Deploy from a branch**,
    Branch: `main`, folder: `/` (root).
@@ -80,8 +81,9 @@ gh api repos/<user>/<repo>/pages
 ### 3. Visitor counter (optional)
 
 `counter-worker/` is a standalone Cloudflare Worker. It counts visits by country
-(from Cloudflare's `CF-IPCountry` header) into a KV namespace; `index.html` POSTs
-to it on load and renders the totals.
+(from Cloudflare's `CF-IPCountry` header) into a KV namespace; on hnguyenx.com
+`index.html` POSTs to it once per tab session and renders the totals, while
+local previews and copies on other hosts only read the totals.
 
 ```bash
 cd counter-worker
@@ -93,8 +95,8 @@ wrangler deploy
 
 The worker publishes to `https://hnguyenx-visits.<your-subdomain>.workers.dev`.
 Point the `api` URL near the top of the counter `<script>` in `index.html` at
-your own Worker URL, and add your domain to `ALLOWED_ORIGINS` in
-`counter-worker/worker.js`.
+your own Worker URL, put your domain in the hostname test a few lines below it,
+and add your domain to `ALLOWED_ORIGINS` in `counter-worker/worker.js`.
 
 ### 4. Online game relay (optional)
 

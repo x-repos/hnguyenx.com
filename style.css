@@ -97,10 +97,19 @@ nav {
   font-size: 1rem;
 }
 
-/* keep the sticky bar shallow on phones, where it would otherwise wrap to three lines */
+/* between phones and desktop the bar takes two rows (the name, then the links): about 92 px */
+@media (max-width: 40rem) {
+  html {
+    scroll-padding-top: 6.75rem;
+  }
+}
+
+/* keep the sticky bar shallow on phones, where it would otherwise wrap to three lines:
+   the name and the Pro Mode pill share the first line, the section links take the second */
 @media (max-width: 30rem) {
   html {
-    scroll-padding-top: 7.5rem;
+    /* clears the bar even when a 20 px default font wraps it to four rows: 154 px below 334 px wide */
+    scroll-padding-top: 8rem;
   }
 
   header {
@@ -109,11 +118,36 @@ nav {
 
   .site-name {
     font-size: 1rem;
+    /* room for the pill ("✦ Pro Mode"); a longer name wraps instead of running under it */
+    max-width: calc(100% - 6.5rem);
   }
 
   nav {
+    flex-basis: 100%;
     gap: 0.15rem 0.7rem;
     font-size: 0.9rem;
+  }
+
+  /* at the right end of the name's line (the sticky header is its containing block);
+     'nav ' outranks the .pro-button rule below */
+  nav .pro-button {
+    position: absolute;
+    top: 0.5rem;
+    right: 0;
+    padding: 0 0.6rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* very narrow in rem (a very large default font in a 320-360 px window):
+   the pill goes back to the link rows so the name keeps its line */
+@media (max-width: 15rem) {
+  .site-name {
+    max-width: none;
+  }
+
+  nav .pro-button {
+    position: static;
   }
 }
 
@@ -336,6 +370,8 @@ ul.entries li {
 .pro-button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
+  /* keep the pill's round ends (a:focus-visible would give it 2px corners) */
+  border-radius: 999px;
 }
 
 .pro-star {
