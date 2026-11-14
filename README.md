@@ -18,7 +18,7 @@ reused, redistributed or used commercially without written permission. See
 - `blog/` — blog index and posts
 - `pi/` — the Pi Collection page and its SVG/PNG downloads
 - `play/` — games: a chooser page and one folder per game (`pi/` Pi Flight, `chess/` Chess, `caro/` Caro, `chinesechess/` Chinese Chess (`cotuong/` is the old address and redirects), `qubit/` Qubit, `blocks/` Lattice, `orbit/` Orbit Sling, `run/` Pi Run, `link/` Pair Path); link-preview pictures in `og/`, no build step
-- `files/` — public PDFs (papers and other documents)
+- `files/` — PDFs the CV links to (a course certificate). Publications link to the publisher's site; publishers' PDFs are not hosted here
 - `assets/` — photo, CV (`cv.pdf`), favicon, link-preview card, fonts
 - `counter-worker/` — Cloudflare Worker that tallies visits by country (KV-backed)
 - `chess-worker/` — Cloudflare Worker that pairs two players for online chess, caro and Chinese chess and passes their moves along (Durable Objects, WebSockets)
