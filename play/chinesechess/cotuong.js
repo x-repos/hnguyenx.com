@@ -241,7 +241,9 @@
       host.querySelector(".side__dot").className = "side__dot is-" + c;
       const turn = !state.over && eng.turn() === c;
       host.classList.toggle("is-turn", turn);
-      host.querySelector(".side__name").innerHTML = nameOf(c) + (turn ? ' <span class="side__turn">' + tr("to move", "đến lượt") + "</span>" : "");
+      // in Vietnamese the words come before the name: "Đến lượt Đỏ"
+      const tag = '<span class="side__turn">' + tr("to move", "Đến lượt") + "</span>";
+      host.querySelector(".side__name").innerHTML = !turn ? nameOf(c) : PlayLang.get() === "vi" ? tag + " " + nameOf(c) : nameOf(c) + " " + tag;
       host.querySelector(".tray").innerHTML = taken[other(c)].slice().sort((a, b) => (a & 7) - (b & 7)).map(mini).join("");
     };
     fill($("side-top"), top); fill($("side-bot"), bottom);
@@ -707,10 +709,20 @@
   $("btn-two").addEventListener("click", () => { audio(); startGame("two", save.level, "r"); });
   $("btn-continue").addEventListener("click", () => { audio(); SFX.pick(); resume(); });
 
-  // the language changed: rewrite every text that was set from here
+  // labels that are not text on the page, in the chosen language
+  function paintLabels() {
+    $("btn-menu").setAttribute("aria-label", tr("Menu", "Menu"));
+    $("btn-mute").setAttribute("aria-label", tr("Sound on or off", "Bật hoặc tắt âm thanh"));
+    $("board").setAttribute("aria-label", tr("Chinese Chess board", "Bàn cờ tướng"));
+    $("moves").setAttribute("aria-label", tr("Moves", "Các nước đi"));
+  }
+  paintLabels();
+  // the language changed: rewrite every text that was set from here. The move list also holds
+  // the line shown before any game.
   PlayLang.onChange(() => {
     for (const el of piecesEl.children) el.querySelector(".pc__abc").textContent = letter(el._pc);
-    if (game) { paintSides(); paintMoves(); paintOver(); }
+    paintLabels(); paintMoves();
+    if (game) { paintSides(); paintOver(); }
     paintStatus(); paintMenu(); paintOnline();
   });
 

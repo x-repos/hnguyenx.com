@@ -920,7 +920,7 @@
       const open = unlocked(i), st = starsOf(i);
       b.disabled = !open;
       if (i === nx) b.className = "is-next";
-      b.setAttribute("aria-label", TX("Level ", "Màn ") + (i + 1) + ", " + levelName(l) + (open ? ", " + st + TX(" stars", " sao") : TX(", locked", ", đã khóa")));
+      b.setAttribute("aria-label", TX("Level ", "Màn ") + (i + 1) + ", " + levelName(l) + (open ? ", " + st + TX(st === 1 ? " star" : " stars", " sao") : TX(", locked", ", đã khóa")));
       const num = document.createElement("b"); num.textContent = String(i + 1);
       const ss = document.createElement("span"); ss.className = "stars";
       for (let s = 0; s < 3; s++) { const el = document.createElement("i"); el.textContent = "★"; if (s < st) el.className = "lit"; ss.appendChild(el); }

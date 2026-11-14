@@ -145,6 +145,10 @@ body.in-menu #game { cursor: default; }
 @media (orientation: landscape) and (max-height: 520px) {
   body:not(.in-menu) .rotate { display: block; }
 }
+/* below 390 px a smaller level title, so every title fits the top bar of a phone 360 px wide or more */
+@media (max-width: 389px) {
+  .hud__title { font-size: 0.9rem; }
+}
 @media (max-width: 360px) {
   .ctl { gap: 8px; }
   .ctl__launch { min-width: 82px; padding: 0 12px; }

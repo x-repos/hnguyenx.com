@@ -229,11 +229,14 @@
     };
     fill($("side-top"), top); fill($("side-bot"), bottom);
   }
+  // a move as written in the list: in Vietnamese the pieces have their own letters, V vua, H hậu, X xe, T tượng, M mã
+  const VI_LETTER = { K: "V", Q: "H", R: "X", B: "T", N: "M" };
+  const written = (s) => tr(s, s.replace(/[KQRBN]/g, (c) => VI_LETTER[c]));
   function paintMoves() {
     let h = "";
     for (let i = 0; i < sans.length; i += 2) {
-      h += '<li><span class="n">' + (i / 2 + 1) + '.</span><span class="m' + (i === sans.length - 1 ? " is-last" : "") + '">' + sans[i] + "</span>" +
-        (i + 1 < sans.length ? '<span class="m' + (i + 1 === sans.length - 1 ? " is-last" : "") + '">' + sans[i + 1] + "</span>" : "") + "</li>";
+      h += '<li><span class="n">' + (i / 2 + 1) + '.</span><span class="m' + (i === sans.length - 1 ? " is-last" : "") + '">' + written(sans[i]) + "</span>" +
+        (i + 1 < sans.length ? '<span class="m' + (i + 1 === sans.length - 1 ? " is-last" : "") + '">' + written(sans[i + 1]) + "</span>" : "") + "</li>";
     }
     const host = $("moves");
     host.innerHTML = h;
@@ -771,7 +774,7 @@
     $("btn-mute").setAttribute("aria-label", tr("Sound on or off", "Bật hoặc tắt âm thanh"));
     $("board").setAttribute("aria-label", tr("Chess board", "Bàn cờ vua"));
     $("moves").setAttribute("aria-label", tr("Moves", "Các nước đi"));
-    if (game) { paintSides(); paintStatus(); }
+    if (game) { paintSides(); paintMoves(); paintStatus(); }
     if (screen === "menu") paintMenu();
     paintOnline(onlineFailed);
     if (!$("over").hidden) paintOver();

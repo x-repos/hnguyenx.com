@@ -884,7 +884,7 @@
       for (let i = ch.from; i < to; i++) {
         const st = save.stars[i] | 0, ok = unlocked(i), num = i >= ADV ? i - ADV + 1 : i + 1;
         h += '<button type="button" class="lv__btn' + (st ? " is-done" : "") + (i === open ? " is-next" : "") + '" data-i="' + i + '"' + (ok ? "" : " disabled") +
-          ' aria-label="' + (i >= ADV ? tr("Advanced level ", "Màn nâng cao ") : tr("Level ", "Màn ")) + num + (ok ? ", " + st + tr(" stars", " sao") : tr(", locked", ", chưa mở")) + '"><span class="lv__num">' + num + '</span><span class="lv__stars">' +
+          ' aria-label="' + (i >= ADV ? tr("Advanced level ", "Màn nâng cao ") : tr("Level ", "Màn ")) + num + (ok ? ", " + st + tr(st === 1 ? " star" : " stars", " sao") : tr(", locked", ", chưa mở")) + '"><span class="lv__num">' + num + '</span><span class="lv__stars">' +
           [1, 2, 3].map((k) => starSvg(k <= st)).join("") + "</span></button>";
       }
       h += "</div>";

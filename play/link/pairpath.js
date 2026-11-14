@@ -19,7 +19,9 @@
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
   // the text in the language chosen for the site: English, or Vietnamese
   const TX = (en, vi) => (window.PlayLang ? window.PlayLang.t(en, vi) : en);
-  const fmt = (n) => Math.round(n).toLocaleString("en-US");
+  // a number as the chosen language writes it: 1,200 and 0.5 in English, 1.200 and 0,5 in Vietnamese
+  const num = (n) => n.toLocaleString(TX("en-US", "vi-VN"));
+  const fmt = (n) => num(Math.round(n));
   function shuffleArr(a) {
     for (let i = a.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -785,7 +787,7 @@
     if (combo >= 2) {
       const bonus = Math.min(2, 0.25 + 0.25 * (combo - 1));
       timeLeft = Math.min(timeMax, timeLeft + bonus);
-      floats.push({ x: clamp(mx, 108, vw - 108), y: my, text: "Combo x" + combo + "  +" + (Math.round(bonus * 100) / 100) + " s", t: 0, col: "#ffc28a" });
+      floats.push({ x: clamp(mx, 108, vw - 108), y: my, text: "Combo x" + combo + "  +" + num(Math.round(bonus * 100) / 100) + " s", t: 0, col: "#ffc28a" });
     } else {
       floats.push({ x: clamp(mx, 40, vw - 40), y: my, text: "+" + gain, t: 0, col: "#ffffff" });
     }

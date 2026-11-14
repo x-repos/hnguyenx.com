@@ -212,7 +212,7 @@
     paintStart();
   }
   function paintStart() {
-    $("start-best").textContent = save.best ? TX("Best: " + save.best + " decimal places · " + save.circles + " circles", "Kỷ lục: " + save.best + " chữ số thập phân · " + save.circles + " vòng tròn") : "";
+    $("start-best").textContent = save.best ? TX("Best: " + places(save.best) + " · " + save.circles + (save.circles === 1 ? " circle" : " circles"), "Kỷ lục: " + save.best + " chữ số thập phân · " + save.circles + " vòng tròn") : "";
   }
   function start() {
     state = "play"; $("start").hidden = true;
@@ -292,7 +292,7 @@
   $("btn-mute").addEventListener("click", () => { audioInit(); toggleMute(); });
   $("btn-again").addEventListener("click", () => { audioInit(); reset(); });
   $("btn-share").addEventListener("click", () => {
-    const text = TX("I reached " + passed + " decimal places of π in Pi Flight.", "Tôi bay được " + passed + " chữ số thập phân của π trong Pi Flight.") + " https://hnguyenx.com/play/pi/";
+    const text = TX("I reached " + places(passed) + " of π in Pi Flight.", "Tôi bay được " + passed + " chữ số thập phân của π trong Pi Flight.") + " https://hnguyenx.com/play/pi/";
     if (navigator.share) navigator.share({ text }).catch(() => {});
     else navigator.clipboard.writeText(text).then(() => { $("btn-share").textContent = TX("Copied", "Đã sao chép"); setTimeout(() => { $("btn-share").textContent = TX("Share", "Chia sẻ"); }, 1500); }).catch(() => {});
   });

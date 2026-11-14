@@ -286,8 +286,8 @@ html[lang="vi"] .gate__sub { white-space: nowrap; }
 @media (hover: none) { .panel__help li.keys { display: none; } }
 .panel__back { margin: 8px 0 0; font-size: 1.05rem; display: flex; justify-content: center; gap: 10px; }
 .panel__back a { display: inline-block; padding: 12px 8px; min-width: 96px; }
-/* the EN / VI switch under the links */
-.panel__lang { margin: 0 0 2px; color: var(--gold); }
+/* the EN / VI switch sits above the how-to list, so it shows without scrolling on a small phone */
+.panel__lang { margin: 8px 0 0; color: var(--gold); }
 
 .lv { margin-top: 8px; text-align: left; flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior: contain; padding: 0 2px 4px; border-top: 1px solid var(--line); }
 .lv h3 { margin: 16px 2px 8px; font-size: 0.88rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }

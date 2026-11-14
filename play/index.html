@@ -13,13 +13,17 @@
   <meta property="og:image" content="https://hnguyenx.com/play/og/play.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Games: Chess, Caro and more. Play in the browser: against a friend online, or against the computer.">
+  <meta property="og:image:alt" content="Play: Chess, Caro and more. Online with a friend, or against the computer. Pick a game.">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Games to play with me">
   <meta name="twitter:description" content="Chess, Caro, Chinese Chess and more. Play in the browser: against a friend online, or against the computer.">
   <meta name="twitter:image" content="https://hnguyenx.com/play/og/play.png">
   <meta name="theme-color" content="#05060b">
   <link rel="icon" type="image/svg+xml" href="../pro/images/favicon-pro.svg?v=2">
+  <link rel="icon" type="image/png" sizes="32x32" href="../pro/images/favicon-pro-32.png?v=2">
+  <link rel="apple-touch-icon" sizes="180x180" href="../pro/images/apple-touch-icon-pro.png?v=2">
+  <!-- the saved language before the first paint; nav.js wires up the switch later -->
+  <script>try{if(localStorage.getItem("site-lang")==="vi"){document.documentElement.setAttribute("lang","vi");document.title="Chơi"}}catch(e){}</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap">
@@ -94,7 +98,7 @@
           <g transform="translate(240 160) scale(0.4)" fill="#fffdf8" stroke="#2e261b" stroke-width="3.2" stroke-linejoin="round"><g><path d="M33 62h34l7 16H26z"/><rect x="18" y="76" width="64" height="12" rx="4"/><path d="M46.500 5h7v6h6v7h-6v12h-7V18h-6v-7h6z"/><path d="M50 30c-9-7-27-3-27 11 0 9 6 15 9 23h36c3-8 9-14 9-23 0-14-18-18-27-11z"/><rect x="29" y="60" width="42" height="7" rx="3.5"/></g><g fill="none" stroke="#2e261b" stroke-width="3" stroke-linecap="round"><path d="M50 36v20"/></g></g>
         </svg>
         <div class="card__body">
-          <h2>Chess</h2>
+          <h2><span lang="en">Chess</span><span lang="vi">Cờ vua</span></h2>
           <p><span lang="en">Play the computer at four levels, a friend on one screen, or a friend online.</span><span lang="vi">Chơi cờ vua với máy ở bốn cấp độ, với bạn trên cùng một màn hình, hoặc với bạn bè qua mạng.</span></p>
           <p class="card__best" id="best-chess"></p>
           <span class="card__go"><span lang="en">Play</span><span lang="vi">Chơi</span></span>
@@ -110,7 +114,7 @@
           <g fill="none" stroke="#b4502a" stroke-width="2.8"><circle cx="130" cy="50" r="5.6"/><circle cx="150" cy="70" r="5.6"/><circle cx="170" cy="90" r="5.6"/><circle cx="130" cy="90" r="5.6"/><circle cx="170" cy="130" r="5.6"/><circle cx="150" cy="110" r="5.6"/><circle cx="210" cy="150" r="5.6"/><circle cx="90" cy="30" r="5.6"/></g>
         </svg>
         <div class="card__body">
-          <h2>Caro</h2>
+          <h2><span lang="en">Caro</span><span lang="vi">Cờ caro</span></h2>
           <p><span lang="en">Five in a row with X and O. Play the computer, a friend on one screen, or a friend online.</span><span lang="vi">Cờ caro: xếp năm quân X hoặc O thẳng hàng. Chơi với máy, với bạn trên cùng một màn hình, hoặc với bạn bè qua mạng.</span></p>
           <p class="card__best" id="best-caro"></p>
           <span class="card__go"><span lang="en">Play</span><span lang="vi">Chơi</span></span>
@@ -262,29 +266,33 @@
     </div>
   </main>
 
-  <script src="../pro/assets/js/nav.js?v=6"></script>
+  <script src="../pro/assets/js/nav.js?v=7"></script>
   <script>
-  // show each game's best result, saved on this device by the games themselves
+  // the tab title and the top bar's labels in the chosen language, and each game's best result, saved on this device by the games themselves
   (function () {
     function read(key) { try { return JSON.parse(localStorage.getItem(key) || "{}"); } catch (e) { return {}; } }
     var p = read("pi-flight-v1");
+    var BAR = [[".home-topnav", "Primary", "Điều hướng chính"], [".home-topnav__brand", "Home, Hoang Anh Nguyen", "Trang chủ, Hoang Anh Nguyen"],
+      [".nav-toggle", "Open menu", "Mở menu"], [".lang-switch", "Language", "Ngôn ngữ"]];
     function show() {
       var vi = document.documentElement.getAttribute("lang") === "vi";
+      document.title = vi ? "Chơi" : "Play";
+      BAR.forEach(function (x) { var e = document.querySelector(x[0]); if (e) e.setAttribute("aria-label", vi ? x[2] : x[1]); });
       var q = read("qubit-flip-v1"), l = read("lattice-v1");
-      if (q.solved) document.getElementById("best-qubit").textContent = vi ? "Đã giải " + q.solved + " trên " + (q.levels || 47) + ", " + (q.totalStars || 0) + " sao" : q.solved + " of " + (q.levels || 47) + " solved, " + (q.totalStars || 0) + " stars";
-      if (l.best) document.getElementById("best-lattice").textContent = (vi ? "Kỷ lục của bạn: " : "Your best: ") + Number(l.best).toLocaleString();
+      if (q.solved) document.getElementById("best-qubit").textContent = vi ? "Đã giải " + q.solved + " trên " + (q.levels || 47) + ", " + (q.totalStars || 0) + " sao" : q.solved + " of " + (q.levels || 47) + " solved, " + (q.totalStars || 0) + (q.totalStars === 1 ? " star" : " stars");
+      if (l.best) document.getElementById("best-lattice").textContent = (vi ? "Kỷ lục của bạn: " : "Your best: ") + Number(l.best).toLocaleString(vi ? "vi-VN" : "en-US");
       var o = read("orbit-sling-v1"), rn = read("pi-run-v1"), pp = read("pair-path-v1");
       var os = o.stars || {}, on = Object.keys(os).length, ost = Object.keys(os).reduce(function (a, k) { return a + (+os[k] || 0); }, 0);
-      if (on) document.getElementById("best-orbit").textContent = vi ? "Đã qua " + on + " trên 24 màn, " + ost + " sao" : on + " of 24 levels, " + ost + " stars";
-      if (rn.best) document.getElementById("best-run").textContent = (vi ? "Kỷ lục của bạn: " : "Your best: ") + rn.best + (vi ? " đơn vị" : " units");
-      if (pp.cleared) document.getElementById("best-link").textContent = vi ? "Đã qua " + pp.cleared + " trên " + (pp.total || 100) + " màn, " + (pp.stars || 0) + " sao" : pp.cleared + " of " + (pp.total || 100) + " levels, " + (pp.stars || 0) + " stars";
+      if (on) document.getElementById("best-orbit").textContent = vi ? "Đã qua " + on + " trên 24 màn, " + ost + " sao" : on + " of 24 levels, " + ost + (ost === 1 ? " star" : " stars");
+      if (rn.best) document.getElementById("best-run").textContent = (vi ? "Kỷ lục của bạn: " : "Your best: ") + Number(rn.best).toFixed(1) + (vi ? " đơn vị" : " units");
+      if (pp.cleared) document.getElementById("best-link").textContent = vi ? "Đã qua " + pp.cleared + " trên " + (pp.total || 100) + " màn, " + (pp.stars || 0) + " sao" : pp.cleared + " of " + (pp.total || 100) + " levels, " + (pp.stars || 0) + (pp.stars === 1 ? " star" : " stars");
       var ch = read("chess-v1"), cw = (Array.isArray(ch.wins) ? ch.wins : []).reduce(function (a, n) { return a + (+n || 0); }, 0);
       if (cw) document.getElementById("best-chess").textContent = (vi ? "Số ván thắng máy: " : "Games won against the computer: ") + cw;
       var ca = read("caro-v1"), caw = (Array.isArray(ca.wins) ? ca.wins : []).reduce(function (a, n) { return a + (+n || 0); }, 0);
       if (caw) document.getElementById("best-caro").textContent = (vi ? "Số ván thắng máy: " : "Games won against the computer: ") + caw;
       var ct = read("cotuong-v1"), ctw = (Array.isArray(ct.wins) ? ct.wins : []).reduce(function (a, n) { return a + (+n || 0); }, 0);
       if (ctw) document.getElementById("best-cotuong").textContent = (vi ? "Số ván thắng máy: " : "Games won against the computer: ") + ctw;
-      if (p.best) document.getElementById("best-pi").textContent = (vi ? "Kỷ lục của bạn: " : "Your best: ") + p.best + (vi ? " chữ số thập phân" : " decimal places");
+      if (p.best) document.getElementById("best-pi").textContent = (vi ? "Kỷ lục của bạn: " : "Your best: ") + p.best + (vi ? " chữ số thập phân" : p.best === 1 ? " decimal place" : " decimal places");
     }
     show();
     document.addEventListener("site:langchange", show);
