@@ -12,8 +12,8 @@
           metres, length 5.605 m, checked against the published figures).
           The long narrow nose on a four-element front wing with its end
           plates, 18-inch wheels with their covers and the small winglets
-          over the front tyres, the halo over the cockpit and a plain
-          helmet, the mirrors, the sidepods with their inlets, undercuts
+          over the front tyres, the halo over the empty cockpit (no
+          driver), the mirrors, the sidepods with their inlets, undercuts
           and downwash ramps, the airbox under the roll-hoop camera, the
           engine cover, the floor with its fences and edges, the
           diffuser, the beam wing and the big rear wing with the DRS flap
@@ -35,11 +35,13 @@
    Roles of the rig's parts (chosen so each has about the share of the
    whole it has in the other machines):
      chest      monocoque from the front bulkhead: the chassis top and
-                sides, the cockpit opening and its inner walls, the plain
-                helmet, the shoulders and the steering wheel under it; the
-                floor ahead of the sidepods with its fences
+                sides, the cockpit opening and its inner walls, the
+                steering wheel in the empty cockpit; the floor ahead of the
+                sidepods with its fences
+     NO DRIVER: the owner asked for the driver to be taken out, so there
+     is no helmet and no body in the cockpit. Do not add one.
      head       nose (x 0.5 .. 1.6)
-     jaw        halo; the mirrors; the headrest round the helmet
+     jaw        halo; the mirrors; the headrest round the cockpit
      neck       airbox and roll hoop, the roll-hoop camera
      hips       engine cover, gearbox and crash structure
      maneL1/R1  sidepod front: inlet, lip, radiator face
@@ -428,8 +430,8 @@
     };
 
     // ---- monocoque (chest): the chassis down to the floor ahead of the sidepods, above the sidepods
-    // alongside the cockpit; the opening's inner walls; the helmet; the floor ahead of the sidepods with
-    // its fences ----
+    // alongside the cockpit; the opening's inner walls; the steering wheel; the floor ahead of the
+    // sidepods with its fences. NO DRIVER (the owner asked): no helmet, no body; do not add one ----
     const aOpen = (x) => (ckW(x) > 0.002 ? bodyAngZ(x, ckW(x)) : 0);
     const aFloor = (x) => bodyAng(x, 0.135);
     const aPod = (x) => bodyAng(x, SPYI(x));
@@ -441,9 +443,7 @@
       bodyBand(S, 1.75, SPX0, aOpen, aFloor, 1, { gu: 18, gv: 16 }), bodyBand(S, 1.75, SPX0, aOpen, aFloor, -1, { gu: 18, gv: 16 }),
       bodyBand(S, SPX0, CK.x1, aOpen, aPod, 1, { gu: 20, gv: 5 }), bodyBand(S, SPX0, CK.x1, aOpen, aPod, -1, { gu: 20, gv: 5 }),
       wall(1), wall(-1),
-      S.ellipsoid(0.135, 0.12, 0.112, { at: [2.80, 0.745, 0], theta: [0, 1.42] }),
-      // under the helmet in the opening: the driver's shoulders and the steering wheel
-      S.ellipsoid(0.17, 0.09, 0.2, { at: [2.66, 0.60, 0], theta: [0, 1.1], w: 0.7 }),
+      // the steering wheel in the empty cockpit
       S.box(0.04, 0.11, 0.26, { at: [2.42, 0.655, 0], r: 0.02, w: 0.8 }),
       both(S, FLX0, SPX0, floorTop, { gu: 16, gv: 8, w: 0.6 }),
       fence(0.30, 1), fence(0.40, 1), fence(0.50, 1), fence(0.30, -1), fence(0.40, -1), fence(0.50, -1));
