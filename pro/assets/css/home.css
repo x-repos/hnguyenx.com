@@ -933,6 +933,10 @@ html.is-turning, html.is-turning * { cursor: grabbing !important; -webkit-user-s
   0%   { opacity: 0; transform: translate3d(0, 18px, 0) scale(0.92); }
   100% { opacity: 1; transform: translate3d(0, 0, 0)    scale(1); }
 }
+/* The portrait page comes after the wind tunnel page: the portrait waits to
+   rise until it is reached (home.js adds .is-arrived). Without the animation
+   (the fallback page) it simply shows. */
+html.js body:not(.home-fallback) .home-scene--hero:not(.is-arrived) .hero-portrait-flip { animation-play-state: paused; }
 @media (max-width: 720px) {
   .hero-portrait-flip {
     width: 110px;
@@ -1138,6 +1142,164 @@ html.is-turning, html.is-turning * { cursor: grabbing !important; -webkit-user-s
 html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
 .lenis.lenis-stopped { overflow: hidden; }
+
+/* ---------- The first page: the wind tunnel ----------
+   A page of its own, one screen tall, on black: its canvas (intro.js) moves
+   with it, so scrolling carries the whole page away and uncovers the portrait
+   page underneath. The machine and its wake fill the upper part; the words
+   sit underneath (bottom left on a computer, across the bottom on a phone);
+   a small readout names the form and what is being solved. */
+.home-intro {
+  position: relative;
+  z-index: 2;
+  height: 100vh;
+  height: var(--vh-lock, 100vh);
+  overflow: hidden;
+  background: #000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  padding: 80px max(28px, 6vw) max(30px, 7vh);
+  -webkit-user-select: none;
+          user-select: none;
+  cursor: grab;
+  /* a page of its own: a swipe on it turns to the portrait page (home.js) instead of scrolling it */
+  touch-action: none;
+}
+.home-intro__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.2s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.home-intro__canvas.is-ready { opacity: 1; }
+.home-intro__words {
+  position: relative;
+  z-index: 1;
+  max-width: 780px;
+  width: 100%;
+  text-align: left;
+  cursor: auto;
+  -webkit-user-select: text;
+          user-select: text;
+}
+/* a soft shade behind the words, so the air stays crisp around them */
+.home-intro__words::before {
+  content: "";
+  position: absolute;
+  inset: -28% -14% -24% -14%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 34% 58%, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.38) 45%, rgba(0, 0, 0, 0) 72%);
+}
+.home-intro .home-scene__eyebrow { margin-bottom: 14px; }
+.flow-title {
+  font-size: clamp(2.2rem, 4.3vw, 4rem);
+  line-height: 1.02;
+  margin: 0 0 6px;
+}
+.home-intro .home-scene__cta {
+  align-items: flex-start;
+  margin-top: 22px;
+  gap: 12px;
+}
+/* the hint names the gesture of the device: click and drag, or tap */
+.flow-cta-touch { display: none; }
+@media (hover: none) and (pointer: coarse) {
+  .flow-cta-fine { display: none; }
+  .flow-cta-touch { display: inline; }
+}
+
+.flow-readout {
+  position: absolute;
+  right: max(28px, 6vw);
+  bottom: max(30px, 7vh);
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  font-family: var(--home-ui);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-align: right;
+  color: var(--home-muted);
+  text-shadow: var(--home-textshadow);
+  pointer-events: none;
+}
+.flow-readout__live { display: inline-flex; align-items: center; gap: 8px; }
+.flow-readout__live::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ff5b4d;
+  box-shadow: 0 0 10px rgba(255, 91, 77, 0.9);
+  animation: flow-live 1.8s ease-in-out infinite;
+}
+@keyframes flow-live { 50% { opacity: 0.3; } }
+.flow-readout__name {
+  font-family: var(--home-display);
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: var(--home-fg);
+  margin: 2px 0 1px;
+}
+.flow-readout__solver,
+.flow-readout__grid { opacity: 0.72; letter-spacing: 0.1em; }
+.flow-readout__grid { font-variant-numeric: tabular-nums; }
+/* no air on this device (the GPU cannot run it): only the form is named */
+.flow-readout.is-still .flow-readout__live,
+.flow-readout.is-still .flow-readout__solver,
+.flow-readout.is-still .flow-readout__grid { display: none; }
+
+/* medium screens: the readout moves to the top left, under the bar */
+@media (max-width: 959px) {
+  .home-intro { padding: 80px 24px max(28px, 6vh); }
+  .flow-readout {
+    right: auto;
+    bottom: auto;
+    left: 24px;
+    top: 84px;
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+@media (max-width: 720px) {
+  .home-intro { padding: 72px 22px calc(26px + env(safe-area-inset-bottom)); }
+  .home-intro .home-scene__eyebrow { font-size: 11px; letter-spacing: 0.16em; margin-bottom: 10px; }
+  .flow-title { font-size: min(2.5rem, 9.4vw); }
+  .home-intro .home-scene__cta { margin-top: 16px; letter-spacing: 0.2em; }
+  .flow-readout { left: 22px; top: 74px; font-size: 10px; gap: 3px; }
+  .flow-readout__name { font-size: 17px; }
+  .home-intro__words::before { background: radial-gradient(ellipse at 40% 60%, rgba(0, 0, 0, 0.66) 0%, rgba(0, 0, 0, 0.4) 50%, rgba(0, 0, 0, 0) 76%); }
+}
+html.is-turning .home-intro { cursor: grabbing; }
+
+/* The scale ruler belongs to the journey that starts at the portrait: it is
+   out of the way while the wind tunnel fills the screen (home.js). */
+.home-scale { transition: opacity 0.6s ease; }
+body.is-tunnel .home-scale { opacity: 0; }
+body.is-tunnel .home-scale,
+body.is-tunnel .home-scale__rail,
+body.is-tunnel .home-scale__hit { pointer-events: none; }
+
+/* Without the animation the wind tunnel is just its words, on a shorter page */
+.home-fallback .home-intro { height: auto; padding: 100px 32px 60px; }
+.home-fallback .home-intro__canvas,
+.home-fallback .flow-readout { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .home-intro { height: auto; padding: 100px 32px 60px; }
+  .home-intro__canvas, .flow-readout { display: none; }
+}
 
 /* ---------- Reduced motion / fallback ---------- */
 @media (prefers-reduced-motion: reduce) {

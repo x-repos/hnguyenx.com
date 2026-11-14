@@ -40,7 +40,7 @@
   <meta name="theme-color" content="#000000">
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-  <link rel="stylesheet" href="assets/css/home.css?v=32">
+  <link rel="stylesheet" href="assets/css/home.css?v=33">
 
   <script>
     document.documentElement.className =
@@ -48,7 +48,7 @@
   </script>
 </head>
 
-<body class="home-body">
+<body class="home-body is-tunnel">
 
   <!-- Top nav -->
   <nav class="home-topnav" aria-label="Primary">
@@ -98,6 +98,37 @@
   </aside>
 
   <main id="home-main" role="main">
+    <!-- =====================================================
+     The first page — a wind tunnel, a page of its own (intro.js): one
+     machine made of particles stands in a live airflow and keeps
+     rebuilding itself: hypercar, F1 car, battle tank, attack helicopter,
+     stealth fighter, Starship. A scroll turns to the portrait page below.
+     ===================================================== -->
+<section class="home-intro" id="intro" aria-label="Wind tunnel">
+  <canvas class="home-intro__canvas" id="intro-canvas" aria-hidden="true"></canvas>
+  <div class="flow-readout" aria-hidden="true">
+    <span class="flow-readout__live"><span lang="en">Live wind tunnel</span><span lang="vi">Ống gió trực tiếp</span></span>
+    <span class="flow-readout__name" id="flow-name"><span lang="en">Hypercar</span><span lang="vi">Siêu xe</span></span>
+    <span class="flow-readout__solver"><span lang="en">2D Navier–Stokes, solved on your GPU</span><span lang="vi">Navier–Stokes 2D, giải trên GPU của bạn</span></span>
+    <span class="flow-readout__grid" id="flow-grid"></span>
+  </div>
+  <div class="home-intro__words">
+    <p class="home-scene__eyebrow">
+      <span lang="en">Physics · Simulation · Machine learning</span>
+      <span lang="vi">Vật lý · Mô phỏng · Học máy</span>
+    </p>
+    <p class="home-scene__title flow-title">
+      <span lang="en">Teaching machines<br>the laws of physics.</span>
+      <span lang="vi">Dạy máy móc<br>các định luật vật lý.</span>
+    </p>
+    <p class="home-scene__cta">
+      <span lang="en"><span class="flow-cta-fine">Scroll to meet me · click to transform · drag to turn</span><span class="flow-cta-touch">Scroll to meet me · tap to transform</span></span>
+      <span lang="vi"><span class="flow-cta-fine">Cuộn xuống để gặp tôi · nhấp để biến hình · kéo để xoay</span><span class="flow-cta-touch">Cuộn xuống để gặp tôi · chạm để biến hình</span></span>
+      <span class="home-scroll-cue" aria-hidden="true"></span>
+    </p>
+  </div>
+</section>
+
     <!-- =====================================================
      Scene 1 — Hero / Qubits
      ===================================================== -->
@@ -481,7 +512,14 @@
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-  <script src="assets/js/home.js?v=42" defer></script>
+  <script src="assets/js/machines.js?v=7" defer></script>
+  <script src="assets/js/machines-cars.js?v=1" defer></script>
+  <script src="assets/js/machines-f1.js?v=1" defer></script>
+  <script src="assets/js/machines-ground.js?v=7" defer></script>
+  <script src="assets/js/machines-sky.js?v=2" defer></script>
+  <script src="assets/js/flow.js?v=7" defer></script>
+  <script src="assets/js/intro.js?v=20" defer></script>
+  <script src="assets/js/home.js?v=43" defer></script>
   <script src="assets/js/nav.js?v=6" defer></script>
 </body>
 </html>

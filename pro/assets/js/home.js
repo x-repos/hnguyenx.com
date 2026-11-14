@@ -63,6 +63,7 @@
   // in a small note, so a blank-looking page is never a mystery.
   function fallback(reason) {
     document.body.classList.add("home-fallback");
+    document.body.classList.remove("is-tunnel");
     const TEXT = {
       "reduced-motion": ["The animation is off because Reduce Motion is turned on in this device's settings.",
                          "Hoạt ảnh đang tắt vì thiết bị này đang bật Giảm chuyển động."],
@@ -118,6 +119,18 @@
   const canvas = document.getElementById("home-canvas");
   if (!canvas) return;
 
+  // The wind tunnel (intro.js) is a page of its own before the portrait page. While it covers the
+  // screen this page's cloud is not drawn, the scale ruler waits, and the portrait page's words and
+  // portrait come in when that page is reached, not while it is still out of sight.
+  const intro = document.querySelector(".home-intro");
+  const introCovers = () => !!intro && window.scrollY < 1;
+  (function portraitArrives() {
+    const hero = document.querySelector(".home-scene--hero");
+    if (!hero) return;
+    if (!intro) { hero.classList.add("is-arrived"); return; }
+    ScrollTrigger.create({ trigger: hero, start: "top 82%", once: true, onEnter: () => hero.classList.add("is-arrived") });
+  })();
+
   // ----- Smooth scrolling (desktop wheel/trackpad only) -----
   // Lenis leaves touch scrolling native, so phones keep their own momentum.
   let lenis = null;
@@ -127,6 +140,95 @@
     gsap.ticker.add((time) => lenis.raf(time * 1000));
     gsap.ticker.lagSmoothing(0);
   }
+
+  // ----- Two pages, not one long scroll -----
+  // The wind tunnel and the portrait page are two pages: scrolling down in the wind tunnel (a wheel,
+  // a swipe, a key) turns to the portrait page in one movement, and scrolling up at the top of the
+  // portrait page turns back. The wind tunnel never follows the wheel or the finger part of the
+  // way, and if a scroll ever leaves the page between the two (a scroll bar dragged, a fast fling
+  // back up), it carries on to the page it was heading for once it comes to rest. Further down,
+  // the page scrolls freely as before.
+  (function twoPages() {
+    if (!intro) return;
+    const pageH = () => intro.offsetHeight;
+    const onIntro = () => window.scrollY < pageH() - 2;
+    const atPortraitTop = () => Math.abs(window.scrollY - pageH()) <= 2;
+    // calm: until when the wheel is held off after a turn, so a trackpad's leftover momentum does not
+    // carry the portrait page on past its top
+    let turning = false, turnTimer = 0, calm = 0;
+    function turnPage(down) {
+      const target = down ? pageH() : 0;
+      if (Math.abs(window.scrollY - target) < 2) return;
+      turning = true;
+      clearTimeout(turnTimer);
+      const done = () => { if (turning) calm = performance.now() + 500; turning = false; };
+      if (lenis) lenis.scrollTo(target, { duration: 0.9, easing: (x) => 1 - Math.pow(1 - x, 3), lock: true, force: true, onComplete: done });
+      else window.scrollTo({ top: target, behavior: "smooth" });
+      turnTimer = setTimeout(done, 1000);
+    }
+    // the wheel (and a trackpad), caught before the smooth scrolling sees it
+    window.addEventListener("wheel", (e) => {
+      if (e.ctrlKey || Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;       // pinch zoom, sideways swipes
+      const here = onIntro(), top = atPortraitTop();
+      const settling = performance.now() < calm && (here || top);
+      if (!settling && !here && !(top && e.deltaY < 0)) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (turning || settling) { if (settling) calm = performance.now() + 250; return; }
+      if (e.deltaY > 1 && here) turnPage(true);
+      else if (e.deltaY < -1 && (top || window.scrollY > 2)) turnPage(false);
+    }, { capture: true, passive: false });
+    // keys
+    window.addEventListener("keydown", (e) => {
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+      const el = e.target;
+      if (el && el.closest && el.closest("input, textarea, select, button, [contenteditable]")) return;
+      const space = e.key === " " || e.key === "Spacebar";
+      const down = e.key === "ArrowDown" || e.key === "PageDown" || (space && !e.shiftKey);
+      const up = e.key === "ArrowUp" || e.key === "PageUp" || (space && e.shiftKey);
+      if (onIntro() && (down || up)) {
+        e.preventDefault();
+        if (!turning) { if (down) turnPage(true); else if (window.scrollY > 2) turnPage(false); }
+      } else if (atPortraitTop() && up) {
+        e.preventDefault();
+        if (!turning) turnPage(false);
+      }
+    });
+    // a swipe on the wind tunnel page (home.css lets no touch scroll it: touch-action none)
+    let sy = null, sx = 0;
+    intro.addEventListener("touchstart", (e) => {
+      if (e.touches.length === 1) { sy = e.touches[0].clientY; sx = e.touches[0].clientX; } else sy = null;
+    }, { passive: true });
+    intro.addEventListener("touchmove", (e) => {
+      if (sy === null || turning || !e.touches.length) return;
+      const dy = sy - e.touches[0].clientY, dx = sx - e.touches[0].clientX;
+      if (Math.abs(dy) > 24 && Math.abs(dy) > Math.abs(dx)) {
+        sy = null;
+        if (dy > 0) turnPage(true); else if (window.scrollY > 2) turnPage(false);
+      }
+    }, { passive: true });
+    intro.addEventListener("touchend", () => { sy = null; }, { passive: true });
+    // never left halfway: once a scroll between the two pages comes to rest, finish it
+    let lastY = window.scrollY, dir = 0, timer = 0, touching = false;
+    function settle() {
+      if (turning || touching || document.documentElement.classList.contains("is-scrubbing")) return;
+      const y = window.scrollY, h = pageH();
+      if (y <= 2 || y >= h - 2) return;
+      turnPage(dir > 0 ? true : dir < 0 ? false : y > h / 2);
+    }
+    window.addEventListener("scroll", () => {
+      const y = window.scrollY;
+      if (y !== lastY) dir = y > lastY ? 1 : -1;
+      lastY = y;
+      clearTimeout(timer);
+      timer = setTimeout(settle, 140);
+    }, { passive: true });
+    window.addEventListener("touchstart", () => { touching = true; }, { passive: true });
+    const lift = () => { touching = false; clearTimeout(timer); timer = setTimeout(settle, 160); };
+    window.addEventListener("touchend", lift, { passive: true });
+    window.addEventListener("touchcancel", lift, { passive: true });
+    window.__proTurnPage = turnPage;
+  })();
 
   // ----- Renderer / scene / camera -----
   let renderer;
@@ -1842,7 +1944,7 @@
     if (sh && sh.poke) sh.poke(clock.elapsedTime);
     window.__proShocks = (window.__proShocks || 0) + 1;
   }
-  const onControl = (el) => !!(el && el.closest && el.closest("a, button, input, textarea, select, label, nav, form, .home-outro__card"));
+  const onControl = (el) => !!(el && el.closest && el.closest("a, button, input, textarea, select, label, nav, form, .home-outro__card, .home-intro"));
   // ----- Pressing: a click, a tap, or a drag that turns the object -----
   // A press on empty space that is let go without moving is a click, and sends the wave.
   // With a mouse, holding and dragging instead turns the cloud: left and right spins it,
@@ -2187,7 +2289,17 @@
     posAttr.needsUpdate = fieldAttr.needsUpdate = true;
   }
 
+  let framesDrawn = 0, tunnelShown = null;
   function tick() {
+    // the scale ruler waits while the wind tunnel page is on screen
+    const tunnel = !!intro && window.scrollY < intro.offsetHeight * 0.5;
+    if (tunnel !== tunnelShown) { tunnelShown = tunnel; document.body.classList.toggle("is-tunnel", tunnel); }
+    if (introCovers() && framesDrawn > 20) {
+      clock.getDelta();
+      requestAnimationFrame(tick);
+      return;
+    }
+    framesDrawn++;
     const frameT0 = performance.now();
     const dt = Math.min(clock.getDelta(), 1 / 30);
     const t = clock.elapsedTime;
@@ -2299,7 +2411,9 @@
   const heroInner = document.querySelector(".home-scene--hero .home-scene__inner");
   if (heroInner) {
     gsap.from(heroInner.querySelectorAll(".home-scene__eyebrow, .home-scene__title, .home-scene__sub, .home-scene__cta"), {
-      y: 22, autoAlpha: 0, duration: 1.2, ease: "power3.out", stagger: 0.12, delay: 0.25,
+      y: 22, autoAlpha: 0, duration: 1.2, ease: "power3.out", stagger: 0.12, delay: intro ? 0.1 : 0.25,
+      // after the wind tunnel page: when the portrait page arrives
+      scrollTrigger: intro ? { trigger: heroInner, start: "top 82%", toggleActions: "play none none reverse" } : undefined,
     });
   }
   gsap.utils.toArray(".home-scene:not(.home-scene--hero) .home-scene__inner").forEach((inner) => {
