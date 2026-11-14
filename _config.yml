@@ -1,0 +1,6 @@
+# GitHub Pages builds this site with Jekyll. These folders stay in the
+# repository but are left off the website.
+exclude:
+  - docs
+  - chess-worker
+  - counter-worker

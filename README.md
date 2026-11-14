@@ -22,6 +22,8 @@ reused, redistributed or used commercially without written permission. See
 - `assets/` — photo, CV (`cv.pdf`), favicon, link-preview card, fonts
 - `counter-worker/` — Cloudflare Worker that tallies visits by country (KV-backed)
 - `chess-worker/` — Cloudflare Worker that pairs two players for online chess, caro and Chinese chess and passes their moves along (Durable Objects, WebSockets)
+- `docs/` — design notes and plans
+- `_config.yml` — keeps `docs/`, `counter-worker/` and `chess-worker/` off the website (they stay in this repository)
 - `CNAME` — custom domain for GitHub Pages
 
 ## Updating
