@@ -3,13 +3,16 @@
    loads first; this file only calls ProMachines.defineMode). Plain
    browser script; also loads in Node.
 
-     jet       an F-35-like single-engine stealth fighter: a pointed,
-               chined nose, a single-seat bubble canopy, side intakes with
-               their bumps, trapezoid wings (swept leading edge, forward-
-               swept trailing edge), twin canted fins, all-moving tails and
-               one big round nozzle. It flies banked toward the viewer, so
-               its planform reads, with a gentle bank and pitch, its
-               control surfaces working a little and its engine glowing.
+     jet       an F-35A-like single-engine stealth fighter, built from
+               measurements (published dimensions and the official three-
+               view outline traced in metres, checked on photos): the
+               chined radome, the one-piece canopy, the intakes with their
+               swept lips and bumps, the wing-root fairings, trapezoid wings
+               (34 deg leading edge, forward-swept trailing edge), twin fins
+               canted 20 deg, the stabilators on their booms and the round
+               nozzle. It flies banked toward the viewer, so its planform
+               reads; its control surfaces work a little; the afterburner
+               glows and flickers.
      starship  a stainless-steel rocket (Starship-like): ogive nose, two
                forward and two aft flaps, six engine bells.
 
@@ -136,7 +139,7 @@
   // wing roots, then (not traced: the booms carry the rest) the boat-tail closing on the nozzle base)
   const JS_ZC = [[0.0,0.003],[0.13,0.089],[0.27,0.142],[0.4,0.207],[0.53,0.28],[0.65,0.327],[0.78,0.378],[0.92,0.425],[1.05,0.464],[1.18,0.487],[1.31,0.505],[1.44,0.517],[1.7,0.545],[2.0,0.588],[2.5,0.645],[3.0,0.707],[3.5,0.769],[4.0,0.834],[4.18,0.87],[4.235,0.95],
     [4.254,1.471],[4.299,1.499],[4.355,1.527],[4.411,1.561],[4.467,1.589],[4.523,1.617],[4.579,1.645],[4.636,1.673],[4.692,1.679],[5.0,1.692],[5.5,1.713],[6.0,1.735],[6.5,1.756],[7.05,1.78],[7.5,1.786],[8.5,1.801],[9.5,1.817],[10.5,1.831],[11.5,1.846],[12.4,1.86],
-    [12.6,1.83],[12.8,1.68],[13.0,1.42],[13.2,1.02],[13.36,0.7]];
+    [12.54,1.888],[12.6,1.91],[12.8,1.98],[13.0,2.03],[13.36,1.95]];
   // the forebody's own half width where the intakes stand beside it (the body without the cowls)
   const JS_ZF = [[4.0,0.834],[4.18,0.87],[4.31,0.909],[4.445,0.949],[4.574,1.005],[4.692,1.03],[5.3,1.08]];
   // the canopy glass: [x, top (on the centre line), sill (its lower edge, side view)]
@@ -373,6 +376,25 @@
       { gu: o.gu || 16, gv: o.gv || 20, flip: !up, w: o.w, heat: o.heat, glow: o.glow });
   }
   const jStab2 = (u0, u1, v0, v1, o) => [jStab(u0, u1, v0, v1, true, o), jStab(u0, u1, v0, v1, false, o)];
+  // ---- the aft fairing (x 12.6 .. 13.36): the hull's section at 12.6 turns into the nozzle's base circle
+  // (1.29 m across, axis 1.21 m up) in the middle and the flat tail booms to the sides (1.08 .. 1.38 m up,
+  // out to 1.95 m), where the booms and the nozzle carry on aft
+  const JA_X0 = 12.6, JA_X1 = 13.36;
+  function jAftPt(x, s, side, q) {
+    jHull(JA_X0, s, q);
+    const t = smooth(JA_X0, JA_X1, x), zw = q[2] * (1 + 0.045 * Math.sin(PI * Math.min(1, (x - JA_X0) / 0.5)) * 0 + (1.95 / 1.91 - 1) * t);
+    const z = zw, r = 0.645, up = s <= 1, c = z < r ? Math.sqrt(r * r - z * z) : 0;
+    let yt = up ? Math.max(1.38, 1.21 + c) : Math.min(1.08, 1.21 - c);
+    if (z > 1.7) { const e = Math.min(1, (z - 1.7) / 0.25); yt += (1.23 - yt) * e * e; }
+    q[0] = x; q[1] = q[1] + (yt - q[1]) * t; q[2] = side * z;
+    return q;
+  }
+  function jAft(s0, s1, side, o) {
+    o = o || {};
+    return S.param(function (u, v, q) { jAftPt(JA_X0 + (JA_X1 - JA_X0) * u, s0 + (s1 - s0) * v, side, q); },
+      { gu: o.gu || 16, gv: o.gv || 28, flip: side > 0, w: o.w, heat: o.heat, glow: o.glow });
+  }
+  const jAftBoth = (s0, s1, o) => [jAft(s0, s1, 1, o), jAft(s0, s1, -1, o)];
   // ---- the nozzle: base 1.29 m across at x 13.36, exit 0.73 m at 14.05 (dry), axis 1.21 m up; the
   // outer flaps end in a sawtooth rim
   const JN = { x0: 13.36, x1: 14.05, r0: 0.645, r1: 0.365, y: 1.21, teeth: 15, tooth: 0.075 };
@@ -381,18 +403,18 @@
     const N = JN;
     return S.param(function (u, v, q) {
       const a = a0 + (a1 - a0) * u, saw = Math.abs(((a * N.teeth / TAU) % 1 + 1) % 1 - 0.5) * 2;
-      const xs = inner ? N.x0 + 0.3 : N.x0, xe = N.x1 - N.tooth * saw, x = xs + (xe - xs) * v, f = (x - N.x0) / (N.x1 - N.x0);
+      const xs = N.x0, xe = N.x1 - N.tooth * saw, x = xs + (xe - xs) * v, f = (x - N.x0) / (N.x1 - N.x0);
       const r = (N.r0 + (N.r1 - N.r0) * Math.pow(f, 0.9)) * (inner ? 0.9 : 1);
       q[0] = x; q[1] = N.y + r * Math.cos(a); q[2] = r * Math.sin(a);
-    }, { gu: o.gu || 60, gv: o.gv || 8, flip: !inner, w: o.w, heat: o.heat, glow: o.glow });
+    }, { gu: o.gu || 60, gv: o.gv || 8, flip: !!inner, w: o.w, heat: o.heat, glow: o.glow });
   }
   // the cuts between the rig's parts (metres along x; section parameters s: 0 top, 1 chine, 2 bottom)
   const JP = {
-    XN: 1.3, XJ: 2.7, sJ: 1.65,                // radome | forward fuselage; the chin below sJ
-    XM: 5.6, XW: 7.1, sM: 1.73,                // the cowl | the trunk wall; the wall above sM, the belly below
-    sS: 0.42, XB: 9.4, XB2: 11.2, XH: 9.9,     // spine | deck; the decks end, the spine ends, belly | hips
-    XA: 12.4,                                  // the aft end around the nozzle
-    ZW1: 3.1, ZW2: 4.15, ZW3: 4.75, XF: 0.13, XT: 0.78, VR: 0.7,   // wing panels; LE flap, flaperon; rudder
+    XN: 1.3, XK: 1.45, sJ: 1.64, XS: 1.5,      // radome | forward fuselage | cockpit deck; the chin below sJ; side | bump
+    XM: 7.1, XW: 7.1, sM: 1.73, sN: 1.86, XL2: 9.0,   // the cowl | the trunk wall; the wall above sM, the belly below
+    XQ: 5.3, sS: 0.28, XC: 7.6, XB: 11.6, XH: 10.7, XT: 12.0, XY: 6.6,  // cockpit deck end; spine | deck; ...
+    XA: 12.6,                                  // the aft fairing round the nozzle's base
+    ZW1: 3.25, ZW2: 4.15, ZW3: 4.4, XF: 0.11, XE: 0.78, VR: 0.6,   // wing panels; LE flap, flaperon; rudder
   };
   // the bank toward the viewer (top to +z) and a touch of nose-up, about the flat frame's origin
   const J_ROT = mul(RZ(-JT.PITCH), RX(JT.BANK));
@@ -401,7 +423,7 @@
   // hinge lines (near side, flat frame): the flaperon (along its leading edge), the stabilator's pivot
   // (spanwise), the rudder (along its leading edge in the fin plane), the LE flap (along its rear edge)
   const J_HINGE = (function () {
-    const q0 = jWingPt(1.95, JP.XT, true, [0, 0, 0]), q1 = jWingPt(JP.ZW2, JP.XT, true, [0, 0, 0]);
+    const q0 = jWingPt(1.95, JP.XE, true, [0, 0, 0]), q1 = jWingPt(JP.ZW2, JP.XE, true, [0, 0, 0]);
     const f0 = jFinPt(0.05, JP.VR, 0, [0, 0, 0]), f1 = jFinPt(0.95, JP.VR, 0, [0, 0, 0]);
     const l0 = jWingPt(2.4, JP.XF, true, [0, 0, 0]), l1 = jWingPt(5.2, JP.XF, true, [0, 0, 0]);
     const d = (a, b) => [b[0] - a[0], b[1] - a[1], b[2] - a[2]], mz = (v) => [v[0], v[1], -v[2]];
@@ -418,47 +440,54 @@
     const L = jLipTabs(), X = JP;
     // a part from shapes in metres: pivot in metres, local frame R
     const put = (name, at, R, ...shapes) => { P[name] = part(jm(at[0], at[1], at[2]), R, S.place(S.join(shapes), J_OFF, null, JK)); };
-    const GL = { w: 0.42, heat: 0.06 };                                  // glazing: sparse and a little warm
+    const GL = { w: 0.4, heat: 0.06 };                                   // glazing: sparse (dark) and a little warm
+    const LN = { w: 0.5 };                                               // detail lines: subtle
+    const along = (x0, x1, n, f) => { const o = []; for (let k = 0; k <= n; k++) o.push(f(x0 + (x1 - x0) * k / n)); return o; };
+    const frame = (side) => along(JC_X0, JC_X1, 28, (x) => { const c = jSec(x); return [x, c.yS, side * c.wc]; });
+    const crease = (x0, x1, side) => along(x0, x1, Math.round((x1 - x0) * 8), (x) => { const q = jHull(x, 1, [0, 0, 0]); return [q[0], q[1], side * q[2]]; });
     // ---- the radome, the chin with the targeting window, the forward fuselage, the canopy
     put("neck", [0.8, 1.15, 0], F_CORE, jBoth(0, X.XN, 0, 2));
-    put("jaw", [2.0, 0.6, 0], F_CORE, jBoth(X.XN, X.XJ, X.sJ, 2),
+    put("jaw", [2.6, 0.6, 0], F_CORE, jBoth(X.XN, 4.24, X.sJ, 2),
       S.ellipsoid(0.3, 0.08, 0.2, { at: [1.72, 0.5, 0], theta: [PI / 2, PI], w: 0.5, heat: 0.18 }));
-    put("chest", [3.0, 1.2, 0], F_CORE, jBoth(X.XN, 4.24, 0, 1), jBoth(X.XN, X.XJ, 1, X.sJ), jBoth(X.XJ, 3.55, 1, 2),
-      jBoth(4.24, 4.72, X.sS, L.sF), jBoth(4.72, X.XW, X.sS, 1));
-    put("head", [3.3, 2.0, 0], F_CORE, S.tag(S.join(jCanopy(JC_X0, JC_X1, 1), jCanopy(JC_X0, JC_X1, -1)), GL));
+    put("chest", [4.8, 1.0, 0], F_CORE, jBoth(X.XN, X.XK, 0, 1), jBoth(X.XN, X.XS, 1, X.sJ), jBoth(X.XQ, X.XC, 0, 1),
+      jBoth(4.24, 5.05, L.sI, 2), jBoth(5.05, X.XY, X.sN, 2), jLine(crease(0.25, 4.2, 1), 0.016, LN), jLine(crease(0.25, 4.2, -1), 0.016, LN));
+    put("head", [3.3, 1.9, 0], F_CORE, S.tag(S.join(jCanopy(JC_X0, JC_X1, 1), jCanopy(JC_X0, JC_X1, -1)), GL), jBoth(X.XK, 4.24, 0, 1),
+      jBoth(4.24, 4.72, 0, L.sF), jBoth(4.72, X.XQ, 0, 1), jLine(frame(1), 0.03, { w: 1 }), jLine(frame(-1), 0.03, { w: 1 }));
     // ---- the intakes (near side; the far side mirrors): the cowl with its lips (mane 1), the trunk's wall
     // (mane 2), the bump and the duct's inner wall (mane 3)
     const lip = [JL.A, JL.B, JL.C, JL.D].map((p) => [p[0], p[1], p[2]]);
     put("maneL1", [4.9, 0.95, 1.5], F_PLATE, jBand(4.254, 5.05, 1, L.sL, 1), jBand(5.05, X.XM, 1, X.sM, 1),
-      jBand(4.254, 4.72, L.sU, 1, 1), jLine(lip, 0.028, { heat: 0.05 }));
-    put("maneL2", [6.3, 0.95, 1.6], F_PLATE, jBand(X.XM, X.XW, 1, X.sM, 1));
-    put("maneL3", [4.3, 0.9, 1.0], F_PLATE, jBand(3.55, 4.24, 1, 2, 1), jInner(4.24, 5.15, 1, { w: 0.6 }));
+      jBand(4.254, 4.72, L.sU, 1, 1), jLine(lip, 0.028, { heat: 0.05 }), jLine(crease(4.3, 7.15, 1), 0.016, LN));
+    put("maneL2", [7.0, 0.95, 1.7], F_PLATE, jBand(X.XM, X.XL2, 1, X.sM, 1));
+    put("maneL3", [4.0, 0.9, 0.9], F_PLATE, jBand(X.XS, 4.24, 1, X.sJ, 1), jInner(4.24, 5.15, 1, { w: 0.8 }), jBand(5.05, X.XY, X.sM, X.sN, 1));
     // ---- the belly (the bays' doors between the intake trunks) and the aft fuselage
-    put("belly", [8.0, 0.25, 0], F_CORE, jBoth(4.24, 5.05, L.sI, 2), jBoth(5.05, X.XW, X.sM, 2), jBoth(X.XW, X.XH, 1, 2));
-    put("hips", [11.2, 1.0, 0], F_CORE, jBoth(X.XH, X.XA, 1, 2), jBoth(X.XB, X.XA, X.sS, 1), jBoth(X.XB2, X.XA, 0, X.sS));
+    put("belly", [8.7, 0.25, 0], F_CORE, jBoth(X.XY, X.XH, X.sM, 2), jBoth(X.XL2, X.XH, 1, X.sM));
+    put("hips", [10.8, 0.8, 0], F_CORE, jBoth(X.XH, X.XT, 1, 2), jBoth(X.XB, X.XT, 0, 1));
     // ---- the spine (back 2) and the decks over the wing roots (back 1 near, back 3 far)
-    put("back2", [8.0, 2.1, 0], F_AFT, jBoth(4.24, X.XB2, 0, X.sS));
-    put("back1", [8.2, 1.6, 1.0], F_AFT, jBand(X.XW, X.XB, X.sS, 1, 1));
+    put("back2", [8.3, 2.1, 0], F_AFT, jBoth(X.XC, X.XB, 0, X.sS));
+    put("back1", [8.8, 1.6, 1.1], F_AFT, jBand(X.XC, X.XB, X.sS, 1, 1));
     // ---- the wing (near): LE flap (fl_up), inner box (flank), flaperon (scap), outer box (fl_paw), tip (fl_lo)
-    put("fl_up", J_HINGE.pLe, F_LIMB, jWing2(1.79, JW_TIP, 0, X.XF));
-    put("flankL", [9.6, 1.3, 2.4], F_PLATE, jWing2(1.79, X.ZW1, X.XF, X.XT));
-    put("scapL", J_HINGE.pScap, F_PLATE, jWing2(1.79, X.ZW2, X.XT, 1));
-    put("fl_paw", [9.9, 1.3, 3.6], F_LIMB, jWing2(X.ZW1, X.ZW3, X.XF, X.XT), jWing2(X.ZW2, X.ZW3, X.XT, 1));
-    put("fl_lo", [10.6, 1.3, 5.0], F_LIMB, jWing2(X.ZW3, JW_TIP, X.XF, 1));
+    const G = 0.006;                                                     // half the hinge gaps (chord fractions)
+    put("fl_up", J_HINGE.pLe, F_LIMB, jWing2(1.79, JW_TIP, 0, X.XF - G));
+    put("flankL", [9.6, 1.3, 2.4], F_PLATE, jWing2(1.79, X.ZW1, X.XF + G, X.XE - G));
+    put("scapL", J_HINGE.pScap, F_PLATE, jWing2(1.79, X.ZW2, X.XE + G, 1));
+    put("fl_paw", [9.9, 1.3, 3.6], F_LIMB, jWing2(X.ZW1, X.ZW3, X.XF + G, X.XE - G), jWing2(X.ZW2, X.ZW3, X.XE - G, 1));
+    put("fl_lo", [10.6, 1.3, 5.0], F_LIMB, jWing2(X.ZW3, JW_TIP, X.XF + G, 1));
     // ---- the tails (near): fin (hl_up), rudder (hl_lo), stabilator (hl_paw), boom (haunch)
-    put("hl_up", jFinPt(0.3, 0.35, 0, [0, 0, 0]), F_LIMB, jFin2(0, 1, 0, X.VR));
-    put("hl_lo", J_HINGE.pFin, F_LIMB, jFin2(0, 1, X.VR, 1));
+    put("hl_up", jFinPt(0.3, 0.35, 0, [0, 0, 0]), F_LIMB, jFin2(0, 1, 0, X.VR - 0.008));
+    put("hl_lo", J_HINGE.pFin, F_LIMB, jFin2(0.04, 0.97, X.VR + 0.008, 1), jFin2(0, 0.04, X.VR - 0.008, 1), jFin2(0.97, 1, X.VR - 0.008, 1));
     put("hl_paw", [14.0, 1.23, 2.0], F_LIMB, jStab2(0, 1, 0, 1));
     // (the booms: inner and outer edges from the plan view, filling between the nozzle and the stabilators)
-    const boom = [[11.4, 1.6, 1.75, 0.03], [11.9, 1.42, 1.95, 0.13], [12.6, 1.3, 2.0, 0.17], [13.0, 1.0, 2.04, 0.18], [13.36, 0.66, 1.95, 0.17],
+    const boom = [[13.22, 0.8, 1.85, 0.06], [13.36, 0.66, 1.95, 0.15], [13.6, 0.62, 1.86, 0.14],
       [13.8, 0.6, 1.75, 0.12], [14.12, 0.62, 1.6, 0.07], [14.2, 0.8, 1.45, 0.02]].map((r) => [r[0], Math.min(0.14, r[3]), (r[2] - r[1]) / 2, 1.24 - 0.01 * (r[0] - 11.4) / 2.8, (r[1] + r[2]) / 2]);
     put("haunchL", [13.0, 1.25, 1.5], F_PLATE, S.loft(boom, { n: 3 }));
     // ---- the aft end and the nozzle: top (tail 1), bottom (tail 2), the hot inside (tail 3), the
     // burner face (tail 4, the exhaust's source at the exit)
-    put("tail1", [13.2, 1.7, 0], F_CORE, jBoth(X.XA, JH_X1, 0, 1), jNozzle(-PI / 2, PI / 2, false));
-    put("tail2", [13.2, 0.7, 0], F_CORE, jBoth(X.XA, JH_X1, 1, 2), jNozzle(PI / 2, 3 * PI / 2, false));
-    put("tail3", [13.9, 1.21, 0], F_CORE, S.tag(jNozzle(0, TAU, true), { heat: 0.35 }));
-    put("tail4", [JN.x1, JN.y, 0], F_CORE, S.disc(0, 0.34, { axis: "x", at: [13.76, JN.y, 0], heat: 0.5 }));
+    put("tail1", [12.4, 1.7, 0], F_CORE, jBoth(X.XT, X.XA, 0, 1), jAftBoth(0.3, 1));
+    put("tail2", [12.4, 0.7, 0], F_CORE, jBoth(X.XT, X.XA, 1, 2), jAftBoth(1, 1.75));
+    put("tail3", [13.6, 1.5, 0], F_CORE, S.tag(jNozzle(0, TAU, true), { heat: 0.35 }), S.tag(S.join(jNozzle(-PI / 2, PI / 2, false), jAftBoth(0, 0.3)), { glow: 0.12 }));
+    put("tail4", [JN.x1, JN.y, 0], F_CORE, S.disc(0, 0.34, { axis: "x", at: [13.76, JN.y, 0], heat: 0.5 }),
+      S.tag(S.join(jNozzle(PI / 2, 3 * PI / 2, false), jAftBoth(1.75, 2)), { glow: 0.12 }));
     // ---- the far side mirrors the near side
     for (const n of ["maneL1", "maneL2", "maneL3", "flankL", "scapL", "haunchL"]) P[n.replace(/L(\d?)$/, "R$1")] = mir(P[n]);
     for (const n of ["fl_up", "fl_lo", "fl_paw", "hl_up", "hl_lo", "hl_paw"]) P[n[0] + "r" + n.slice(2)] = mir(P[n]);
@@ -489,8 +518,9 @@
     name: "jet", kind: "vehicle", yaw: 0.4, dwell: J_DWELL,
     parts: function () { return jetParts(); },
     animate: jetAnimate,
-    // the engine's jet: a fast, hot stream from the nozzle (afterburner), flickering a little; in
-    // afterburner the nozzle opens to about 1.1 m across (0.73 m dry), so the jet is that wide
+    // the engine's jet: a fast, hot stream from the nozzle (afterburner), flickering a little
+    // THE OWNER ASKED FOR AN AGGRESSIVE JET: the afterburner is lit, and lit the F135 nozzle opens to
+    // about 1.1 m across (0.73 m is its closed, dry exit), so the jet is 0.55 m in radius: keep it so
     exhaust: [{ part: "tail4", at: [0, 0, 0], dir: [1, 0, 0], speed: 3.6, nozzle: 0.55 * JK, heat: 1,
       power: (age, t) => 0.92 + 0.08 * Math.sin(t * 23.0) * Math.sin(t * 7.0) }],
   });
