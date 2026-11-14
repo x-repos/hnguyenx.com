@@ -20,8 +20,9 @@
   if (!section || !canvas) return;
   const readout = section.querySelector(".flow-readout");
   // No machine is drawn (Reduce Motion, no WebGL, the libraries did not load): the readout goes
-  // too, so it never names a machine that is not there.
-  const off = () => { if (readout) readout.style.display = "none"; };
+  // too, so it never names a machine that is not there, and so does the soft picture of the tunnel
+  // that stands in for it while the page loads (home.css, .home-intro::before).
+  const off = () => { if (readout) readout.style.display = "none"; section.classList.add("is-off"); };
   if (!window.THREE) { off(); return; }
   // The machine is drawn but the air cannot run on this device: only its name stays.
   const still = () => { if (readout) readout.classList.add("is-still"); };
@@ -611,15 +612,40 @@
   // READOUT — the form's name, in both languages
   // ====================================================
   // Under the solver's name: the Navier–Stokes momentum equation in its general form (velocity u,
-  // pressure p, viscous stress tensor τ, body force f), typeset by KaTeX; the page holds a plain
-  // copy in case KaTeX did not load.
+  // pressure p, viscous stress tensor τ, body force f), typeset by KaTeX. KaTeX arrives after this
+  // file (rest.js announces it), and the typeset copy replaces the page's plain one only once its
+  // fonts are in, so the equation never goes blank; without KaTeX the plain copy stays.
   const eqEl = document.getElementById("flow-eq");
-  if (eqEl && window.katex) {
+  function typeset() {
+    if (!eqEl || !window.katex || eqEl.hasAttribute("data-typeset")) return;
+    eqEl.setAttribute("data-typeset", "");
+    const box = document.createElement("span");
     try {
       window.katex.render("\\rho\\left(\\frac{\\partial\\mathbf{u}}{\\partial t}+(\\mathbf{u}\\cdot\\nabla)\\,\\mathbf{u}\\right)=-\\nabla p+\\nabla\\cdot\\boldsymbol{\\tau}+\\mathbf{f}",
-        eqEl, { throwOnError: false });
-    } catch (e) { /* the plain copy stays */ }
+        box, { throwOnError: false });
+    } catch (e) { return; /* the plain copy stays */ }
+    // set out of sight first, to read which of KaTeX's fonts it uses; those are fetched, then it is
+    // swapped in (document.fonts.ready would wait for the whole page in Safari)
+    box.style.cssText = "position:absolute;left:0;top:0;visibility:hidden;pointer-events:none";
+    eqEl.parentNode.appendChild(box);
+    const swap = () => {
+      eqEl.textContent = "";
+      while (box.firstChild) eqEl.appendChild(box.firstChild);
+      box.remove();
+    };
+    const faces = new Set();
+    for (const el of box.querySelectorAll(".katex-html *")) {
+      const cs = getComputedStyle(el), family = cs.fontFamily.split(",")[0].trim();
+      if (family.indexOf("KaTeX_") >= 0) faces.add(cs.fontStyle + " " + cs.fontWeight + " 16px " + family);
+    }
+    if (faces.size && document.fonts && document.fonts.load) {
+      Promise.all([...faces].map((f) => document.fonts.load(f))).then(swap, swap);
+    } else {
+      swap();
+    }
   }
+  if (window.katex) typeset();
+  else document.addEventListener("pro:katex", typeset, { once: true });
   const nameEl = document.getElementById("flow-name");
   let shownName = null;
   function paintName() {
@@ -868,7 +894,7 @@
     }
     U.uOccBias.value = 0.05 * place.s;      // about 6 cm on a car: the surface's own dots stay in front
     renderer.render(scene, camera);
-    if (first) { first = false; canvas.classList.add("is-ready"); }
+    if (first) { first = false; canvas.classList.add("is-ready"); section.classList.add("is-live"); }
   }
   function update() {
     const want = visible && document.visibilityState === "visible";

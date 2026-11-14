@@ -2265,8 +2265,10 @@
   };
   const eqItems = [];
   let eqLayer = null;
-  (function buildEquations() {
-    if (!window.katex) return;
+  // KaTeX is loaded after this file (rest.js), so the page turn does not wait for it: the equations
+  // are built when it arrives ("pro:katex"); updateEquations() takes them up from then on
+  function buildEquations() {
+    if (!window.katex || eqLayer) return;
     eqLayer = document.createElement("div");
     eqLayer.className = "home-eqs";
     eqLayer.setAttribute("aria-hidden", "true");
@@ -2290,7 +2292,9 @@
         });
       });
     });
-  })();
+  }
+  if (window.katex) buildEquations();
+  else document.addEventListener("pro:katex", buildEquations, { once: true });
   // Each equation is a little body that wanders on its own: a slowly turning
   // random heading pushes it around, the figure's core pushes it out, the
   // edges of its region and the other equations push it back, and scrolling
