@@ -208,6 +208,23 @@
       }
     }, { passive: true });
     intro.addEventListener("touchend", () => { sy = null; }, { passive: true });
+    // and a swipe down at the top of the portrait page turns the page back in one move, the same way
+    // (a native scroll back would stop part-way, wait, then snap; the owner found the way back not good)
+    let by = null, bx = 0;
+    window.addEventListener("touchstart", (e) => {
+      by = e.touches.length === 1 && atPortraitTop() ? e.touches[0].clientY : null;
+      if (by !== null) bx = e.touches[0].clientX;
+    }, { passive: true });
+    window.addEventListener("touchmove", (e) => {
+      if (by === null || !e.touches.length) return;
+      const dy = e.touches[0].clientY - by, dx = e.touches[0].clientX - bx;
+      if (dy < -6 || Math.abs(dx) > Math.abs(dy) + 6) { by = null; return; }   // reading on down the page, or sideways
+      if (dy > 0) {
+        if (e.cancelable) e.preventDefault();      // no native scroll: the page turns instead
+        if (dy > 24 && !turning) { by = null; turnPage(false); }
+      }
+    }, { passive: false });
+    window.addEventListener("touchend", () => { by = null; }, { passive: true });
     // never left halfway: once a scroll between the two pages comes to rest, finish it
     let lastY = window.scrollY, dir = 0, timer = 0, touching = false;
     function settle() {
