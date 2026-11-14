@@ -75,7 +75,7 @@
     suv: ["Hybrid SUV", "SUV hybrid"], hypercar: ["Hypercar", "Siêu xe"], f1: ["F1 car", "Xe đua F1"], tank: ["Battle tank", "Xe tăng chiến đấu"],
     helicopter: ["Light helicopter", "Trực thăng hạng nhẹ"], jet: ["Stealth fighter", "Tiêm kích tàng hình"],
     bomber: ["Stealth bomber", "Máy bay ném bom tàng hình"],
-    starship: ["Starship", "Tàu vũ trụ Starship"], cylinder: ["Cylinder", "Hình trụ"],
+    starship: ["Spaceship", "Tàu vũ trụ"], cylinder: ["Cylinder", "Hình trụ"],
     leopard: ["Leopard", "Báo hoa mai"], lion: ["Lion", "Sư tử"], robot: ["Battle robot", "Robot chiến đấu"],
     car: ["Car", "Ô tô"], humanoid: ["Humanoid robot", "Robot hình người"], drone: ["Drone", "Drone"],
     dog: ["Robot dog", "Chó robot"], rover: ["Mars rover", "Xe tự hành sao Hỏa"],
