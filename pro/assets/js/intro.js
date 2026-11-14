@@ -683,10 +683,17 @@
           fa.set(e.x, e.y, e.z).project(camera);
           const cy0 = fa.y;
           fb.set(e.x, e.y + e.r, e.z).project(camera);
-          const rN = Math.abs(fb.y - cy0), wv = 0.35 * Math.sin(t * 9.0) * (e.swirl > 0 ? 1 : -1);
-          fa.set(e.x + e.r * 1.9, e.y, e.z).project(camera);
-          fb.set(e.x + e.r * 1.9 + 0.3, e.y + 0.3 * wv, e.z).project(camera);
-          air.jet(fa.x, fa.y, fb.x - fa.x, fb.y - fa.y, (e.speed || 1.4) * e.power, rN * 0.7, e.heat < 0 ? 0.4 : e.heat);
+          const rN = Math.abs(fb.y - cy0), sg = e.swirl > 0 ? 1 : -1;
+          // pushed twice along the stream (just behind the fin, and a little further down it, weaving a
+          // little later there) so it reads as a stream; at least a few cells wide even on a phone's
+          // coarser air grid, and tinted enough to be seen
+          const rj = Math.max(rN * 0.9, 0.03), hk = Math.min(1, (e.heat < 0 ? 0.4 : e.heat) * 1.6);
+          for (let k = 0; k < 2; k++) {
+            const wv = 0.35 * Math.sin(t * 9.0 - 1.4 * k) * sg, ax = e.r * (1.9 + 2.2 * k);
+            fa.set(e.x + ax, e.y, e.z).project(camera);
+            fb.set(e.x + ax + 0.3, e.y + 0.3 * wv, e.z).project(camera);
+            air.jet(fa.x, fa.y, fb.x - fa.x, fb.y - fa.y, (e.speed || 1.4) * 1.25 * e.power, rj * (1 + 0.25 * k), k ? hk * 0.6 : hk);
+          }
           continue;
         }
         if (e.speed > 0 && !(e.r > 0) && typeof air.jet === "function") {

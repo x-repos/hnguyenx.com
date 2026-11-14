@@ -32,27 +32,31 @@
    on the ground line. Every shape is written in metres in the machine's
    orientation and handed to the rig with world: true.
 
-   Roles of the rig's parts:
-     chest      monocoque: the chassis top and sides, the cockpit opening
-                and its inner walls, the driver's plain helmet
-     head       nose
-     jaw        halo; the mirrors
+   Roles of the rig's parts (chosen so each has about the share of the
+   whole it has in the other machines):
+     chest      monocoque from the front bulkhead: the chassis top and
+                sides, the cockpit opening and its inner walls, the plain
+                helmet, the shoulders and the steering wheel under it; the
+                floor ahead of the sidepods with its fences
+     head       nose (x 0.5 .. 1.6)
+     jaw        halo; the mirrors; the headrest round the helmet
      neck       airbox and roll hoop, the roll-hoop camera
-     hips       engine cover
+     hips       engine cover, gearbox and crash structure
      maneL1/R1  sidepod front: inlet, lip, radiator face
      maneL2/R2  sidepod middle (top and outer side)
      maneL3/R3  sidepod rear: the downwash ramp
-     flankL/R   the undercut and the floor's outer edge
-     belly      floor, fences and plank
+     flankL/R   the undercut, the chassis side inside it, the floor edge
+     belly      floor beside and behind the sidepods, the plank
+     back2      front wing, the neutral centre, with the nose's tip
      back1/3    front wing, outer halves
-     back2      front wing, centre
-     scapL/R    front wing end plates
-     haunchL/R  rear wing end plates
-     *_up       suspension (and the winglets over the front tyres)
-     *_lo       rims with their covers
+     scapL/R    front wing end plates (and the elements' last 0.15 m)
+     haunchL/R  rear wing end plates and tips
+     *_up       suspension; the winglets over the front tyres; the rear
+                driveshafts and brake-duct housings
+     *_lo       rims with their covers, the brake drums
      *_paw      tyres
      tail1      diffuser
-     tail2      gearbox and crash structure, beam wing, rain light, tailpipe
+     tail2      beam wing, rain light, tailpipe
      tail3      rear wing main plane and the swan-neck pylon
      tail4      DRS flap
    ===================================================================== */
@@ -108,8 +112,10 @@
   // wheels: centres (wheelbase 3.600, tracks 1.621 / 1.549), the tyre radius (720 mm), the traced
   // sidewall-to-sidewall widths, the tread widths (305 / 405 mm), the rim widths (13.2 / 16.9 in) and
   // the 18-inch rim's flange radius
-  const WFR = { x: 1.3203, y: 0.36, z: 0.8106, w: 0.370, tread: 0.305, rim: 0.3353 };
-  const WRE = { x: 4.9203, y: 0.36, z: 0.7744, w: 0.462, tread: 0.405, rim: 0.4293 };
+  // (the axles stand a hair higher than the tyre radius: the points' sampling jitter, 3 mm on screen,
+  // must not put any below the floor line)
+  const WFR = { x: 1.3203, y: 0.3645, z: 0.8106, w: 0.370, tread: 0.305, rim: 0.3353 };
+  const WRE = { x: 4.9203, y: 0.3645, z: 0.7744, w: 0.462, tread: 0.405, rim: 0.4293 };
   const TR = 0.36, RIMR = 0.245;
   // centre line: top of the nose and the chassis (the cockpit rim from x 2.0), its underside down to
   // the floor; the plan half width of the nose and the chassis
@@ -118,12 +124,10 @@
   const BOTN = curve([[0, 0.15], [0.5022, 0.2612], [0.7189, 0.2621], [1.0203, 0.27], [1.3203, 0.25], [1.6203, 0.18], [1.70, 0.125], [1.75, 0.11], [3.2, 0.11]]);
   const NCW = curve([[0, 0.012], [0.0203, 0.03], [0.0803, 0.06], [0.2203, 0.085], [0.4924, 0.0987], [0.7002, 0.107], [0.8872, 0.1153], [1.3203, 0.15],
     [1.5703, 0.165], [1.808, 0.1807], [1.9319, 0.1972], [2.0558, 0.2137], [2.3203, 0.26], [2.7203, 0.29], [3.1703, 0.30]]);
-  // the engine cover: its top (the airbox at 1.027, falling to 0.71 before the rear axle) and the half
-  // width at its foot (traced in plan)
+  // the engine cover's top (the airbox at 1.027, falling to 0.71 before the rear axle; its half width
+  // at the foot, traced in plan, is ECZF below)
   const ECT = curve([[3.16, 1.006], [3.18, 1.027], [3.31, 1.027], [3.41, 1.015], [3.5, 1.008], [3.6, 0.99], [3.7, 0.97], [3.8, 0.951], [3.9, 0.931],
     [4.0, 0.909], [4.1, 0.888], [4.2, 0.869], [4.3, 0.849], [4.4, 0.822], [4.5, 0.796], [4.6, 0.765], [4.7, 0.726], [4.76, 0.717], [4.86, 0.71], [4.92, 0.64], [4.97, 0.56]]);
-  const ECW = curve([[3.17, 0.22], [3.4203, 0.30], [3.7045, 0.3856], [3.9101, 0.3445], [4.1158, 0.3116], [4.3215, 0.2787], [4.486, 0.254], [4.6094, 0.2375],
-    [4.7328, 0.2293], [4.8562, 0.2046], [4.97, 0.14]]);
   // sidepods: the top line (the shoulder's crease), the undercut line (the lower edge of the outer
   // side) and the plan half width; where the undercut's inner end meets the chassis or the floor
   const SPT = curve([[2.4266, 0.6714], [2.4523, 0.672], [2.6879, 0.6683], [2.8765, 0.6526], [3.2772, 0.6189], [3.6307, 0.5615], [3.9842, 0.4804],
@@ -143,7 +147,7 @@
   const FEB = curve([[1.6981, 0.0766], [2.2428, 0.0698], [2.9236, 0.0749], [3.8314, 0.0832], [4.5577, 0.0886]]);
   const FET = curve([[1.6981, 0.1219], [2.2428, 0.1015], [2.9236, 0.1044], [3.8314, 0.1128], [4.5577, 0.1203]]);
   const PLANK = { x0: 1.75, x1: 4.22, y0: 0.037, y1: 0.047, z: 0.125 };
-  const FLX0 = 1.7203, FLX1 = 4.5577;
+  const FLX0 = 1.7203;
   // the diffuser: its roof on the centre line and the side walls' top edge
   const DIFR = curve([[4.2203, 0.0471], [4.4703, 0.1842], [4.7203, 0.2363], [4.9203, 0.278], [5.1203, 0.3197], [5.3703, 0.3719]]);
   const DIFT = (x) => 0.132 + (x - 4.2203) / 1.15 * 0.24;
@@ -225,7 +229,8 @@
   }
 
   // ---- the engine cover (x 3.16 .. 4.97): from its near foot (on the sidepod's inner edge) over the
-  // top to the far foot; v 0 = the top, 1 = the near foot. Narrow-topped over the roll hoop ----
+  // top to the far foot; v 0 = the top, 1 = the near foot. Narrow-topped over the roll hoop. Its foot:
+  // height ECYF, half width ECZF (the traced plan from x 3.42; the roll hoop's base before it) ----
   const ECN = curve([[3.16, 2.2], [3.5, 2.4], [4.2, 2.6], [4.97, 2.6]]), ECTP = curve([[3.16, 0.42], [3.45, 0.30], [3.8, 0.12], [4.3, 0.05], [4.97, 0.05]]);
   const ECYF = curve([[3.16, 0.745], [3.3, 0.70], [3.5, 0.635], [3.63, 0.60], [3.98, 0.52], [4.34, 0.43], [4.57, 0.355], [4.66, 0.29], [4.8, 0.27], [4.97, 0.30]]);
   const ECZF = curve([[3.16, 0.27], [3.30, 0.275], [3.42, 0.30], [3.7045, 0.3856], [3.9101, 0.3445], [4.1158, 0.3116], [4.3215, 0.2787], [4.486, 0.254],
@@ -238,7 +243,7 @@
 
   // ---- the gearbox and the crash structure (x 4.86 .. 5.50): a rounded box under the rear wing ----
   const CST = curve([[4.86, 0.62], [4.94, 0.545], [5.27, 0.47], [5.50, 0.42]]);
-  const CSB = curve([[4.86, 0.27], [4.92, 0.28], [5.12, 0.32], [5.30, 0.33], [5.50, 0.30]]);
+  const CSB = curve([[4.86, 0.27], [4.95, 0.28], [5.2, 0.29], [5.38, 0.265], [5.50, 0.29]]);
   const CSW = curve([[4.86, 0.17], [4.95, 0.13], [5.30, 0.085], [5.50, 0.07]]);
   function crashPt(x, a, q) {
     const t = CST(x), b = CSB(x), w = CSW(x), c = Math.cos(a), sn = Math.sin(a), e = 2 / 3.2, yc = (t + b) / 2;
@@ -262,16 +267,22 @@
   // a band of the centre body between the near-side angles a0(x) .. a1(x) (numbers or functions)
   const angAt = (f, x) => (typeof f === "function" ? f(x) : f);
   function bodyBand(S, x0, x1, a0, a1, side, o) {
-    const Q = [0, 0, 0];
-    return sweep(S, x0, x1, (x, v, q) => { const A = angAt(a0, x), B = angAt(a1, x); bodyPt(x, A + (B - A) * v, Q); q[0] = Q[0]; q[1] = Q[1]; q[2] = Q[2]; }, side, o);
+    // the bounds tabulated along the band (they are smooth; the sampler calls this very often)
+    const NB = 48, A0 = new Float64Array(NB + 1), A1 = new Float64Array(NB + 1), Q = [0, 0, 0];
+    for (let i = 0; i <= NB; i++) { const x = x0 + (x1 - x0) * i / NB; A0[i] = angAt(a0, x); A1[i] = angAt(a1, x); }
+    return sweep(S, x0, x1, (x, v, q) => {
+      const f = (x - x0) / (x1 - x0) * NB, i = f >= NB ? NB - 1 : f < 0 ? 0 : f | 0, w = f - i;
+      const A = A0[i] + (A0[i + 1] - A0[i]) * w, B = A1[i] + (A1[i + 1] - A1[i]) * w;
+      bodyPt(x, A + (B - A) * v, Q); q[0] = Q[0]; q[1] = Q[1]; q[2] = Q[2];
+    }, side, o);
   }
   // a wing element spanning z0 .. z1: f(z, q) gives the leading edge (q.x, q.y), the chord q.c, its
   // angle q.a (trailing edge up), thickness q.t and camber q.k (fractions of the chord; the camber of
   // these inverted wings bulges down)
   function foil(S, z0, z1, f, o) {
-    const q = { x: 0, y: 0, c: 0.1, a: 0, t: 0.1, k: 0.04 };
-    return S.param((u, v, out) => {
-      const z = z0 + (z1 - z0) * u;
+    const q = { x: 0, y: 0, c: 0.1, a: 0, t: 0.1, k: 0.04 }, v0 = (o && o.v0) || 0, v1 = (o && o.v1) || 1;
+    return S.param((u, vv, out) => {
+      const z = z0 + (z1 - z0) * u, v = v0 + (v1 - v0) * vv;
       q.t = 0.1; q.k = 0.04;
       f(z, q);
       const s0 = v < 0.5 ? 1 - 2 * v : 2 * v - 1, s = 0.5 - 0.5 * Math.cos(PI * s0);
@@ -280,6 +291,17 @@
       const ca = Math.cos(q.a), sa = Math.sin(q.a);
       out[0] = q.x + lx * ca - ly * sa; out[1] = q.y + lx * sa + ly * ca; out[2] = z;
     }, Object.assign({ gu: 28, gv: 16, flip: z1 > z0 }, o));
+  }
+  // a wing element as its upper surface, its underside (lighter: it faces the ground) and a crisp line
+  // along the trailing edge
+  function blade(S, z0, z1, f, o) {
+    o = o || {};
+    const q = { x: 0, y: 0, c: 0.1, a: 0, t: 0.1, k: 0.04 }, gu = o.gu || 28, gv = o.gv || 16;
+    const te = (s, out) => { const z = z0 + (z1 - z0) * s; f(z, q); out[0] = q.x + q.c * Math.cos(q.a); out[1] = q.y + q.c * Math.sin(q.a); out[2] = z; };
+    return S.join(
+      foil(S, z0, z1, f, { gu, gv: Math.ceil(gv / 2), v0: 0, v1: 0.5 }),
+      foil(S, z0, z1, f, { gu, gv: Math.ceil(gv / 2), v0: 0.5, v1: 1, w: o.wl == null ? 0.6 : o.wl }),
+      tube(S, te, 0.0035, 0.0035, [0, 1, 0], { gu: Math.max(8, gu), gv: 4, w: o.wt == null ? 1.6 : o.wt }));
   }
   // a tube along path(s, out), s in 0 .. 1; section half axes a (toward `ref`) and b
   function tube(S, path, a, b, ref, o) {
@@ -325,7 +347,7 @@
   const sidePlate = (S, pts, z, t, fw, ew) => S.place(slab(S, pts, t, fw == null ? 1 : fw, ew == null ? 1 : ew), [0, 0, z]);
   // a tyre around the axle (z) at c: radius R, the flange radius r, the profile (section width w,
   // tread width tw, rim width rw): the sidewall bulges out past the rim and rolls over the shoulder
-  function tyre(S, c, R, r, w, tw, rw, o) {
+  function tyre(S, c, R, r, w, tw, rw, v0, v1, o) {
     const prof = [], hb = rw / 2 + 0.006, hs = w / 2, ht = tw / 2, rs = R - 0.035;
     // from the outer bead round the tread to the inner bead: [radius, z]
     const outer = [[r, hb], [r + 0.02, hs - 0.004], [r + 0.05, hs], [rs - 0.02, hs - 0.003], [rs, hs - 0.012]];
@@ -334,16 +356,22 @@
     for (let i = outer.length - 1; i >= 0; i--) prof.push([outer[i][0], -outer[i][1]]);
     const L = [0];
     for (let i = 1; i < prof.length; i++) L.push(L[i - 1] + Math.hypot(prof[i][0] - prof[i - 1][0], prof[i][1] - prof[i - 1][1]));
-    const tot = L[L.length - 1];
-    return S.param((u, v, out) => {
-      const d = v * tot;
-      let i = 1;
+    const tot = L[L.length - 1], NT = 512, TR_ = new Float64Array(NT + 1), TZ_ = new Float64Array(NT + 1);
+    for (let k = 0, i = 1; k <= NT; k++) {
+      const d = tot * k / NT;
       while (i < L.length - 1 && L[i] < d) i++;
-      const t = (d - L[i - 1]) / ((L[i] - L[i - 1]) || 1), rho = prof[i - 1][0] + (prof[i][0] - prof[i - 1][0]) * t, z = prof[i - 1][1] + (prof[i][1] - prof[i - 1][1]) * t;
+      const t = (d - L[i - 1]) / ((L[i] - L[i - 1]) || 1);
+      TR_[k] = prof[i - 1][0] + (prof[i][0] - prof[i - 1][0]) * t; TZ_[k] = prof[i - 1][1] + (prof[i][1] - prof[i - 1][1]) * t;
+    }
+    return S.param((u, vv, out) => {
+      const g = (v0 + (v1 - v0) * vv) * NT, k = g >= NT ? NT - 1 : g | 0, w = g - k;
+      const rho = TR_[k] + (TR_[k + 1] - TR_[k]) * w, z = TZ_[k] + (TZ_[k + 1] - TZ_[k]) * w;
       const a = TAU * u;
       out[0] = c[0] + rho * Math.cos(a); out[1] = c[1] + rho * Math.sin(a); out[2] = c[2] + z;
-    }, Object.assign({ gu: 90, gv: 26, flip: true }, o));
+    }, Object.assign({ gu: 90, gv: Math.max(4, Math.round(26 * (v1 - v0))), flip: true }, o));
   }
+  // the whole tyre: its outer sidewall and the tread, and the inner sidewall lighter (it is mostly hidden)
+  const tyreAll = (S, c, R, r, w, tw, rw) => S.join(tyre(S, c, R, r, w, tw, rw, 0, 0.64), tyre(S, c, R, r, w, tw, rw, 0.64, 1, { w: 0.45 }));
   // a face in the plane x between an inner ellipse (centre zc, yc; half axes rz, ry) and an outer closed
   // outline ([z, y] polygon), filled along rays from the centre; nx: the side it faces (-1 forward)
   function ringFace(S, x, outer, zc, yc, rz, ry, nx, o) {
@@ -366,7 +394,7 @@
       q[0] = x; q[1] = yc + r * dy; q[2] = zc + r * dz;
     }, Object.assign({ gu: 64, gv: 6, flip: nx < 0 }, o));
   }
-  // the outline of a closed loop of [z, y] points as a list (for the faces), and as a lip tube at x
+  // a lip: a thin tube round a closed loop of [z, y] points in the plane x
   function lip(S, x, zy, r, o) { return tube(S, loopX(x, zy), r, r, [1, 0, 0], Object.assign({ gu: Math.max(24, zy.length * 3), gv: 6 }, o)); }
 
   /* ------------------------------------------------------------------
@@ -381,14 +409,27 @@
     };
     const Q = [0, 0, 0];
 
-    // ---- nose (head): the full section from the tip to the front bulkhead, the tip's round face ----
-    const NX1 = 1.25;
+    // ---- nose (head): the full section from x 0.5 to the front bulkhead (its first half metre and the
+    // tip's round face ride with the front wing's centre, back2) ----
+    const NX0 = 0.5, NX1 = 1.6;
     const tip = S.param((u, v, q) => { bodyPt(0.004, TAU * u, Q); const s = bodySec(0.004), yc = (s.t + s.b) / 2; q[0] = 0.004 - 0.004 * (1 - v); q[1] = yc + (Q[1] - yc) * v; q[2] = Q[2] * v; },
-      { gu: 24, gv: 3, flip: true });
-    put("head", [0.65, 0.40, 0], "chest", bodyBand(S, 0.004, NX1, 0, PI, 1, { gu: 40, gv: 14 }), bodyBand(S, 0.004, NX1, 0, PI, -1, { gu: 40, gv: 14 }), tip);
+      { gu: 24, gv: 3, flip: false });
+    put("head", [1.05, 0.45, 0], "chest", bodyBand(S, NX0, NX1, 0, PI, 1, { gu: 30, gv: 14 }), bodyBand(S, NX0, NX1, 0, PI, -1, { gu: 30, gv: 14 }));
+
+    // the floor: its top from the chassis or the undercut's foot out to the edge; the fences under the
+    // front of the chassis
+    const FZI = curve([[1.72, 0.17], [1.8, 0.18], [2.06, 0.214], [2.32, 0.26], [2.43, 0.285], [2.8, 0.30], [3.2, 0.34], [3.6, 0.38], [4.2, 0.36], [4.45, 0.30], [4.58, 0.27]]);
+    const floorTop = (x, v, q) => { const zi = Math.min(FZI(x), FLW(x) - 0.01); q[0] = x; q[2] = zi + (FLW(x) - zi) * v; q[1] = FET(x); };
+    const fence = (z, side) => {
+      // from the floor's swept leading edge at z, rearward
+      let x0 = FLX0;
+      for (let k = 0; k < 60 && FLW(x0) < z; k++) x0 += 0.01;
+      return S.place(slab(S, [[x0, 0.07], [x0 + 0.55, 0.07], [x0 + 0.55, 0.115], [x0 + 0.05, 0.20], [x0, 0.19]], 0.008, 0.5, 1.4), [0, 0, side * z]);
+    };
 
     // ---- monocoque (chest): the chassis down to the floor ahead of the sidepods, above the sidepods
-    // alongside the cockpit; the opening's inner walls; the helmet ----
+    // alongside the cockpit; the opening's inner walls; the helmet; the floor ahead of the sidepods with
+    // its fences ----
     const aOpen = (x) => (ckW(x) > 0.002 ? bodyAngZ(x, ckW(x)) : 0);
     const aFloor = (x) => bodyAng(x, 0.135);
     const aPod = (x) => bodyAng(x, SPYI(x));
@@ -396,11 +437,16 @@
       const w = ckW(x); bodyPt(x, aOpen(x), Q); q[0] = x; q[2] = w; q[1] = Q[1] - 0.11 * v;
     }, side, { gu: 30, gv: 4, w: 0.55, flip: false });
     put("chest", [2.3, 0.45, 0], null,
-      bodyBand(S, NX1, 1.75, 0, PI, 1, { gu: 14, gv: 16 }), bodyBand(S, NX1, 1.75, 0, PI, -1, { gu: 14, gv: 16 }),
+      bodyBand(S, NX1, 1.75, 0, PI, 1, { gu: 6, gv: 16 }), bodyBand(S, NX1, 1.75, 0, PI, -1, { gu: 6, gv: 16 }),
       bodyBand(S, 1.75, SPX0, aOpen, aFloor, 1, { gu: 18, gv: 16 }), bodyBand(S, 1.75, SPX0, aOpen, aFloor, -1, { gu: 18, gv: 16 }),
       bodyBand(S, SPX0, CK.x1, aOpen, aPod, 1, { gu: 20, gv: 5 }), bodyBand(S, SPX0, CK.x1, aOpen, aPod, -1, { gu: 20, gv: 5 }),
       wall(1), wall(-1),
-      S.ellipsoid(0.135, 0.12, 0.112, { at: [2.80, 0.745, 0], theta: [0, 1.42] }));
+      S.ellipsoid(0.135, 0.12, 0.112, { at: [2.80, 0.745, 0], theta: [0, 1.42] }),
+      // under the helmet in the opening: the driver's shoulders and the steering wheel
+      S.ellipsoid(0.17, 0.09, 0.2, { at: [2.66, 0.60, 0], theta: [0, 1.1], w: 0.7 }),
+      S.box(0.04, 0.11, 0.26, { at: [2.42, 0.655, 0], r: 0.02, w: 0.8 }),
+      both(S, FLX0, SPX0, floorTop, { gu: 16, gv: 8, w: 0.6 }),
+      fence(0.30, 1), fence(0.40, 1), fence(0.50, 1), fence(0.30, -1), fence(0.40, -1), fence(0.50, -1));
 
     // ---- airbox and roll hoop (neck): the top of the cover over the roll hoop, its face round the
     // intake, the intake's lip, the roll-hoop camera on top ----
@@ -414,11 +460,15 @@
       both(S, 3.161, NKX, coverPt, { gu: 10, gv: 14 }),
       ringFace(S, 3.161, face, 0, 0.905, 0.085, 0.07, -1),
       lip(S, 3.166, intake, 0.008),
-      sidePlate(S, TCAM, 0, 0.034, 0.7, 1.2),
+      sidePlate(S, TCAM, 0, 0.034, 1, 1.2),
       S.box(0.10, 0.035, 0.25, { at: [3.31, 1.1225, 0], r: 0.012 }));
 
-    // ---- engine cover (hips) ----
-    put("hips", [4.1, 0.65, 0], "chest", both(S, NKX, 4.97, coverPt, { gu: 42, gv: 14 }));
+    // ---- engine cover, gearbox and crash structure (hips) ----
+    const csEnd = S.param((u, v, q) => { crashPt(5.50, TAU * u, Q); const yc = (CST(5.5) + CSB(5.5)) / 2; q[0] = 5.50; q[1] = yc + (Q[1] - yc) * v; q[2] = Q[2] * v; },
+      { gu: 24, gv: 3, flip: false });
+    const crash = S.join(sweep(S, 4.86, 5.50, (x, v, q) => crashPt(x, v * PI, q), 1, { gu: 18, gv: 10 }),
+      sweep(S, 4.86, 5.50, (x, v, q) => crashPt(x, v * PI, q), -1, { gu: 18, gv: 10 }), csEnd);
+    put("hips", [4.3, 0.62, 0], "chest", both(S, NKX, 4.97, coverPt, { gu: 42, gv: 14 }), crash);
 
     // ---- sidepods (mane): top and outer side in three lengths; the inlet's lip and the radiator face
     // behind it in the first ----
@@ -430,7 +480,7 @@
     let cz = 0, cy = 0;
     for (const p of inlet) { cz += p[0] / inlet.length; cy += p[1] / inlet.length; }
     const core = inlet.map((p) => [cz + (p[0] - cz) * 0.9, cy + (p[1] - cy) * 0.9]);
-    const SP1 = 2.95, SP2 = 3.70;
+    const SP1 = 3.05, SP2 = 3.70;
     put("maneL1", [2.65, 0.58, 0.5], "chest", pod(SPX0, SP1, 16), lip(S, SPX0 + 0.004, inlet, 0.011),
       ringFace(S, SPX0 + 0.09, core, cz, cy, 0, 0, -1, { w: 0.5, heat: 0.22, gv: 5 }));
     put("maneL2", [3.3, 0.52, 0.62], "chest", pod(SP1, SP2, 22));
@@ -439,22 +489,12 @@
 
     // ---- the undercut, the chassis side inside it, the floor's edge (flank) ----
     const cave = sweep(S, SPX0, 3.35, (x, v, q) => { const yu = SPYU(x); q[0] = x; q[2] = SPZU(x); q[1] = yu + (0.115 - yu) * v; }, 1, { gu: 18, gv: 6, w: 0.7 });
-    const edge = sweep(S, 1.70, 4.53, (x, v, q) => { q[0] = x; q[2] = FLW(x); q[1] = FET(x) + (FEB(x) - FET(x)) * v; }, 1, { gu: 70, gv: 3, w: 1.3 });
+    const edge = sweep(S, 1.70, 4.53, (x, v, q) => { q[0] = x; q[2] = FLW(x); q[1] = FET(x) + (FEB(x) - FET(x)) * v; }, 1, { gu: 70, gv: 3, w: 0.9 });
     put("flankL", [3.3, 0.25, 0.55], "chest", sweep(S, SPX0, 4.6, podUnder, 1, { gu: 44, gv: 10 }), cave, edge);
     P.flankR = H.mirror(P.flankL);
 
-    // ---- floor (belly): its top from the chassis or the undercut's foot out to the edge, the fences
-    // under the front of the chassis, the plank ----
-    const FZI = curve([[1.72, 0.17], [1.8, 0.18], [2.06, 0.214], [2.32, 0.26], [2.43, 0.285], [2.8, 0.30], [3.2, 0.34], [3.6, 0.38], [4.2, 0.36], [4.45, 0.30], [4.58, 0.27]]);
-    const floorTop = (x, v, q) => { const zi = Math.min(FZI(x), FLW(x) - 0.01); q[0] = x; q[2] = zi + (FLW(x) - zi) * v; q[1] = FET(x); };
-    const fence = (z, side) => {
-      // from the floor's swept leading edge at z, rearward
-      let x0 = FLX0;
-      for (let k = 0; k < 60 && FLW(x0) < z; k++) x0 += 0.01;
-      return S.place(slab(S, [[x0, 0.07], [x0 + 0.55, 0.07], [x0 + 0.55, 0.115], [x0 + 0.05, 0.20], [x0, 0.19]], 0.008, 0.5, 1.4), [0, 0, side * z]);
-    };
-    put("belly", [3.0, 0.1, 0], "chest", both(S, FLX0, 4.58, floorTop, { gu: 60, gv: 8, w: 0.85, flip: false }),
-      fence(0.30, 1), fence(0.40, 1), fence(0.50, 1), fence(0.30, -1), fence(0.40, -1), fence(0.50, -1),
+    // ---- floor (belly): its top from the undercut's foot out to the edge, the plank ----
+    put("belly", [3.4, 0.1, 0], "chest", both(S, SPX0, 4.58, floorTop, { gu: 48, gv: 8, w: 0.6 }),
       S.box(PLANK.x1 - PLANK.x0, 0.06, 2 * PLANK.z, { at: [(PLANK.x0 + PLANK.x1) / 2, 0.07, 0], r: 0.01, w: 0.5 }));
 
     // ---- halo (jaw): the hoop round the cockpit on its rear mounts and the centre pillar; the mirrors
@@ -462,15 +502,18 @@
     const hoop = spline([[2.86, 0.75, 0.275], [2.81, 0.785, 0.287], [2.70, 0.826, 0.312], [2.56, 0.850, 0.310], [2.45, 0.862, 0.255], [2.385, 0.866, 0.15],
       [2.36, 0.866, 0], [2.385, 0.866, -0.15], [2.45, 0.862, -0.255], [2.56, 0.850, -0.310], [2.70, 0.826, -0.312], [2.81, 0.785, -0.287], [2.86, 0.75, -0.275]]);
     const mirror = (s) => S.join(
-      S.box(0.23, 0.075, 0.155, { at: [2.38, 0.725, s * 0.62], r: 0.03 }),
-      strut(S, [2.42, 0.69, s * 0.59], [2.45, 0.66, s * 0.55], 0.018, 0.01, [1, 0, 0]));
+      S.box(0.23, 0.073, 0.155, { at: [2.38, 0.7315, s * 0.62], r: 0.03 }),
+      strut(S, [2.42, 0.70, s * 0.59], [2.45, 0.665, s * 0.55], 0.018, 0.01, [1, 0, 0]));
     put("jaw", [2.5, 0.8, 0], "chest", tube(S, hoop, 0.024, 0.02, [0, 1, 0], { gu: 90, gv: 8 }),
-      strut(S, [2.065, 0.66, 0], [2.37, 0.866, 0], 0.016, 0.028, [0, 0, 1]), mirror(1), mirror(-1));
+      strut(S, [2.06, 0.66, 0], [2.335, 0.866, 0], 0.018, 0.018, [0, 0, 1]), mirror(1), mirror(-1),
+      tube(S, spline([[2.72, 0.752, 0.205], [2.86, 0.762, 0.19], [3.0, 0.764, 0.17], [3.12, 0.76, 0.12], [3.15, 0.757, 0], [3.12, 0.76, -0.12], [3.0, 0.764, -0.17],
+        [2.86, 0.762, -0.19], [2.72, 0.752, -0.205]]), 0.022, 0.032, [0, 1, 0], { gu: 40, gv: 8 }));
 
-    // ---- front wing: four elements (back2 the centre under the nose, back1/back3 the outer halves),
-    // swept back in plan, the flaps rising toward the end plates (scap) ----
+    // ---- front wing: four elements swept back in plan, the flaps rising toward the end plates; back2 the
+    // centre under the nose (the neutral section, |z| < 0.25, and a little more) with the nose's tip,
+    // back1/back3 the outer halves, scap the end plates and the elements' last 0.15 m ----
     const LE0 = curve([[0, 0.004], [0.083, 0.033], [0.51, 0.19], [0.95, 0.362]]);
-    const TE0 = curve([[0, 0.5525], [0.246, 0.4813], [0.552, 0.6614], [0.868, 0.8416], [0.95, 0.83]]);
+    const TE0 = curve([[0, 0.5525], [0.246, 0.4813], [0.552, 0.6614], [0.868, 0.8416], [0.95, 0.815]]);
     // per element: its share of the stack's plan length, heights of its leading and trailing edges at the
     // centre and at the end plate (the side view's chords)
     const FWE = [
@@ -484,84 +527,82 @@
       const xa = le + L * e.f[0], xb = le + L * e.f[1], ya = lerp(e.y0[0], e.y1[0], g), yb = lerp(e.y0[1], e.y1[1], g);
       q.x = xa; q.y = ya; q.c = Math.hypot(xb - xa, yb - ya); q.a = Math.atan2(yb - ya, xb - xa); q.t = 0.09; q.k = 0.05;
     };
-    const fwing = (z0, z1, gu) => S.join(FWE.map((e) => foil(S, z0, z1, fwEl(e), { gu, gv: 12 })));
-    put("back2", [0.3, 0.2, 0], "head", fwing(-0.25, 0.25, 16));
-    put("back1", [0.45, 0.26, 0.6], "head", fwing(0.25, 0.944, 26));
+    const fwing = (z0, z1, gu) => S.join(FWE.map((e) => blade(S, z0, z1, fwEl(e), { gu, gv: 12 })));
+    put("back2", [0.3, 0.22, 0], "head", fwing(-0.30, 0.30, 18),
+      bodyBand(S, 0.004, NX0, 0, PI, 1, { gu: 14, gv: 14 }), bodyBand(S, 0.004, NX0, 0, PI, -1, { gu: 14, gv: 14 }), tip);
+    put("back1", [0.45, 0.26, 0.56], "head", fwing(0.30, 0.80, 20));
     P.back3 = H.mirror(P.back1);
     const FEP = S.rounded([[0.8173, 0.4966], [0.6621, 0.4782], [0.5468, 0.44], [0.467, 0.3598], [0.4072, 0.2665], [0.385, 0.2109], [0.3961, 0.1733],
       [0.5956, 0.1564], [0.8173, 0.1618]], 0.03, 3);
-    put("scapL", [0.6, 0.33, 0.952], "head", sidePlate(S, FEP, 0.952, 0.012, 0.5, 1.6),
+    put("scapL", [0.62, 0.33, 0.90], "head", sidePlate(S, FEP, 0.952, 0.012, 1, 1.6), fwing(0.80, 0.944, 6),
       S.quad([0.40, 0.162, 0.958], [0.817, 0.162, 0.958], [0.40, 0.158, 0.90], [0.817, 0.162, 0.90], { w: 0.6 }));
     P.scapR = H.mirror(P.scapL);
 
     // ---- rear wing: the main plane and the swan-neck pylon over it (tail3), the DRS flap (tail4), the
-    // end plates leaning out with the rounded tips (haunch) ----
-    const RWS = 0.585;
+    // end plates leaning out and the tips (haunch) ----
+    const RWS = 0.60;
     const PYL = [[5.3119, 1.0009], [4.9348, 0.9993], [4.8594, 0.911], [4.8393, 0.7852], [4.8971, 0.7855], [4.9549, 0.9165], [5.3119, 0.9582]];
     put("tail3", [5.15, 0.88, 0], "chest",
-      foil(S, -RWS, RWS, (z, q) => { q.x = 5.025; q.y = 0.853; q.c = 0.30; q.a = 0.07; q.t = 0.12; q.k = 0.07; }, { gu: 60, gv: 16 }),
-      sidePlate(S, PYL, 0, 0.03, 0.6, 1.3));
+      blade(S, -RWS, RWS, (z, q) => { q.x = 5.025; q.y = 0.857; q.c = 0.30; q.a = 0.08; q.t = 0.10; q.k = 0.035; }, { gu: 60, gv: 16, wl: 0.8 }),
+      sidePlate(S, PYL, 0, 0.03, 1, 1.3));
     put("tail4", [5.39, 0.93, 0], "tail3",
-      foil(S, -RWS, RWS, (z, q) => { q.x = 5.27; q.y = 0.878; q.c = 0.25; q.a = 0.39; q.t = 0.10; q.k = 0.05; }, { gu: 60, gv: 16 }));
+      blade(S, -RWS, RWS, (z, q) => { q.x = 5.29; q.y = 0.888; q.c = 0.204; q.a = 0.44; q.t = 0.10; q.k = 0.05; }, { gu: 60, gv: 16, wl: 0.8 }));
     const REP = S.rounded([[5.6051, 0.8432], [5.3747, 0.8492], [5.0683, 0.855], [5.0683, 0.6028], [5.2805, 0.4388], [5.4525, 0.3263], [5.5279, 0.3927],
       [5.57, 0.6286], [5.6051, 0.80]], 0.03, 3);
-    const tipR = S.param((u, v, q) => {
-      const a = v * PI / 2; q[0] = 5.03 + 0.50 * u; q[1] = 0.85 + 0.135 * Math.sin(a); q[2] = 0.505 + 0.10 * Math.cos(a);
-    }, { gu: 20, gv: 6, flip: true, w: 0.8 });
-    put("haunchL", [5.33, 0.62, 0.55], "tail3", S.place(slab(S, REP, 0.012, 0.5, 1.6), [0, 0, 0.46 - 0.27 * 0.33], [1, 0, 0, 0, 1, 0, 0, 0.27, 1]), tipR);
+    // the tip: the profiles' ends close in a plate over the end plate's top (its outline the wing's side view)
+    const tipR = sidePlate(S, [[5.025, 0.857], [5.10, 0.845], [5.3154, 0.846], [5.45, 0.88], [5.475, 0.95], [5.475, 0.978], [5.411, 0.9687], [5.2675, 0.9274],
+      [5.0762, 0.8812]], 0.606, 0.012, 1, 1.4);
+    put("haunchL", [5.33, 0.62, 0.55], "tail3", S.place(slab(S, REP, 0.012, 1, 1.6), [0, 0, 0.46 - 0.27 * 0.33], [1, 0, 0, 0, 1, 0, 0, 0.27, 1]), tipR);
     P.haunchR = H.mirror(P.haunchL);
 
-    // ---- gearbox and crash structure with the rain light and the tailpipe, the two-element beam wing
+    // ---- the two-element beam wing, the tailpipe and the rain light on the crash structure's end
     // (tail2); the diffuser: side walls, roof and strakes (tail1) ----
-    const csEnd = S.param((u, v, q) => { crashPt(5.50, TAU * u, Q); const yc = (CST(5.5) + CSB(5.5)) / 2; q[0] = 5.50; q[1] = yc + (Q[1] - yc) * v; q[2] = Q[2] * v; },
-      { gu: 24, gv: 3, flip: false });
-    const crash = S.join(sweep(S, 4.86, 5.50, (x, v, q) => crashPt(x, v * PI, q), 1, { gu: 18, gv: 10 }),
-      sweep(S, 4.86, 5.50, (x, v, q) => crashPt(x, v * PI, q), -1, { gu: 18, gv: 10 }), csEnd);
-    const beam = (x, y, c, a) => foil(S, -0.45, 0.45, (z, q) => { q.x = x; q.y = y; q.c = c; q.a = a; q.t = 0.10; q.k = 0.05; }, { gu: 30, gv: 12 });
+    const beam = (x, y, c, a) => blade(S, -0.45, 0.45, (z, q) => { q.x = x; q.y = y; q.c = c; q.a = a; q.t = 0.10; q.k = 0.05; }, { gu: 30, gv: 12, wl: 0.8, wt: 1 });
     put("tail2", [5.2, 0.42, 0], "chest",
-      S.tag(S.join(crash, beam(5.19, 0.391, 0.254, 0.18), beam(5.22, 0.491, 0.25, 0.205),
+      S.tag(S.join(beam(5.19, 0.391, 0.254, 0.18), beam(5.22, 0.491, 0.25, 0.205),
         S.cyl(0.042, 0.22, { axis: "x", at: [4.93, 0.575, 0], caps: false }),
         S.torus(0.04, 0.006, { axis: "x", at: [5.15, 0.575, 0], heat: 0.5 })), { glow: 0 }),
-      S.box(0.012, 0.05, 0.075, { at: [5.508, 0.36, 0], r: 0.005, heat: 0.55 }));
-    const dWall = (side) => sweep(S, 4.58, 5.37, (x, v, q) => { q[0] = x; q[2] = FLW(x); q[1] = 0.062 + (DIFT(x) - 0.062) * v; }, side, { gu: 24, gv: 5, w: 0.8, flip: false });
+      S.box(0.012, 0.05, 0.075, { at: [5.508, 0.36, 0], r: 0.005, heat: 0.12, w: 3 }));
+    const dWall = (side) => sweep(S, 4.2203, 5.375, (x, v, q) => { q[0] = x; q[2] = x < 4.58 ? 0.50 : FLW(x); q[1] = 0.062 + (DIFT(x) - 0.062) * v; }, side, { gu: 30, gv: 5, w: 0.8, flip: false });
     const strake = (z) => sidePlate(S, [[4.45, 0.062], [5.30, 0.062], [5.30, DIFR(5.30)], [4.45, DIFR(4.45)]], z, 0.006, 0.4, 1.2);
     put("tail1", [4.9, 0.2, 0], "chest", dWall(1), dWall(-1),
-      both(S, 4.40, 5.37, (x, v, q) => { q[0] = x; q[2] = FLW(x) * v; q[1] = DIFR(x); }, { gu: 18, gv: 8, w: 0.35 }),
-      strake(0.17), strake(-0.17), strake(0.30), strake(-0.30));
+      both(S, 4.40, 5.37, (x, v, q) => { q[0] = x; q[2] = FLW(x) * v; q[1] = DIFR(x); }, { gu: 18, gv: 8, w: 0.5 }),
+      strake(0.17), strake(-0.17));
 
-    // ---- wheels: tyres (paw), rims with their covers, the lip and the hub nut (lo) ----
-    const rimL = (c, rw) => {
+    // ---- wheels: tyres (paw); rims with their covers, the lip, the hub nut and the brake drum, round
+    // so it may turn with the wheel (lo) ----
+    const rimL = (c, rw, drum) => {
       const zo = c[2] + rw / 2 + 0.004, zi = c[2] - rw / 2 + 0.01;
       return S.join(
         S.disc(0.036, RIMR - 0.012, { at: [c[0], c[1], zo] }),
         S.torus(RIMR - 0.006, 0.007, { at: [c[0], c[1], zo - 0.004] }),
         S.cyl(0.034, 0.012, { axis: "z", at: [c[0], c[1], zo] }),
-        S.disc(0.12, RIMR - 0.01, { at: [c[0], c[1], zi], axis: "-z", w: 0.5 }));
+        S.disc(0.07, RIMR - 0.01, { at: [c[0], c[1], zi], axis: "-z" }),
+        S.cyl(drum, 0.075, { axis: "z", at: [c[0], c[1], zi - 0.075] }), S.disc(0.05, drum, { at: [c[0], c[1], zi - 0.075], axis: "-z", w: 0.6 }));
     };
     const CF = [WFR.x, WFR.y, WFR.z], CR = [WRE.x, WRE.y, WRE.z];
-    put("fl_paw", CF, null, tyre(S, CF, TR, RIMR, WFR.w, WFR.tread, WFR.rim));
-    put("fl_lo", CF, null, rimL(CF, WFR.rim));
-    put("hl_paw", CR, null, tyre(S, CR, TR, RIMR, WRE.w, WRE.tread, WRE.rim));
-    put("hl_lo", CR, null, rimL(CR, WRE.rim));
+    put("fl_paw", CF, null, tyreAll(S, CF, TR, RIMR, WFR.w, WFR.tread, WFR.rim));
+    put("fl_lo", CF, null, rimL(CF, WFR.rim, 0.13));
+    put("hl_paw", CR, null, tyreAll(S, CR, TR, RIMR, WRE.w, WRE.tread, WRE.rim));
+    put("hl_lo", CR, null, rimL(CR, WRE.rim, 0.14));
 
-    // ---- suspension (up): faired wishbones, push or pull rods, track rods, the brake drums; the
-    // winglet over each front tyre; the rear driveshafts ----
+    // ---- suspension (up): faired wishbones, push and pull rods, track and toe links; the winglet over
+    // each front tyre; the rear driveshafts and brake-duct housings ----
     const arm = (p, q) => strut(S, p, q, 0.032, 0.011, [1, 0, 0]);
     const winglet = S.param((u, v, q) => {
       const a = 1.20 + 0.58 * u, R = 0.374 + 0.02 * v; q[0] = WFR.x + R * Math.cos(a); q[1] = WFR.y + R * Math.sin(a); q[2] = 0.625 + 0.05 * v;
-    }, { gu: 16, gv: 4, flip: true });
+    }, { gu: 16, gv: 4, flip: false });
     put("fl_up", [1.33, 0.40, 0.42], "chest",
       arm([1.12, 0.53, 0.15], [1.33, 0.56, 0.655]), arm([1.58, 0.56, 0.16], [1.33, 0.56, 0.655]),
       arm([1.08, 0.29, 0.13], [1.32, 0.17, 0.665]), arm([1.62, 0.25, 0.15], [1.32, 0.17, 0.665]),
       arm([1.32, 0.19, 0.64], [1.40, 0.55, 0.16]), arm([1.20, 0.37, 0.15], [1.22, 0.38, 0.655]),
-      S.cyl(0.13, 0.075, { axis: "z", at: [WFR.x, WFR.y, WFR.z - WFR.rim / 2 - 0.075], w: 0.7 }),
       winglet);
     put("hl_up", [4.92, 0.38, 0.38], "chest",
       arm([4.72, 0.52, 0.17], [4.93, 0.56, 0.58]), arm([5.08, 0.50, 0.13], [4.93, 0.56, 0.58]),
       arm([4.70, 0.26, 0.20], [4.92, 0.16, 0.60]), arm([5.12, 0.29, 0.12], [4.92, 0.16, 0.60]),
       arm([4.80, 0.30, 0.20], [4.78, 0.30, 0.59]), arm([4.92, 0.52, 0.56], [4.80, 0.27, 0.15]),
       strut(S, [4.92, 0.36, 0.12], [4.92, 0.36, 0.56], 0.022, 0.022, [0, 1, 0]),
-      S.cyl(0.14, 0.06, { axis: "z", at: [WRE.x, WRE.y, WRE.z - WRE.rim / 2 - 0.06], w: 0.7 }));
+      S.box(0.30, 0.40, 0.04, { at: [4.93, 0.37, 0.505], r: 0.015 }));
     for (const n of ["up", "lo", "paw"]) { P["fr_" + n] = H.mirror(P["fl_" + n]); P["hr_" + n] = H.mirror(P["hl_" + n]); }
     return P;
   }
@@ -571,14 +612,17 @@
      the engine hums through the chassis
      ------------------------------------------------------------------ */
   const F1_D = 4.0;
-  const FLOOR_V = 3.4;                       // the rolling road's speed on screen (machine units a second)
+  // the rolling road moves with the wind: half the screen's longer side a second, 3.65 machine units a
+  // second on a 1440 x 900 screen, 4.1 at 1920 x 1080, 4.2 on a phone (intro.js layout, flow.js inflow)
+  const FLOOR_V = 3.9;
   const WHEEL_W = FLOOR_V / (TR * K);        // so the tyres' contact patches move with it
   function f1Animate(A, t, age, aim, H) {
     const w = WHEEL_W * t;
     A.rz("fl_paw", w).rz("fl_lo", w).rz("fr_paw", w).rz("fr_lo", w);
     A.rz("hl_paw", w).rz("hl_lo", w).rz("hr_paw", w).rz("hr_lo", w);
+    // the rain light pulses red, softly (about twice a second)
     const b = 0.5 + 0.5 * Math.cos(TAU * 2.2 * t);
-    A.glow("tail2", 0.45 * b * b);
+    A.glow("tail2", 0.75 * b * b);
     A.move("chest", 0, 0.0012 * Math.sin(t * 57) + 0.0008 * Math.sin(t * 31 + 1.3), 0);
   }
   // the tailpipe's end in tail2's frame
