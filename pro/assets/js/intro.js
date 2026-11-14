@@ -258,7 +258,7 @@
       .filter((c) => c && c.name).map((c) => ({ name: c.name, dwell: +c.dwell > 0 ? +c.dwell : D.dwell || 5 }));
     // the first car: the SUV (a Lexus-RX-like hybrid, the owner's choice), or the old hypercar until it exists
     const FIRST = ["suv", "hypercar"].find((n) => all.some((c) => c.name === n)) || "suv";
-    const SHOW = [FIRST, "f1", "helicopter", "jet"];
+    const SHOW = [FIRST, "f1", "helicopter", "jet", "starship"];
     const shown = SHOW.map((n) => all.find((c) => c.name === n)).filter(Boolean);
     const cycle = shown.length ? shown : all;
     if (!cycle.length) return cylinder();
