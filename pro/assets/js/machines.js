@@ -283,8 +283,8 @@
   const GROUND = -1.3;
   // the tank was taken out (the owner asked); the SUV replaces the hypercar (the hypercar stays listed
   // only until the SUV exists)
-  const ORDER = ["suv", "hypercar", "f1", "helicopter", "jet", "starship"];
-  const DWELL = { suv: 4.5, hypercar: 4.5, f1: 4.0, tank: 5.0, helicopter: 5.0, jet: 4.5, starship: 5.0 };
+  const ORDER = ["coupe", "suv", "hypercar", "f1", "helicopter", "jet", "starship"];
+  const DWELL = { coupe: 4.5, suv: 4.5, hypercar: 4.5, f1: 4.0, tank: 5.0, helicopter: 5.0, jet: 4.5, starship: 5.0 };
   const DURATION = { dwell: 4.5, transform: 2.2 };
   const JITTER = 0.003;
   const EMPTY = Object.freeze([]);
