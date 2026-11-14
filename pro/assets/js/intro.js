@@ -1,10 +1,10 @@
 /* =========================================================
    Pro Mode — the first page: a wind tunnel.
    One machine made of particles stands in a live airflow and keeps
-   rebuilding itself: a hypercar, an F1 car, a battle tank, an attack
-   helicopter, a stealth bomber and a Starship, which launches, and round
-   again (the forms and the transformations come from machines.js and the
-   files after it). The air is a 2D fluid solved on the GPU around the
+   rebuilding itself: a sports car, an F1 car, a light helicopter, which
+   takes off, a stealth fighter and a spaceship, which lands as the sports
+   car again (the forms and the transformations come from machines.js and
+   the files after it). The air is a 2D fluid solved on the GPU around the
    machine's own silhouette (flow.js); engines and the rotor's downwash
    blow into it. Between two machines the particles fly apart, swirl and
    settle into the next one, as they do between the scales further down.
@@ -17,8 +17,13 @@
 
   const section = document.querySelector(".home-intro");
   const canvas = document.getElementById("intro-canvas");
-  if (!section || !canvas || !window.THREE) return;
+  if (!section || !canvas) return;
   const readout = section.querySelector(".flow-readout");
+  // No machine is drawn (Reduce Motion, no WebGL, the libraries did not load): the readout goes
+  // too, so it never names a machine that is not there.
+  const off = () => { if (readout) readout.style.display = "none"; };
+  if (!window.THREE) { off(); return; }
+  // The machine is drawn but the air cannot run on this device: only its name stays.
   const still = () => { if (readout) readout.classList.add("is-still"); };
 
   const isMobile =
@@ -27,13 +32,13 @@
   // Reduce Motion is respected (the page says so in a note), unless the visitor asked to play anyway
   let forceMotion = false;
   try { forceMotion = localStorage.getItem("pro-motion") === "1"; } catch (e) {}
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches && !forceMotion) { still(); return; }
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches && !forceMotion) { off(); return; }
 
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true, powerPreference: "high-performance" });
   } catch (e) {
-    still();
+    off();
     return;
   }
   const PR = isMobile ? 1 : Math.min(window.devicePixelRatio || 1, 2);

@@ -282,7 +282,7 @@
      ------------------------------------------------------------------ */
   const PI = Math.PI, TAU = 2 * Math.PI;
   const GROUND = -1.3;
-  // the owner's line-up: the tank, the hypercar and the SUV were taken out (they asked)
+  // the owner's line-up, in this order
   const ORDER = ["coupe", "f1", "helicopter", "jet", "starship"];
   const DWELL = { coupe: 4.5, f1: 4.0, tank: 5.0, helicopter: 5.0, jet: 4.5, starship: 5.0 };
   const DURATION = { dwell: 4.5, transform: 2.2 };
