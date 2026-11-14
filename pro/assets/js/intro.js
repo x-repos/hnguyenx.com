@@ -398,7 +398,7 @@
     uYaw: { value: 0 }, uPitch: { value: 0 }, uPivot: { value: new THREE.Vector3() },
     uMouse: { value: new THREE.Vector2(9, 9) }, uMouseStr: { value: 0 }, uAspect: { value: 1 },
     uShock: { value: [new THREE.Vector3(0, 0, 99), new THREE.Vector3(0, 0, 99), new THREE.Vector3(0, 0, 99)] },
-    uMaskSize: { value: 2 }, uMorph: { value: 0 }, uChaos: { value: 0 },
+    uMaskSize: { value: 2 }, uMorph: { value: 0 }, uChaos: { value: 0 }, uOccBias: { value: 0.06 },
   };
   // Where a particle is: on machine A, on machine B, or in flight between them, exactly as the cloud
   // flies between the scales further down the page (home.js), but about the machine's own centre.
@@ -499,6 +499,38 @@
   cloud.frustumCulled = false;
   cloud.renderOrder = 5;
   scene.add(cloud);
+  // The machine hides what is behind it, as a real one does (the owner found it odd to see all four
+  // wheels through the body): first its surface goes into the depth buffer only, as bigger dots that
+  // close the gaps between them, set back a little so the surface's own dots stay in front; then the
+  // dots are drawn with the depth test, so the far wheels, the far side and the inside are hidden,
+  // while what shows below the body (the bottoms of the far wheels) still shows. What the air passes
+  // through (a rotor's blur disc) hides nothing either.
+  const occluder = new THREE.Points(geo, new THREE.ShaderMaterial({
+    uniforms: U,
+    colorWrite: false,
+    depthWrite: true,
+    depthTest: true,
+    vertexShader: `
+      uniform float uSize, uPR, uOccBias;
+      ${PLACE}
+      void main() {
+        vec4 mv = modelViewMatrix * vec4(placed(), 1.0);
+        mv.z -= uOccBias;
+        gl_Position = projectionMatrix * mv;
+        gl_PointSize = uSize * uPR * 2.6 * clamp(6.5 / -mv.z, 0.6, 1.8);
+        if (mix(aSolidA, aSolidB, kM) < 0.5) gl_Position = vec4(0.0, 0.0, 2.0, 1.0);
+      }`,
+    fragmentShader: `
+      precision highp float;
+      void main() {
+        vec2 c = gl_PointCoord - 0.5;
+        if (dot(c, c) > 0.25) discard;
+        gl_FragColor = vec4(0.0);
+      }`,
+  }));
+  occluder.frustumCulled = false;
+  occluder.renderOrder = 4;
+  scene.add(occluder);
 
   // ====================================================
   // THE AIR — flow.js, around the silhouette drawn from the same particles
@@ -775,6 +807,7 @@
       air.step(dt, { time: t, inflow: 1, band: FULL_BAND, crossFlow: 0.35, floor });
       air.setOpacity(1);
     }
+    U.uOccBias.value = 0.05 * place.s;      // about 6 cm on a car: the surface's own dots stay in front
     renderer.render(scene, camera);
     if (first) { first = false; canvas.classList.add("is-ready"); }
   }
