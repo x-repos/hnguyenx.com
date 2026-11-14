@@ -45,7 +45,7 @@
      ------------------------------------------------------------------ */
   const LEN = 52.1, K = 3.75 / LEN, XC = LEN / 2, YC = -0.25;
   const RB = 4.505;                       // barrel radius (traced 9.009 m across; published 9 m)
-  const ROLL = 0;                         // roll about the axis (radians; + turns the starboard side toward the viewer)
+  const ROLL = 0;                         // roll about the axis (radians; + turns the leeward side up, the tiles show below)
   // the hull's side profile [x, rho]: a blunt tip cap (sphere radius 0.87 m), a tangent ogive to 13.663 m, the barrel
   const HULL = [[0, 0], [0.05, 0.291], [0.1, 0.405], [0.15, 0.488], [0.2, 0.555], [0.25, 0.58], [0.5, 0.737], [1, 1.041],
     [1.5, 1.329], [2, 1.602], [2.5, 1.86], [3, 2.104], [3.5, 2.334], [4, 2.552], [4.5, 2.756], [5, 2.948], [5.5, 3.127],
@@ -77,10 +77,11 @@
   // sea-level engines (exit 1.3 m, 3.1 m tall) 0.87 m from the axis, turned 60 deg
   const RVAC = { re: 1.15, top: LEN - 4.6, at: [[-3.10, 0], [1.55, -2.685], [1.55, 2.685]] };
   const RSL = { re: 0.65, top: LEN - 3.1, at: [[0.87, 0], [-0.435, 0.753], [-0.435, -0.753]] };
-  // the engine bay: the aft dome above the engines, the skirt's inner wall and its bottom rim
+  // the engine bay: the aft dome above the engines (its rim at x0, bulging 1 m toward the base), the skirt's
+  // bottom rim (inner radius rin)
   const BAY = { x0: 46.6, dome: 1.0, rin: 4.42 };
-  // the heat-shield tiles are drawn sparser than the steel (they read dark)
-  const WT = 0.45;
+  // the heat-shield tiles are drawn much sparser than the steel (they read black)
+  const WT = 0.28;
 
   /* ------------------------------------------------------------------
      Geometry (authoring only: runs once, when the rig is built)
@@ -124,13 +125,6 @@
     HS.r = HT[o] + (HT[o + 2] - HT[o]) * w; HS.rr = HT[o + 1] + (HT[o + 3] - HT[o + 1]) * w;
     return HS;
   }
-  // where the nose reaches the radius rho (x from 0 to XN)
-  function hullX(rho) {
-    if (rho >= RB) return XN;
-    let lo = 0, hi = XN;
-    for (let k = 0; k < 50; k++) { const mid = (lo + hi) / 2; if (hullR(mid).r < rho) lo = mid; else hi = mid; }
-    return (lo + hi) / 2;
-  }
   // a surface that writes its own outward normal in q[3..5]
   function analytic(sh) { for (const pt of sh) if (pt && pt.p && pt.p.nrm === false) pt.p.nrm = true; return sh; }
   const fnOf = (a) => (typeof a === "function" ? a : () => a);
@@ -150,6 +144,50 @@
       q[3] = -h.rr; q[4] = h.r * s; q[5] = h.r * c;
       if (h.r < 1e-6) { q[3] = -1; q[4] = 0; q[5] = 0; }
     }, { gu, gv, w: o.w, heat: o.heat, glow: o.glow }));
+  }
+  // A lane: the hull from x0 to x1, made of bands (each { a0, a1: angles, numbers or functions of x; w: its
+  // density weight; seams: the steel rings' weld seams drawn as thin lines, narrow bands of the extra weight
+  // seams.w at the positions seams.at }), cut along x into pieces in proportion to the weights of the entries
+  // [part, weight], in order (by area: square metres times the weights). Returns [[part, shape, xa, xb], ...].
+  function lane(S, x0, x1, bands, entries) {
+    const n = 6000, dx = (x1 - x0) / n, cum = new Float64Array(n + 1), A0 = bands.map((b) => fnOf(b.a0)), A1 = bands.map((b) => fnOf(b.a1));
+    const seamW = (b, x) => {
+      if (!b.seams) return 0;
+      for (const xs of b.seams.at) if (Math.abs(x - xs) < b.seams.hw) return b.seams.w;
+      return 0;
+    };
+    for (let i = 1; i <= n; i++) {
+      const x = x0 + dx * (i - 0.5), h = hullR(x), ds = Math.sqrt(h.r * h.r + h.rr * h.rr) * dx;
+      let a = 0;
+      for (let j = 0; j < bands.length; j++) a += Math.max(0, A1[j](x) - A0[j](x)) * ((bands[j].w == null ? 1 : bands[j].w) + seamW(bands[j], x));
+      cum[i] = cum[i - 1] + a * ds;
+    }
+    const xAt = (A) => {
+      let lo = 0, hi = n;
+      while (hi - lo > 1) { const m = (lo + hi) >> 1; if (cum[m] < A) lo = m; else hi = m; }
+      return x0 + dx * (lo + Math.min(1, Math.max(0, (A - cum[lo]) / Math.max(1e-12, cum[hi] - cum[lo]))));
+    };
+    let tw = 0;
+    for (const e of entries) tw += e[1];
+    const out = [];
+    let acc = 0, xa = x0;
+    for (let k = 0; k < entries.length; k++) {
+      acc += entries[k][1] / tw * cum[n];
+      const xb = k === entries.length - 1 ? x1 : Math.min(x1, xAt(acc));
+      if (xb > xa + 1e-6) {
+        const sh = [];
+        for (const b of bands) {
+          sh.push(hullBand(S, xa, xb, b.a0, b.a1, b));
+          if (b.seams) for (const xs of b.seams.at) {
+            const sa = Math.max(xa, xs - b.seams.hw), sb = Math.min(xb, xs + b.seams.hw);
+            if (sb > sa + 1e-4) sh.push(hullBand(S, sa, sb, b.a0, b.a1, { w: b.seams.w, dr: 0.004, gv: 1, gu: 24, heat: b.heat, glow: b.glow }));
+          }
+        }
+        out.push([entries[k][0], S.join(sh.filter(Boolean)), xa, xb]);
+      }
+      xa = xb;
+    }
+    return out;
   }
   // A flap: a plate in the plane through the axis at the angle th, its planform a polygon [x, rho] (the root
   // along the hull may be a curve) that every line rho = const crosses once, the thickness falling from t0 at
@@ -213,7 +251,8 @@
     }, { gu: o.gu || 10, gv: o.gv || 30, w: o.w, heat: o.heat, glow: o.glow }));
   }
   // an engine at [starboard, leeward] = c: the powerhead from its top to the throat (a short drum), then the
-  // bell from the throat (radius rt) to the exit (radius re) at the skirt bottom, outer and inner walls
+  // bell from the throat (radius rt) to the exit (radius re) at the skirt bottom, outer and inner walls (the
+  // inside glows when it burns; the outside, close to the skirt, only a little)
   function engine(S, c, top, xt, rt, re, ph, o) {
     o = o || {};
     const y0 = c[0], z0 = c[1], L = LEN - xt;
@@ -223,15 +262,14 @@
       const a = TAU * u, s = v, x = xt + L * s, r = prof(s) * (inner ? 0.965 : 1), ca = Math.cos(a), sa = Math.sin(a), sg = inner ? -1 : 1;
       q[0] = x; q[1] = y0 + r * sa; q[2] = z0 + r * ca;
       q[3] = -dprof(s) * sg; q[4] = sa * sg; q[5] = ca * sg;
-    }, { gu: o.gu || 28, gv: o.gv || 12, w: o.w, heat: o.heat, glow: o.glow }));
+    }, { gu: o.gu || 28, gv: o.gv || 12, w: inner || o.wo == null ? o.w : o.wo, heat: o.heat, glow: inner ? o.glow : 0.3 }));
     const drum = analytic(S.param(function (u, v, q) {
       const a = TAU * u, x = top + (xt - top) * v, r = ph * (1 - 0.35 * v), ca = Math.cos(a), sa = Math.sin(a);
       q[0] = x; q[1] = y0 + r * sa; q[2] = z0 + r * ca; q[3] = 0.35 * ph / Math.max(1e-6, xt - top); q[4] = sa; q[5] = ca;
-    }, { gu: 16, gv: 4, w: o.w, heat: o.heat, glow: 0 }));
+    }, { gu: 16, gv: 4, w: o.wo == null ? o.w : o.wo, heat: o.heat, glow: 0 }));
     return { outer: bell(false), inner: bell(true), drum };
   }
-  // the engine bay, seen only from behind: the aft dome over the engines (its rim on the skirt's inner wall at
-  // x0, bulging dome metres toward the base), the skirt's inner wall from there to the base, its bottom rim
+  // the engine bay, seen only from behind: the aft dome over the engines and the skirt's bottom rim
   function dome(S, a0, a1, o) {
     o = o || {};
     return analytic(S.param(function (u, v, q) {
@@ -240,13 +278,6 @@
       // outward on the engines' side: the ellipse's gradient (x / dome^2, r / rin^2)
       q[3] = c / BAY.dome; q[4] = s / BAY.rin * Math.sin(a); q[5] = s / BAY.rin * Math.cos(a);
     }, { gu: o.gu || 24, gv: o.gv || 8, w: o.w, heat: o.heat, glow: o.glow }));
-  }
-  function skirtWall(S, a0, a1, o) {
-    o = o || {};
-    return analytic(S.param(function (u, v, q) {
-      const a = a0 + (a1 - a0) * u, x = BAY.x0 + (LEN - BAY.x0) * v;
-      q[0] = x; q[1] = BAY.rin * Math.sin(a); q[2] = BAY.rin * Math.cos(a); q[3] = 0; q[4] = -Math.sin(a); q[5] = -Math.cos(a);
-    }, { gu: o.gu || 24, gv: o.gv || 6, w: o.w, heat: o.heat, glow: o.glow }));
   }
   function rim(S, a0, a1, o) {
     o = o || {};
@@ -258,75 +289,108 @@
 
   /* ------------------------------------------------------------------
      The parts. Everything is drawn in metres in the ship's frame above and
-     placed into the machine frame by SHIP (scale K, the roll, the axis at
-     YC). Where the rig's parts split the surfaces (chosen so that every
-     part gets about the share of the points the other machines give it):
-       neck      the nose cap (tiles)            head   the nose's steel band
-       jaw       the tiled cheeks round the forward flaps (near side)
-       maneL1/R1 the nose's far side (tiles), starboard / port
-       chest, belly, hips   the leeward steel barrel's middle band, front to back
-       maneL2-3 / R2-3      its starboard / port bands
-       back1-3, tail1-4     the windward (tiled) barrel, front to back
-       scapL/R   the forward flaps          flankL/R + haunchL/R  the aft flaps
-                 (L starboard, up; R port)  (the leeward face and edges / the tiled face)
-       hl_up/hr_up  the aft flaps' hinge fairings
-       hl_paw/hr_paw/fl_paw  the vacuum Raptors   hl_lo/hr_lo/fl_lo  the sea-level Raptors
-       fr_paw    the aft dome    fl_up/fr_up  the skirt's inner wall   fr_lo  its bottom rim
+     placed into the machine frame (scale K, the roll, the axis at YC).
+     The rig's parts (L: starboard, up; R: port, down):
+       neck       the nose cap (tiles), the front of the nose, the tile edge's line
+       head       the nose's steel band          jaw  the cheeks round the forward flaps (tiles)
+       maneL1/R1  the nose's far side (tiles)
+       scapL/R    the forward flaps              flankL/R  the aft flaps' leeward faces
+       haunchL/R  the aft flaps' tiled faces and edges (they ride on flankL/R)
+       hl_up/hr_up            the aft flaps' hinge fairings
+       hl_paw, hr_paw, fl_paw the vacuum Raptors (fl: the one on the port flap line)
+       hl_lo, hr_lo, fl_lo    the sea-level Raptors (fl: the one on the starboard flap line)
+       fr_paw     the aft dome                   fr_lo  the skirt's bottom rim
+     and every one of them (but the flaps) a ring section of the barrel, its
+     leeward steel with the weld seams and its windward tiles, front to back
+     as listed in AL.RING (chest, belly, hips and the mane, back and tail
+     plates are only that). The sections' sizes are chosen so that every part
+     gets about the share of the points the other machines give it.
      ------------------------------------------------------------------ */
+  const ENG = ["fl_paw", "hr_paw", "hl_paw", "fl_lo", "hl_lo", "hr_lo"];     // the engines' parts
   const SHIP_AT = [-XC * K, YC, 0];
   const SHIP_R = [1, 0, 0, 0, Math.cos(ROLL), Math.sin(ROLL), 0, -Math.sin(ROLL), Math.cos(ROLL)];
   const toM = (p) => [(p[0] - XC) * K, YC + K * (p[1] * Math.cos(ROLL) + p[2] * Math.sin(ROLL)), K * (p[2] * Math.cos(ROLL) - p[1] * Math.sin(ROLL))];
-  // where the barrel's bands are split (metres along x; the middle band's half angle)
-  const AL = { TC: 45 * DEG, XC1: 26.5, XC2: 39.3, XM: 33, XB: [XN, 19, 25, 31, 37, 43, 48, LEN] };
+  // How the surfaces are shared out among the rig's parts (tuned so that every part gets about the share of
+  // the points the other machines give it: the report shows the densities alike): the barrel is cut into ring
+  // sections (steel and tiles) in proportion to these weights, front to back.
+  const AL = {
+    NOSE: 3.9,                      // the nose's far side (tiles) is the neck's to here, then maneL1 / maneR1
+    XH: 12.75,                      // the nose's steel band is the head's to here, then the jaw's
+    XJ: 9.8,                        // the cheeks are the jaw's to here, then maneL1 / maneR1's
+    RING: [["head", 6.3], ["jaw", 0.3], ["neck", 1.9], ["maneL1", 3.7], ["maneR1", 21.9],
+      ["chest", 76.3], ["maneL2", 25.4],
+      ["maneR2", 42.4], ["back1", 23.3], ["belly", 73.6],
+      ["back2", 51.4], ["maneL3", 27.0], ["maneR3", 42.5], ["back3", 23.3],
+      ["tail1", 37.0], ["hips", 69.0], ["tail2", 33.2], ["tail3", 28.1], ["tail4", 16.8], ["hl_up", 9.8], ["hr_up", 9.7],
+      ["fr_lo", 19.1], ["fl_up", 16.3], ["fr_up", 16.3],
+      ["fl_lo", 13.5], ["hl_lo", 10.1], ["hr_lo", 10.0], ["fl_paw", 5.0], ["hl_paw", 22.6], ["hr_paw", 22.6]],
+    SEAM: { hw: 0.045, w: 2.4 },    // the weld seams: 9 cm wide lines of 3.4 times the steel's density
+    EDGE: { w: 2.0, d: 0.07 },      // the tile edge round the nose's steel band, a line like the seams
+    WD: 0.39,                       // the aft dome's density weight
+    FW: { ww: 0.5, we: 0.45 },      // the flaps' tiled faces and edges (forward / aft): denser than the hull's tiles,
+    AW: { ww: 0.38, we: 0.45 },     // so the flaps get their share; their windward faces are on the far side
+    WE: [0.3, 0.9],                 // the engines' bells (dark metal): outer wall (sparse, it is near the skirt), inner
+  };
   function shipParts(S, H) {
-    const P = {};
-    const place = (sh) => S.place(S.join(sh), SHIP_AT, SHIP_R, K);
-    // a part from ship geometry (metres), its pivot at the ship point c (metres)
-    const put = (name, c, parent, ...shapes) => {
-      const at = toM(c);
-      P[name] = { at, rot: null, parent: parent || null, world: true, shape: S.place(place(shapes), [-at[0], -at[1], -at[2]]) };
-    };
+    const SH = {}, PV = {}, PA = {};
+    const add = (name, sh, pivot) => { if (!sh) return; (SH[name] = SH[name] || []).push(sh); if (pivot && !PV[name]) PV[name] = pivot; };
     const T = { w: WT }, E = tileEdge, nE = (x) => -tileEdge(x), R90 = 90 * DEG;
-    // ---- the nose ----
-    put("neck", [1.5, 0, 0], null, hullBand(S, 0, TILE_CAP, -PI, PI, T));
-    put("head", [8, 0, 3], null, hullBand(S, TILE_CAP, XN, nE, E));
-    put("jaw", [8, 0, 3], null, hullBand(S, TILE_CAP, 12.8, E, R90, T), hullBand(S, TILE_CAP, 12.8, -R90, nE, T));
-    put("maneL1", [8, 3, -1], null, hullBand(S, TILE_CAP, XN, R90, PI, T));
-    put("maneR1", [8, -3, -1], null, hullBand(S, TILE_CAP, XN, -PI, -R90, T));
-    // ---- the barrel: the leeward steel (middle band and its sides), the windward tiles ----
-    put("chest", [(XN + AL.XC1) / 2, 0, RB], null, hullBand(S, XN, AL.XC1, -AL.TC, AL.TC));
-    put("belly", [(AL.XC1 + AL.XC2) / 2, 0, RB], null, hullBand(S, AL.XC1, AL.XC2, -AL.TC, AL.TC));
-    put("hips", [(AL.XC2 + LEN) / 2, 0, RB], null, hullBand(S, AL.XC2, LEN, -AL.TC, AL.TC));
-    put("maneL2", [(XN + AL.XM) / 2, RB * 0.9, RB * 0.4], null, hullBand(S, XN, AL.XM, AL.TC, R90));
-    put("maneL3", [(AL.XM + LEN) / 2, RB * 0.9, RB * 0.4], null, hullBand(S, AL.XM, LEN, AL.TC, R90));
-    put("maneR2", [(XN + AL.XM) / 2, -RB * 0.9, RB * 0.4], null, hullBand(S, XN, AL.XM, -R90, -AL.TC));
-    put("maneR3", [(AL.XM + LEN) / 2, -RB * 0.9, RB * 0.4], null, hullBand(S, AL.XM, LEN, -R90, -AL.TC));
-    const XB = AL.XB, WIND = ["back1", "back2", "back3", "tail1", "tail2", "tail3", "tail4"];
-    for (let i = 0; i < WIND.length; i++) put(WIND[i], [(XB[i] + XB[i + 1]) / 2, 0, -RB], null, hullBand(S, XB[i], XB[i + 1], R90, 1.5 * PI, T));
-    // ---- the flaps (L: starboard, up; R: port, down) ----
+    // ---- the nose: the cap, the front of the far side and of the steel band, and the line of the tile edge round
+    // the band (neck), the steel band (head; its end, where it opens onto the barrel, and the cheeks round the
+    // forward flaps: jaw), the far side and the cheeks' rear (maneL1 / R1) ----
+    add("neck", hullBand(S, 0, TILE_CAP, -PI, PI, T), [1.5, 0, 0]);
+    add("neck", hullBand(S, TILE_CAP, AL.NOSE, R90, 1.5 * PI, T));
+    add("head", hullBand(S, AL.NOSE, AL.XH, nE, E), [8, 0, 3]);
+    add("jaw", hullBand(S, AL.XH, XN, nE, E), [8, 0, 3]);
+    add("neck", hullBand(S, TILE_CAP, AL.NOSE, nE, E));
+    const ed = (x) => AL.EDGE.d / Math.max(0.5, hullR(x).r), EO = { w: AL.EDGE.w, dr: 0.004, gu: 1 };
+    add("neck", hullBand(S, TILE_CAP, 12.8, (x) => E(x) - ed(x), E, EO));
+    add("neck", hullBand(S, TILE_CAP, 12.8, nE, (x) => -E(x) + ed(x), EO));
+    add("neck", hullBand(S, TILE_CAP, TILE_CAP + AL.EDGE.d, -30 * DEG, 30 * DEG, { w: AL.EDGE.w, dr: 0.004, gv: 1 }));
+    add("jaw", hullBand(S, TILE_CAP, AL.XJ, E, R90, T), [8, 0, 3]);
+    add("jaw", hullBand(S, TILE_CAP, AL.XJ, -R90, nE, T));
+    add("maneL1", hullBand(S, AL.XJ, 12.8, E, R90, T), [9, 3, -2]);
+    add("maneR1", hullBand(S, AL.XJ, 12.8, -R90, nE, T), [9, -3, -2]);
+    add("maneL1", hullBand(S, AL.NOSE, XN, R90, PI, T), [9, 3, -2]);
+    add("maneR1", hullBand(S, AL.NOSE, XN, -PI, -R90, T), [9, -3, -2]);
+    // ---- the barrel in ring sections: the leeward steel with the rings' weld seams, the windward tiles (a ring
+    // section in an engine's part does not glow with the engine) ----
+    const seams = { at: [], hw: AL.SEAM.hw, w: AL.SEAM.w };
+    for (let k = 0; XN + k * RING < LEN - 0.5; k++) seams.at.push(XN + k * RING);
+    const bands = [{ a0: -R90, a1: R90, w: 1, seams }, { a0: R90, a1: 1.5 * PI, w: WT }];
+    for (const [n, sh, xa, xb] of lane(S, XN, LEN, bands, AL.RING)) add(n, ENG.indexOf(n) >= 0 ? S.tag(sh, { glow: 0 }) : sh, [(xa + xb) / 2, 0, RB]);
+    // ---- the flaps (L: starboard, up; R: port, down): their faces and edges; the aft flaps' hinge fairings ----
     const fp = fwdPoly(), ap = aftPoly();
     for (const [sd, sg] of [["L", 1], ["R", -1]]) {
-      const f = flap(S, fp, [0, 1, 2], sg * FWD.th, FWD.t0, FWD.t1, { ww: WT, we: WT });
-      put("scap" + sd, [FWD.te0[0], sg * FWD.te0[1] * Math.sin(FWD.th), FWD.te0[1] * Math.cos(FWD.th)], null, f.lee, f.wind, f.edges);
-      const a = flap(S, ap, [0, 1, 2], sg * AFT.th, AFT.t0, AFT.t1, { ww: WT, we: WT, gu: 18, gv: 12 });
-      put("flank" + sd, [(AFT.le0[0] + LEN) / 2, sg * (RB + 0.2), 0], null, a.lee, a.edges);
-      put("haunch" + sd, [(AFT.le0[0] + LEN) / 2, sg * (RB + 0.2), 0], "flank" + sd, a.wind);
-      put((sg > 0 ? "hl" : "hr") + "_up", [(FAIR.x0 + LEN) / 2, sg * (RB + 0.2), 0], null, fairing(S, FAIR, sg * AFT.th));
+      const f = flap(S, fp, [0, 1, 2], sg * FWD.th, FWD.t0, FWD.t1, AL.FW);
+      add("scap" + sd, S.join(f.lee, f.wind, f.edges), [FWD.te0[0], sg * FWD.te0[1] * Math.sin(FWD.th), FWD.te0[1] * Math.cos(FWD.th)]);
+      const a = flap(S, ap, [0, 1, 2], sg * AFT.th, AFT.t0, AFT.t1, Object.assign({ gu: 18, gv: 12 }, AL.AW));
+      const hinge = [(AFT.le0[0] + LEN) / 2, sg * (RB + 0.2), 0];
+      add("flank" + sd, a.lee, hinge);
+      add("haunch" + sd, S.join(a.wind, a.edges), hinge); PA["haunch" + sd] = "flank" + sd;
+      const up = (sg > 0 ? "hl" : "hr") + "_up";
+      add(up, fairing(S, FAIR, sg * AFT.th), [(FAIR.x0 + LEN) / 2, sg * (RB + 0.3), 0]);
     }
-    // ---- the engines: vacuum Raptors (paw), sea-level Raptors (lo) ----
-    const XVT = RVAC.top + 1.1, XST = RSL.top + 1.0;
+    // ---- the engines: vacuum Raptors (paw), sea-level Raptors (lo); their pivots at the centres of their exits ----
     const eng = (name, c, big) => {
-      const e = big ? engine(S, c, RVAC.top, XVT, 0.22, RVAC.re, 0.55) : engine(S, c, RSL.top, XST, 0.16, RSL.re, 0.42);
-      put(name, [LEN, c[0], c[1]], null, e.outer, e.inner, e.drum);
+      const o = { w: AL.WE[1], wo: AL.WE[0] }, e = big ? engine(S, c, RVAC.top, RVAC.top + 1.1, 0.22, RVAC.re, 0.55, o) : engine(S, c, RSL.top, RSL.top + 1.0, 0.16, RSL.re, 0.42, o);
+      add(name, S.join(e.outer, e.inner, e.drum));
+      PV[name] = [LEN, c[0], c[1]];       // (the exhaust leaves from the pivot)
     };
     eng("fl_paw", RVAC.at[0], true); eng("hr_paw", RVAC.at[1], true); eng("hl_paw", RVAC.at[2], true);
     eng("fl_lo", RSL.at[0], false); eng("hl_lo", RSL.at[1], false); eng("hr_lo", RSL.at[2], false);
-    // ---- the engine bay and the skirt ----
-    const IN = { w: 0.5 };
-    put("fr_paw", [BAY.x0 + 0.5, 0, 0], null, dome(S, -PI, PI, IN));
-    put("fl_up", [49, RB * 0.7, 0], null, skirtWall(S, 0, PI, IN));
-    put("fr_up", [49, -RB * 0.7, 0], null, skirtWall(S, -PI, 0, IN));
-    put("fr_lo", [LEN, 0, 0], null, rim(S, -PI, PI));
+    // ---- the engine bay (seen from behind, through the open skirt, whose skin is its wall): the aft dome over the
+    // engines, the skirt's bottom rim ----
+    add("fr_paw", dome(S, -PI, PI, { w: AL.WD }), [BAY.x0 + 0.5, 0, 0]);
+    add("fr_lo", rim(S, -PI, PI), [LEN, 0, 0]);
+    // ---- into the machine frame: each part's shapes and its pivot (ship metres) ----
+    const P = {};
+    for (const name of PM.PARTS) {
+      if (!SH[name]) throw new Error("starship: no shape for " + name);
+      const at = toM(PV[name] || [XC, 0, 0]);
+      const sh = S.place(S.join(SH[name]), SHIP_AT, SHIP_R, K);
+      P[name] = { at, rot: null, parent: PA[name] || null, world: true, shape: S.place(sh, [-at[0], -at[1], -at[2]]) };
+    }
     return P;
   }
 
@@ -336,7 +400,6 @@
      at rest before the dwell ends.
      ------------------------------------------------------------------ */
   const S_DWELL = 5.0;
-  const ENG = ["fl_paw", "hr_paw", "hl_paw", "fl_lo", "hl_lo", "hr_lo"];
   // the forward flaps' hinge: the chord of their root, from the leading edge's root to the trailing edge's
   const FAX = (function () {
     const out = {};
@@ -352,11 +415,11 @@
     if (k > 0) {
       // the aft flaps work together (pitch) with a little difference (roll); the forward ones answer
       const p = Math.sin(t * 0.83 + 0.4), r = Math.sin(t * 0.57 + 2.1);
-      A.wr("flankL", 1, 0, 0, (0.07 * p + 0.025 * r) * k);
-      A.wr("flankR", 1, 0, 0, -(0.07 * p - 0.025 * r) * k);
+      A.wr("flankL", 1, 0, 0, (0.11 * p + 0.035 * r) * k);
+      A.wr("flankR", 1, 0, 0, -(0.11 * p - 0.035 * r) * k);
       const f = FAX.L, g = FAX.R, q = Math.sin(t * 0.71 + 1.2);
-      A.wr("scapL", f[0], f[1], f[2], (0.06 * q - 0.02 * r) * k);
-      A.wr("scapR", g[0], g[1], g[2], -(0.06 * q + 0.02 * r) * k);
+      A.wr("scapL", f[0], f[1], f[2], (0.09 * q - 0.03 * r) * k);
+      A.wr("scapR", g[0], g[1], g[2], -(0.09 * q + 0.03 * r) * k);
     }
     // the engines burn: the bells glow hot and flicker
     for (let i = 0; i < ENG.length; i++) A.glow(ENG[i], 0.78 + 0.14 * Math.sin(t * 31.0 + i * 1.7) * Math.sin(t * 13.0 + i * 2.3));
