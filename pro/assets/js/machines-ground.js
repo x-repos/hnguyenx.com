@@ -8,13 +8,14 @@
                  (the gun never fires; the tank is not in the cycle).
      helicopter  an EC120-Colibri-like light helicopter, built from the
                  measured outline (published dimensions, the maker's
-                 three-view drawing and the owner's photo, in metres): the
-                 egg-shaped glazed cabin, the engine and gearbox fairing,
-                 a compact three-blade rotor head with long slender blades,
-                 the slender boom, the swept fin with its ducted fan, the
-                 stabiliser with end plates and the skid gear. It hovers
+                 three-view drawing and photos, in metres): the egg-shaped
+                 glazed cabin, the engine and gearbox fairing with the
+                 exhaust on its left, a compact three-blade rotor head, the
+                 slender boom, the swept fin with its ducted fan, the
+                 stabiliser with its tip lights and the skid gear. It hovers
                  nose down a little with a gentle bob; the rotor turns
-                 clockwise seen from above and the tail fan spins.
+                 clockwise seen from above, each blade drawn as a thin blade
+                 with the faint blur it leaves behind, and the tail fan spins.
 
    Plain browser script; loads after machines.js (also in Node, after it).
    No brand marks: no logos, insignia, numbers or names on any machine.
@@ -28,23 +29,26 @@
      neck      commander and gunner sights   rotor head: mast, swashplate,
                                              hub and domed cap (it turns)
      head      turret roof and ring          the engine fairing's crest
-     jaw       gun mantlet                   engine exhaust, stabiliser end plates
-     mane 1-3  turret wedges, side armour    blade 1-3: L root half with its
-                                             sleeve, R outer half (+ a very
-                                             faint ring at the tip path)
-     back 1-3  bustle halves, basket         tail boom: top, underside, rear sides
-     flank     light side skirts             the fin's two faces (round the duct)
+     jaw       gun mantlet                   engine exhaust, stabiliser tip lights
+     mane 1-3  turret wedges, side armour    blade 1-3 and its blur: L the root
+                                             half with its sleeve, R the outer half
+     back 1-3  bustle halves, basket         tail boom: top, underside, and a strip
+                                             along each side above and below
+     flank     light side skirts             the fin's two faces
      scap      heavy front skirt, guard      faired rear gear leg, step bar
-     haunch    rear plate grilles, guard     stabiliser halves
+     haunch    rear plate grilles, guard     stabiliser halves (sparse: seen edge
+                                             on), the boom's rear sides and the
+                                             faces of the fin extension
      fl_up     suspension arms, rollers      cabin side under the doors, door lines
      fl_lo     road wheels                   skid, turning up into the front cross tube
      fl_paw    track runs, idler             cabin side with the door windows
      hl_up     suspension arms, rollers      the engine fairing's sides
      hl_lo     road wheels                   tail boom sides (front)
      hl_paw    track runs, sprocket          rear fuselage sides
-     tail 1-4  the gun, mantlet to muzzle    fin edges; stators, tail bumper,
-                                             antenna and beacon; the duct and its
-                                             lips; the fan (it spins)
+     tail 1-4  the gun, mantlet to muzzle    fin edges; stators, the fin extension's
+                                             edges, tail bumper, antenna, lights; the
+                                             duct, its lips and the shroud ring; the
+                                             fan, hub and gearbox housing (it spins)
    ===================================================================== */
 (function (G) {
   "use strict";
@@ -326,30 +330,36 @@
   /* ==================================================================
      HELICOPTER: an EC120-Colibri-like light helicopter, built from
      measurements: the published dimensions (EASA type certificate data,
-     the maker's three-view drawing) and the owner's photo, traced into
-     tables in metres. An egg-shaped glazed cabin with a big curved
-     windscreen and door windows, the engine and gearbox fairing on the
-     roof with the exhaust, a low mast with a compact three-blade hub
-     under a domed cap and three long slender blades (10 m across), the
-     cabin's underside sweeping up into a slender boom, a swept fin with a
-     ducted tail fan (a shroud ring and eight fan blades), a fin extension
-     below, a horizontal stabiliser with end plates, and skid gear: two
-     skids that turn up at the front into the front cross tube, a faired
-     rear cross tube and a step bar on each side.
+     the maker's three-view drawing) and photos, traced into tables in
+     metres. An egg-shaped glazed cabin with a big curved windscreen and
+     door windows, the engine and gearbox fairing on the roof with the
+     exhaust pipe on its left, a low mast with a compact three-blade hub
+     under a domed cap and three long slender blades, the cabin's underside
+     sweeping up into a slender boom, a swept fin with a ducted tail fan (a
+     shroud ring, eight thin fan blades, ten stators and a big hub), a fin
+     extension below, a horizontal stabiliser with small tip lights, and
+     skid gear: two skids that turn up at the front into the front cross
+     tube, a faired rear cross tube and a step bar on each side.
      The tables: x aft of the nose tip, y up from the bottom of the skids,
      z toward the helicopter's left (the near side). The machine frame is
      the same, scaled by HK and moved so that the whole machine, rotor tips
-     included, spans x -1.85 .. 1.85 and the cabin sits around y = -0.3.
+     included, is centred on x = 0 and the cabin sits around y = -0.3.
+     Every proportion is the real one, the 10.0 m rotor included (the owner
+     asked for real dimensions): its tips reach |z| = 1.6 in depth, which
+     only moves them nearer or further (the air is 2D), and across the
+     screen the whole machine, the rotor's forward tip to the fin, spans
+     11.55 m: x -1.85 .. 1.85 at this scale.
      ================================================================== */
   const HELI_D = 5.0;
   const HK = 0.32, HXC = 3.825, HYC = 1.405, HYM = -0.3;
   const HOFF = [-HXC * HK, HYM - HYC * HK, 0];
   const toM = (p) => [(p[0] - HXC) * HK, (p[1] - HYC) * HK + HYM, (p[2] || 0) * HK];
   const EC = {
-    hubX: 3.05, hubY: 2.954, R: 5.0, chord: 0.26, cone: 0.045,   // rotor: axis, blade plane, radius, chord, coning
-    mastY: 2.70, domeY: 2.965, domeR: 0.34, domeH: 0.17,           // mast foot (fairing top), hub cap
-    fen: [8.733, 1.847], duct: 0.385, lip: 0.429, fhub: 0.149,     // ducted tail fan: centre, radii
-    W: 14, WF: 11,                                                  // rotor and fan speeds (rad/s)
+    hubX: 3.05, hubY: 2.954, R: 5.0, chord: 0.26, cone: 0.045,    // rotor: axis, blade plane, radius (the real 10 m rotor), chord, coning
+    mastY: 2.70, domeY: 2.965, domeR: 0.34, domeH: 0.17,            // mast foot (fairing top), hub cap
+    fen: [8.733, 1.847], duct: 0.385, lip: 0.429, fhub: 0.149,      // ducted tail fan: centre, radii
+    stab: [7.46, 7.94, 1.735, 0.2, 1.27],                            // stabiliser: leading and trailing edge, height, root and tip z
+    W: 22, WF: 11,                                                   // rotor and fan speeds (rad/s)
   };
   const spow = (v, e) => (v < 0 ? -Math.pow(-v, e) : Math.pow(v, e));
   // monotone cubic through [[x, y], ...], flat outside
@@ -393,52 +403,111 @@
   const F_HW = curve([[1.84, 0], [1.87, 0.17], [1.9, 0.243], [2.0, 0.319], [2.1, 0.375], [2.2, 0.418], [2.3, 0.452], [2.4, 0.478], [2.5, 0.499], [2.6, 0.515], [2.8, 0.504], [3.0, 0.493],
     [3.4, 0.469], [3.8, 0.446], [4.2, 0.423], [4.5, 0.406], [4.6, 0.393], [4.7, 0.216], [4.8, 0]]);
   const F_X0 = 1.84, F_X1 = 4.8;
-  // the hull section at x: top, bottom, the widest line, half width, the two exponents (the curves
-  // tabulated every 2 mm when the shapes are first built: the sampler evaluates them very often)
-  const HS = { t: 0, b: 0, yw: 0, hw: 0, nu: 2, nl: 2 };
-  const TB_X1 = 8.0, TB_N = 4000;
+  // the hull section at x: top, bottom, the widest line (half way), half width, the two exponents, and
+  // their slopes along x (the curves tabulated every 5 mm when the shapes are first built: the sampler
+  // evaluates them very often)
+  const HS = { t: 0, b: 0, yw: 0, hw: 0, nu: 2, nl: 2, dt: 0, db: 0, dhw: 0, dnu: 0, dnl: 0 };
+  const TB_X1 = 8.0, TB_N = 1600, TB_K = 10;
   let TB = null;
   function hullSec(x) {
     if (!TB) {
-      TB = new Float64Array((TB_N + 1) * 5);
+      TB = new Float64Array((TB_N + 1) * TB_K);
       for (let i = 0; i <= TB_N; i++) {
-        const xi = TB_X1 * i / TB_N, o = i * 5;
-        TB[o] = H_TOP(xi); TB[o + 1] = H_BOT(xi); TB[o + 2] = H_HW(xi); TB[o + 3] = H_NU(xi); TB[o + 4] = H_NL(xi);
+        const xi = TB_X1 * i / TB_N, o = i * TB_K, t = H_TOP(xi);
+        TB[o] = t; TB[o + 1] = Math.min(t, H_BOT(xi)); TB[o + 2] = Math.max(0, H_HW(xi)); TB[o + 3] = H_NU(xi); TB[o + 4] = H_NL(xi);
+      }
+      for (let i = 0; i <= TB_N; i++) {
+        const a = i > 0 ? i - 1 : 0, b = i < TB_N ? i + 1 : TB_N, h = (b - a) * TB_X1 / TB_N;
+        for (let k = 0; k < 5; k++) TB[i * TB_K + 5 + k] = (TB[b * TB_K + k] - TB[a * TB_K + k]) / h;
       }
     }
     let f = x / TB_X1 * TB_N;
     f = f < 0 ? 0 : f > TB_N - 1e-9 ? TB_N - 1e-9 : f;
-    const i = f | 0, w = f - i, o = i * 5;
-    const t = TB[o] + (TB[o + 5] - TB[o]) * w, b = TB[o + 1] + (TB[o + 6] - TB[o + 1]) * w;
-    HS.t = t; HS.b = b < t ? b : t; HS.yw = (t + HS.b) / 2; HS.hw = Math.max(0, TB[o + 2] + (TB[o + 7] - TB[o + 2]) * w);
-    HS.nu = TB[o + 3] + (TB[o + 8] - TB[o + 3]) * w; HS.nl = TB[o + 4] + (TB[o + 9] - TB[o + 4]) * w;
+    const i = f | 0, w = f - i, o = i * TB_K, p = o + TB_K;
+    HS.t = TB[o] + (TB[p] - TB[o]) * w; HS.b = TB[o + 1] + (TB[p + 1] - TB[o + 1]) * w; HS.hw = TB[o + 2] + (TB[p + 2] - TB[o + 2]) * w;
+    HS.nu = TB[o + 3] + (TB[p + 3] - TB[o + 3]) * w; HS.nl = TB[o + 4] + (TB[p + 4] - TB[o + 4]) * w;
+    HS.dt = TB[o + 5] + (TB[p + 5] - TB[o + 5]) * w; HS.db = TB[o + 6] + (TB[p + 6] - TB[o + 6]) * w; HS.dhw = TB[o + 7] + (TB[p + 7] - TB[o + 7]) * w;
+    HS.dnu = TB[o + 8] + (TB[p + 8] - TB[o + 8]) * w; HS.dnl = TB[o + 9] + (TB[p + 9] - TB[o + 9]) * w;
+    HS.yw = (HS.t + HS.b) / 2;
     return HS;
   }
-  // a point of the hull at x and angle a (0 = top, PI/2 = the near side (+z), PI = the bottom, 3PI/2 = far side)
+  // a point of the hull at x and angle a (0 = top, PI/2 = the near side (+z), PI = the bottom), with its
+  // outward normal in q[3..5] (the gradient of the section's superellipse |(y - yw)/Y|^n + |z/hw|^n,
+  // which also follows the section's change along x)
   function hullPt(x, a, q) {
-    const s = hullSec(x), c = Math.cos(a), sn = Math.sin(a), e = 2 / (c >= 0 ? s.nu : s.nl);
-    q[0] = x;
-    q[1] = c >= 0 ? s.yw + (s.t - s.yw) * Math.pow(c, e) : s.yw - (s.yw - s.b) * Math.pow(-c, e);
-    q[2] = sn >= 0 ? s.hw * Math.pow(sn, e) : -s.hw * Math.pow(-sn, e);
+    const s = hullSec(x), c = Math.cos(a), sn = Math.sin(a), up = c >= 0, n = up ? s.nu : s.nl, e = 2 / n;
+    const ac = c < 0 ? -c : c, as = sn < 0 ? -sn : sn;
+    const C = ac > 1e-12 ? Math.pow(ac, e) : 0, Z1 = as > 1e-12 ? Math.pow(as, e) : 0;
+    const Y = Math.max(1e-4, (s.t - s.b) / 2), Z = Math.max(1e-4, s.hw);
+    const eta = up ? C : -C, zeta = sn >= 0 ? Z1 : -Z1;
+    q[0] = x; q[1] = s.yw + Y * eta; q[2] = s.hw * zeta;
+    const gy = (ac > 1e-12 ? Math.pow(ac, 2 - e) : 0) * (up ? 1 : -1) / Y;
+    const gz = (as > 1e-12 ? Math.pow(as, 2 - e) : 0) * (sn >= 0 ? 1 : -1) / Z;
+    let gx = -gy * ((s.dt + s.db) / 2 + eta * (s.dt - s.db) / 2) - gz * zeta * s.dhw;
+    const dn = up ? s.dnu : s.dnl;
+    if (dn !== 0) gx += (c * c * (ac > 1e-9 ? Math.log(ac) : 0) + sn * sn * (as > 1e-9 ? Math.log(as) : 0)) * e * dn / n;
+    q[3] = gx; q[4] = gy; q[5] = gz;
     return q;
   }
   // the near-side angle where the hull is at height y (a in 0..PI)
   function hullAng(x, y) {
-    const s = hullSec(x);
-    if (y >= s.yw) { const r = Math.min(1, (y - s.yw) / Math.max(1e-6, s.t - s.yw)); return Math.acos(Math.pow(r, s.nu / 2)); }
-    const r = Math.min(1, (s.yw - y) / Math.max(1e-6, s.yw - s.b));
+    const s = hullSec(x), Y = Math.max(1e-6, (s.t - s.b) / 2);
+    if (y >= s.yw) { const r = Math.min(1, (y - s.yw) / Y); return Math.acos(Math.pow(r, s.nu / 2)); }
+    const r = Math.min(1, (s.yw - y) / Y);
     return PI - Math.acos(Math.pow(r, s.nl / 2));
   }
+  // The section's angle a from an even parameter s (0..1 the upper quarter, 1..2 the lower): near the
+  // crest, the widest line and the keel the plain angle bunches the points (the superellipse's sides
+  // run as a power of it), so a moves as s^(n/2) there, which spreads them evenly.
+  function warpA(s, nu, nl) {
+    const lo = s > 1, p = (lo ? nl : nu) / 2, t = lo ? (s > 2 ? 1 : s - 1) : (s < 0 ? 0 : s);
+    const A = Math.pow(t, p), B = Math.pow(1 - t, p);
+    return (lo ? PI / 2 : 0) + (PI / 2) * A / (A + B);
+  }
+  function unwarpA(a, nu, nl) {
+    const lo = a > PI / 2, w = Math.min(1, Math.max(0, (lo ? a - PI / 2 : a) / (PI / 2)));
+    const s = w <= 0 ? 0 : w >= 1 ? 1 : (function () { const r = Math.pow(w / (1 - w), 2 / (lo ? nl : nu)); return r / (1 + r); })();
+    return lo ? 1 + s : s;
+  }
+  // a surface that writes its own outward normal in q[3..5] (no finite differences: 5x fewer evaluations;
+  // S.param's patches carry nrm: false, the framework's loft caps use nrm: true the same way)
+  function analytic(sh) { for (const pt of sh) if (pt && pt.p && pt.p.nrm === false) pt.p.nrm = true; return sh; }
+  // ---- surface builders (metres; authoring only) ----
+  const ang = (f, x) => (typeof f === "function" ? f(x) : f);
+  // a band of the hull from x0 to x1 between the angles lo and hi (numbers, functions of x, or arrays
+  // tabulated at NB + 1 even steps from x0 to x1), on the near side (side 1) or mirrored onto the far side
+  // (side -1); null where it has no width
+  const NB = 32;
+  function hullBand(S, x0, x1, lo, hi, side, o) {
+    o = o || {};
+    const S0 = new Float64Array(NB + 1), S1 = new Float64Array(NB + 1);
+    let span = 0;
+    for (let i = 0; i <= NB; i++) {
+      const x = x0 + (x1 - x0) * i / NB, a0 = ArrayBuffer.isView(lo) ? lo[i] : ang(lo, x), a1 = Math.max(a0, ArrayBuffer.isView(hi) ? hi[i] : ang(hi, x));
+      const s = hullSec(x);
+      S0[i] = unwarpA(a0, s.nu, s.nl); S1[i] = unwarpA(a1, s.nu, s.nl);
+      if (a1 - a0 > span) span = a1 - a0;
+    }
+    if (span < 2e-3) return null;
+    return analytic(S.param(function (u, v, q) {
+      const f = u * NB, i = f >= NB ? NB - 1 : f | 0, w = f - i, x = x0 + (x1 - x0) * u;
+      const s0 = S0[i] + (S0[i + 1] - S0[i]) * w, s1 = S1[i] + (S1[i + 1] - S1[i]) * w, sec = hullSec(x);
+      hullPt(x, warpA(s0 + (s1 - s0) * v, sec.nu, sec.nl), q);
+      if (side < 0) { q[2] = -q[2]; q[5] = -q[5]; }
+    }, { gu: o.gu || Math.max(3, Math.round((x1 - x0) * 22)), gv: o.gv || Math.min(20, Math.max(3, Math.round(span * 9))), w: o.w, heat: o.heat, glow: o.glow }));
+  }
+  // the same band on both sides
+  const hullBoth = (S, x0, x1, a0, a1, o) => S.join(hullBand(S, x0, x1, a0, a1, 1, o), hullBand(S, x0, x1, a0, a1, -1, o));
   // the engine fairing at x (tabulated too): the angle where its foot meets the hull (0 where there is
   // no fairing), the height of its foot, its top and its half width
-  const FT_N = 1500, FS = { a: 0, y0: 0, top: 0, w: 0 }, FQ = [0, 0, 0];
+  const FT_N = 1000, FS = { a: 0, y0: 0, top: 0, w: 0 }, FQ = [0, 0, 0, 0, 0, 0];
   let FT = null;
   function fairSec(x) {
     if (!FT) {
       FT = new Float64Array((FT_N + 1) * 4);
       for (let i = 0; i <= FT_N; i++) {
-        const xi = F_X0 + (F_X1 - F_X0) * i / FT_N, s = hullSec(xi), w = Math.max(0, F_HW(xi)), o = i * 4;
-        const a = xi > F_X0 && xi < F_X1 && s.hw > 1e-6 && w > 0 ? Math.asin(Math.min(1, Math.pow(Math.min(1, w / s.hw), s.nu / 2))) : 0;
+        const xi = F_X0 + (F_X1 - F_X0) * i / FT_N, s = hullSec(xi), hw = s.hw, nu = s.nu, w = Math.max(0, F_HW(xi)), o = i * 4;
+        const a = xi > F_X0 && xi < F_X1 && hw > 1e-6 && w > 0 ? Math.asin(Math.min(1, Math.pow(Math.min(1, w / hw), nu / 2))) : 0;
         hullPt(xi, a, FQ);
         FT[o] = a; FT[o + 1] = FQ[1]; FT[o + 2] = Math.max(FQ[1], F_TOP(xi)); FT[o + 3] = w;
       }
@@ -451,25 +520,6 @@
     return FS;
   }
   const fairAng = (x) => (x <= F_X0 || x >= F_X1 ? 0 : fairSec(x).a);
-  // ---- surface builders (metres; authoring only) ----
-  const ang = (f, x) => (typeof f === "function" ? f(x) : f);
-  // a band of the hull from x0 to x1 between the angles a0(x) and a1(x) (numbers or functions of x),
-  // on the near side (side 1) or mirrored onto the far side (side -1)
-  function hullBand(S, x0, x1, a0, a1, side, o) {
-    o = o || {};
-    // the bounds tabulated along the band (they are smooth; the sampler calls this function very often)
-    const NB = 24, A0 = new Float64Array(NB + 1), A1 = new Float64Array(NB + 1);
-    let span = 0;
-    for (let i = 0; i <= NB; i++) { const x = x0 + (x1 - x0) * i / NB; A0[i] = ang(a0, x); A1[i] = ang(a1, x); span = Math.max(span, A1[i] - A0[i]); }
-    return S.param(function (u, v, q) {
-      const f = u * NB, i = f >= NB ? NB - 1 : f | 0, w = f - i;
-      const a = A0[i] + (A0[i + 1] - A0[i]) * w, b = A1[i] + (A1[i + 1] - A1[i]) * w;
-      hullPt(x0 + (x1 - x0) * u, a + (b - a) * v, q);
-      q[2] *= side;
-    }, { gu: o.gu || Math.max(2, Math.round((x1 - x0) * 20)), gv: o.gv || Math.min(16, Math.max(2, Math.round(span * 8))), flip: side > 0, w: o.w, heat: o.heat, glow: o.glow });
-  }
-  // the same band on both sides
-  const hullBoth = (S, x0, x1, a0, a1, o) => S.join(hullBand(S, x0, x1, a0, a1, 1, o), hullBand(S, x0, x1, a0, a1, -1, o));
   // the engine fairing: a rounded trapezoid section standing on the hull where its foot meets it;
   // a in [-PI/2, PI/2]: -PI/2 the far foot, 0 the crest, PI/2 the near foot
   function fairPt(x, a, q) {
@@ -477,59 +527,78 @@
     q[0] = x; q[1] = f.y0 + (f.top - f.y0) * vv; q[2] = f.w * spow(Math.sin(a), 0.5) * (1 - 0.34 * vv);
     return q;
   }
+  // its angle from an even parameter s in [-1, 1] (it runs as a square root of the angle at the crest
+  // and at the foot: the same cure as the hull's)
+  const fairWarp = (s) => { const t = s < 0 ? -s : s > 1 ? 1 : s, A = t * t, B = (1 - t) * (1 - t); return (s < 0 ? -1 : 1) * (PI / 2) * A / (A + B); };
+  const fairUnwarp = (a) => { const w = Math.min(1, Math.abs(a) / (PI / 2)); if (w >= 1) return a < 0 ? -1 : 1; const r = Math.sqrt(w / (1 - w)); return (a < 0 ? -1 : 1) * r / (1 + r); };
   function fairBand(S, x0, x1, a0, a1, o) {
     o = o || {};
-    return S.param(function (u, v, q) { fairPt(x0 + (x1 - x0) * u, a0 + (a1 - a0) * v, q); },
-      { gu: o.gu || Math.max(4, Math.round((x1 - x0) * 30)), gv: o.gv || 16, flip: true, w: o.w, heat: o.heat, glow: o.glow });
+    const s0 = fairUnwarp(a0), s1 = fairUnwarp(a1);
+    return S.param(function (u, v, q) { fairPt(x0 + (x1 - x0) * u, fairWarp(s0 + (s1 - s0) * v), q); },
+      { gu: o.gu || Math.max(4, Math.round((x1 - x0) * 30)), gv: o.gv || 12, flip: true, w: o.w, heat: o.heat, glow: o.glow });
   }
-  // a smooth path through points (centripetal-ish Catmull-Rom, tabulated by arc length) with frames
-  // carried along it; tube(S, path, ra, rb) sweeps an ellipse (ra along the frame's n, rb along b)
+  // A smooth path through points (Catmull-Rom), resampled evenly by arc length, with a frame carried
+  // along it (parallel transport of nref): flat arrays C (centres), T, N, B of M + 1 samples.
   function path(pts, nref) {
-    const P = pts.map((p) => p.slice()), n = P.length, raw = [];
-    const cr = (a, b, c, d, t) => 0.5 * ((2 * b) + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (-a + 3 * b - 3 * c + d) * t * t * t);
+    const n = pts.length, SUB = 10, NR = (n - 1) * SUB + 1, raw = new Float64Array(NR * 3), L = new Float64Array(NR);
     for (let i = 0; i < n - 1; i++) {
-      const p0 = P[Math.max(0, i - 1)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(n - 1, i + 2)];
-      for (let k = 0; k < 24; k++) { const t = k / 24; raw.push([0, 1, 2].map((j) => cr(p0[j], p1[j], p2[j], p3[j], t))); }
+      const p0 = pts[i > 0 ? i - 1 : 0], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2 < n ? i + 2 : n - 1];
+      for (let k = 0; k < SUB; k++) {
+        const t = k / SUB, t2 = t * t, t3 = t2 * t, o = (i * SUB + k) * 3;
+        for (let j = 0; j < 3; j++) raw[o + j] = 0.5 * (2 * p1[j] + (p2[j] - p0[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (3 * p1[j] - p0[j] - 3 * p2[j] + p3[j]) * t3);
+      }
     }
-    raw.push(P[n - 1].slice());
-    const L = [0];
-    for (let i = 1; i < raw.length; i++) L.push(L[i - 1] + Math.hypot(raw[i][0] - raw[i - 1][0], raw[i][1] - raw[i - 1][1], raw[i][2] - raw[i - 1][2]));
-    const tot = L[L.length - 1], M = 96, C = [], T = [], N = [], B = [];
+    const pe = pts[n - 1], oe = (NR - 1) * 3;
+    raw[oe] = pe[0]; raw[oe + 1] = pe[1]; raw[oe + 2] = pe[2];
+    for (let i = 1; i < NR; i++) { const o = i * 3; L[i] = L[i - 1] + Math.hypot(raw[o] - raw[o - 3], raw[o + 1] - raw[o - 2], raw[o + 2] - raw[o - 1]); }
+    const tot = L[NR - 1], M = Math.max(8, Math.min(160, Math.ceil(tot / 0.025)));
+    const C = new Float64Array((M + 1) * 3), T = new Float64Array((M + 1) * 3), N = new Float64Array((M + 1) * 3), B = new Float64Array((M + 1) * 3);
+    let i = 1;
     for (let k = 0; k <= M; k++) {
       const s = tot * k / M;
-      let i = 1;
-      while (i < L.length - 1 && L[i] < s) i++;
-      const f = (s - L[i - 1]) / Math.max(1e-9, L[i] - L[i - 1]);
-      C.push([0, 1, 2].map((j) => raw[i - 1][j] + (raw[i][j] - raw[i - 1][j]) * f));
+      while (i < NR - 1 && L[i] < s) i++;
+      const f = Math.min(1, Math.max(0, (s - L[i - 1]) / Math.max(1e-12, L[i] - L[i - 1]))), o = k * 3, a = (i - 1) * 3, b = i * 3;
+      for (let j = 0; j < 3; j++) C[o + j] = raw[a + j] + (raw[b + j] - raw[a + j]) * f;
     }
     for (let k = 0; k <= M; k++) {
-      const a = C[Math.max(0, k - 1)], b = C[Math.min(M, k + 1)];
-      T.push(H_.norm([b[0] - a[0], b[1] - a[1], b[2] - a[2]]));
+      const a = (k > 0 ? k - 1 : 0) * 3, b = (k < M ? k + 1 : M) * 3, o = k * 3;
+      const tx = C[b] - C[a], ty = C[b + 1] - C[a + 1], tz = C[b + 2] - C[a + 2], l = Math.hypot(tx, ty, tz) || 1;
+      T[o] = tx / l; T[o + 1] = ty / l; T[o + 2] = tz / l;
     }
-    // parallel transport of the reference normal
-    let nn = H_.norm(nref || [0, 1, 0]);
+    let nx = nref ? nref[0] : 0, ny = nref ? nref[1] : 1, nz = nref ? nref[2] : 0;
     for (let k = 0; k <= M; k++) {
-      const t = T[k], d = H_.dot(nn, t);
-      nn = H_.norm([nn[0] - t[0] * d, nn[1] - t[1] * d, nn[2] - t[2] * d]);
-      N.push(nn); B.push(H_.cross(t, nn));
+      const o = k * 3, tx = T[o], ty = T[o + 1], tz = T[o + 2], d = nx * tx + ny * ty + nz * tz;
+      nx -= tx * d; ny -= ty * d; nz -= tz * d;
+      const l = Math.hypot(nx, ny, nz) || 1;
+      nx /= l; ny /= l; nz /= l;
+      N[o] = nx; N[o + 1] = ny; N[o + 2] = nz;
+      B[o] = ty * nz - tz * ny; B[o + 1] = tz * nx - tx * nz; B[o + 2] = tx * ny - ty * nx;
     }
     return { C, T, N, B, M, len: tot };
   }
+  // a tube along a path: an ellipse (ra along the frame's N, rb along B; numbers or functions of the
+  // fraction along the path) swept along it, with its outward normal
   function tube(S, pth, ra, rb, o) {
     o = o || {};
     rb = rb == null ? ra : rb;
-    return S.param(function (u, v, q) {
-      const f = v * pth.M, k = Math.min(pth.M - 1, f | 0), w = f - k, a = TAU * u, ca = Math.cos(a), sa = Math.sin(a);
+    const C = pth.C, N = pth.N, B = pth.B, T = pth.T, M = pth.M, L = pth.len, fa = typeof ra === "function", fb = typeof rb === "function";
+    return analytic(S.param(function (u, v, q) {
+      const f = v * M, k = f >= M ? M - 1 : f | 0, w = f - k, a = TAU * u, ca = Math.cos(a), sa = Math.sin(a), k0 = k * 3, k1 = k0 + 3;
+      const A = fa ? ra(v) : ra, Bv = fb ? rb(v) : rb;
+      // a radius that grows along the path tilts the normal back
+      const dA = fa ? (ra(Math.min(1, v + 0.01)) - ra(Math.max(0, v - 0.01))) / (0.02 * L) : 0, dB = fb ? (rb(Math.min(1, v + 0.01)) - rb(Math.max(0, v - 0.01))) / (0.02 * L) : 0;
+      const nn = Bv * ca, nb = A * sa, nt = -(dA * Bv * ca * ca + dB * A * sa * sa);
       for (let j = 0; j < 3; j++) {
-        const c = pth.C[k][j] + (pth.C[k + 1][j] - pth.C[k][j]) * w, n = pth.N[k][j] + (pth.N[k + 1][j] - pth.N[k][j]) * w, b = pth.B[k][j] + (pth.B[k + 1][j] - pth.B[k][j]) * w;
-        q[j] = c + ra * ca * n + rb * sa * b;
+        const n = N[k0 + j] + (N[k1 + j] - N[k0 + j]) * w, b = B[k0 + j] + (B[k1 + j] - B[k0 + j]) * w, t = T[k0 + j] + (T[k1 + j] - T[k0 + j]) * w;
+        q[j] = C[k0 + j] + (C[k1 + j] - C[k0 + j]) * w + A * ca * n + Bv * sa * b;
+        q[3 + j] = nn * n + nb * b + nt * t;
       }
-    }, { gu: o.gu || 12, gv: o.gv || Math.max(6, Math.round(pth.len * 24)), flip: false, w: o.w, heat: o.heat, glow: o.glow });
+    }, { gu: o.gu || 10, gv: o.gv || Math.max(6, Math.round(L * 14)), w: o.w, heat: o.heat, glow: o.glow }));
   }
-  // a round end cap of a tube path (k = 0 or M), facing outward
+  // a round end cap of a tube path (end 0 or M), facing outward
   function tubeEnd(S, pth, k, r, o) {
-    const c = pth.C[k], t = pth.T[k], s = k ? 1 : -1;
-    return S.disc(0, r, Object.assign({ at: c, rot: { z: [t[0] * s, t[1] * s, t[2] * s] } }, o));
+    const j = k * 3, s = k ? 1 : -1, T = pth.T;
+    return S.disc(0, r, Object.assign({ at: [pth.C[j], pth.C[j + 1], pth.C[j + 2]], rot: { z: [T[j] * s, T[j + 1] * s, T[j + 2] * s] } }, o));
   }
   // a round strut from p to q
   function strut(S, p, q, r, o) {
@@ -551,7 +620,7 @@
     }
     return best;
   }
-  const FR_N = 4096;
+  const FR_N = 2048;
   let FR = null;
   function finReach(phi) {
     if (!FR) { FR = new Float64Array(FR_N + 1); for (let i = 0; i <= FR_N; i++) FR[i] = finReachRaw(TAU * i / FR_N); }
@@ -570,23 +639,27 @@
     const root = (1 - H_.smooth(8.2, 8.55, x)) * H_.smooth(1.42, 1.56, y) * (1 - H_.smooth(1.93, 2.08, y));
     return 0.045 + (SHROUD_HW(x) - 0.045) * Math.max(near, root);
   }
-  // one side face of the fin (side 1 near, -1 far): rays from the duct edge to the outline
+  // one side face of the fin (side 1 near, -1 far): rays from the duct's lip to the outline
+  // (o.r0 / o.r1: from and to these distances from the fan centre, within the outline)
   function finFace(S, side, phi0, phi1, o) {
     o = o || {};
-    const C = EC.fen, r0 = EC.duct;
+    const C = EC.fen, ra = o.r0 || (EC.lip + EC.duct) / 2, rb = o.r1 || 99;
     return S.param(function (u, v, q) {
-      const phi = phi0 + (phi1 - phi0) * u, R = finReach(phi), r = r0 + (R - r0) * v;
+      const phi = phi0 + (phi1 - phi0) * u, R = finReach(phi), r0 = Math.min(ra, R), r = r0 + (Math.min(rb, R) - r0) * v;
       q[0] = C[0] + r * Math.cos(phi); q[1] = C[1] + r * Math.sin(phi); q[2] = side * finHalf(q[0], q[1]);
-    }, { gu: o.gu || 90, gv: o.gv || 14, flip: side > 0, w: o.w, heat: o.heat, glow: o.glow });
+    }, { gu: o.gu || Math.max(6, Math.round(48 * (phi1 - phi0) / TAU)), gv: o.gv || 10, flip: side > 0, w: o.w, heat: o.heat, glow: o.glow });
   }
-  // the fin's edges: a strip round the outline from one face to the other (not along the boom root)
-  function finEdge(S, o) {
+  // the fin's edges: a strip round the outline from one face to the other (not along the boom root),
+  // facing outward
+  // (lower: only the edges of the fin extension below the boom, or all the others)
+  function finEdge(S, lower, o) {
     const P = [];
     for (let i = 0; i < FIN.length; i++) {
       const p = FIN[i], q = FIN[(i + 1) % FIN.length];
       if (Math.abs(p[0] - 7.979) < 0.01 && Math.abs(q[0] - 7.978) < 0.01) continue;      // the boom root
+      if ((i >= 4 && i <= 8) !== lower) continue;
       const hp = finHalf(p[0], p[1]), hq = finHalf(q[0], q[1]);
-      P.push(S.quad([p[0], p[1], hp], [q[0], q[1], hq], [p[0], p[1], -hp], [q[0], q[1], -hq], o));
+      P.push(S.quad([p[0], p[1], -hp], [q[0], q[1], -hq], [p[0], p[1], hp], [q[0], q[1], hq], o));
     }
     return S.join(P);
   }
@@ -600,6 +673,7 @@
       lo: [[1.748, 1.48], [2.52, 1.671], [2.572, 1.71], [2.6, 1.773]] },
     { up: [[1.221, 2.21], [1.301, 2.242], [1.416, 2.266], [1.643, 2.269]], lo: [[1.221, 2.21], [1.266, 2.122], [1.554, 2.138], [1.575, 2.145], [1.643, 2.269]] },
   ];
+  for (const w of WINS) { w.x0 = w.up[0][0]; w.x1 = w.up[w.up.length - 1][0]; }
   // the doors' outline and the line between them (panel lines)
   const DOOR = [[0.704, 0.879], [2.468, 0.852], [2.483, 0.863], [2.749, 1.919], [2.673, 2.17], [1.828, 2.16], [1.219, 2.106], [0.704, 0.879]];
   const DOOR_DIV = [[1.555, 0.857], [1.87, 2.154]];
@@ -609,37 +683,45 @@
     return ch[ch.length - 1][1];
   }
   const GLASS = { w: 0.33, heat: 0.04 };
-  // the cabin skin from x0 to x1 between the angles aT(x) .. aB(x) on one side, the glazing sparse
-  // (dark) and the rest of the skin around it
+  // the cabin skin from x0 to x1 between the angles aT(x) .. aB(x) on one side: the glazing sparse (dark)
+  // and the skin round it, in pieces from one window's end to the next
   function cabinSkin(S, x0, x1, side, aT, aB, o) {
     const xs = [x0, x1];
-    for (const w of WINS) for (const p of w.up.concat(w.lo)) if (p[0] > x0 + 1e-6 && p[0] < x1 - 1e-6) xs.push(p[0]);
+    for (const w of WINS) for (const xe of [w.x0, w.x1]) if (xe > x0 + 1e-6 && xe < x1 - 1e-6) xs.push(xe);
     xs.sort((a, b) => a - b);
     const out = [];
     for (let i = 0; i + 1 < xs.length; i++) {
       const xa = xs[i], xb = xs[i + 1];
-      if (xb - xa < 1e-4) continue;
+      if (xb - xa < 1e-3) continue;
       const xm = (xa + xb) / 2;
-      const ws = WINS.filter((w) => w.up[0][0] <= xa + 1e-6 && w.up[w.up.length - 1][0] >= xb - 1e-6).sort((p, q) => chainY(q.up, xm) - chainY(p.up, xm));
-      const clampA = (f) => (x) => Math.min(ang(aB, x), Math.max(ang(aT, x), f(x)));
-      let cur = aT;
+      const ws = WINS.filter((w) => w.x0 <= xa + 1e-6 && w.x1 >= xb - 1e-6).sort((p, q) => chainY(q.up, xm) - chainY(p.up, xm));
+      // the bounds along the piece: skin, glass, skin, glass, ..., skin (each window kept below the last)
+      let prev = new Float64Array(NB + 1);
+      const end = new Float64Array(NB + 1);
+      for (let k = 0; k <= NB; k++) { const x = xa + (xb - xa) * k / NB; prev[k] = ang(aT, x); end[k] = Math.max(prev[k], ang(aB, x)); }
       for (const w of ws) {
-        const top = clampA((x) => hullAng(x, chainY(w.up, x))), bot = clampA((x) => hullAng(x, chainY(w.lo, x)));
-        out.push(hullBand(S, xa, xb, cur, top, side, o), hullBand(S, xa, xb, top, bot, side, Object.assign({}, o, GLASS)));
-        cur = bot;
+        const top = new Float64Array(NB + 1), low = new Float64Array(NB + 1);
+        for (let k = 0; k <= NB; k++) {
+          const x = xa + (xb - xa) * k / NB;
+          top[k] = Math.min(end[k], Math.max(prev[k], hullAng(x, chainY(w.up, x))));
+          low[k] = Math.min(end[k], Math.max(top[k], hullAng(x, chainY(w.lo, x))));
+        }
+        out.push(hullBand(S, xa, xb, prev, top, side, o), hullBand(S, xa, xb, top, low, side, Object.assign({}, o, GLASS)));
+        prev = low;
       }
-      out.push(hullBand(S, xa, xb, cur, aB, side, o));
+      out.push(hullBand(S, xa, xb, prev, end, side, o));
     }
-    return out;
+    return out.filter(Boolean);
   }
   // a line drawn on the hull along a side-view polyline (window frames, panel lines): a thin tube
   function hullLine(S, pts, side, r, o) {
-    const P = [];
+    const P = [], q = [0, 0, 0, 0, 0, 0];
     for (let i = 0; i + 1 < pts.length; i++) {
-      const a = pts[i], b = pts[i + 1], n = Math.max(2, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 0.05));
+      const a = pts[i], b = pts[i + 1], n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 0.1));
       for (let k = i ? 1 : 0; k <= n; k++) {
-        const x = a[0] + (b[0] - a[0]) * k / n, y = a[1] + (b[1] - a[1]) * k / n, q = hullPt(x, hullAng(x, y), [0, 0, 0]);
-        q[2] *= side; P.push(q);
+        const x = a[0] + (b[0] - a[0]) * k / n, y = a[1] + (b[1] - a[1]) * k / n;
+        hullPt(x, hullAng(x, y), q);
+        P.push([q[0], q[1], q[2] * side]);
       }
     }
     return tube(S, path(P, [0, 0, side]), r, r, Object.assign({ gu: 6 }, o));
@@ -647,20 +729,25 @@
   const winLoop = (w) => w.lo.concat(w.up.slice().reverse().slice(1));
   // the frames of some of the windows (indices into WINS) on one side
   const frames = (S, side, which) => S.join(which.map((i) => hullLine(S, winLoop(WINS[i]), side, 0.011, { w: 0.75 })));
-  // 3x3 products (row-major)
-  function mm3(a, b) {
-    const o = new Array(9);
-    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) o[i * 3 + j] = a[i * 3] * b[j] + a[i * 3 + 1] * b[3 + j] + a[i * 3 + 2] * b[6 + j];
-    return o;
-  }
-  const RY = (a) => H_.euler(0, a, 0), RZ = (a) => H_.euler(0, 0, a), RX = (a) => H_.euler(a, 0, 0);
+  const RY = (a) => H_.euler(0, a, 0), RX = (a) => H_.euler(a, 0, 0);
+  // Where the rig's parts split the surfaces, chosen so that every part gets about its share of the
+  // points (the counts are set by the other modes, the helicopter sets none): x stations along the hull
+  // (cabin front, cabin middle, rear fuselage to boom, boom sides front / rear, boom end; where tail1 and
+  // tail2 take over the boom's top and underside), hull angles (0 the top .. PI the bottom: the cabin's
+  // window band, door band and belly; the rear fuselage's side and underside; the boom's top, upper and
+  // lower side strips, side and underside), the fairing's crest and where its rear end (with the exhaust)
+  // starts, the blades' halves (radius), the fin's sectors round the fan (the extension: PH0..PH1; then
+  // DB for tail2 and, before PH0, DA for tail1), the shroud ring round the duct (radius), and the weights
+  // of the duct's wall, its lips, the stabiliser, the step bar and the front cross tube.
+  const K = { C1: 0.969, C2: 2.427, C3: 3.991, CB: 5.538, C4: 8.0, AT: 0.695, AB: 1.665, AL: 2.101, RB: 1.641, BT1: 0.685, BT: 1.1, BB: 1.934, BB1: 2.041,
+    AF: 0.942, RM: 2.694, PH0: 4.322, PH1: 5.164, AN: 0.442, DW: 0.1, LW: 3.5, SW: 0.3, DA: 0.673, DB: 1.251, XJ: 4.589, XT1: 6.926, XT2: 7.124,
+    GS: 0.68, GC: 0.962 };
+  const { C1, C2, C3, CB, C4, AT, AB, AL, RB, BT1, BT, BB, BB1, AF } = K;
   function heliParts(S, H) {
     const P = {};
     // a part from geometry in metres (pivot in metres too)
     const put = (name, at, parent, ...shapes) => { P[name] = part(S, toM(at), null, parent, S.place(S.join(shapes), HOFF, null, HK)); };
     const fa = (x) => fairAng(x);
-    const C1 = 1.12, C2 = 2.9, C3 = 4.8, C4 = 8.0, CB = 6.35;       // cabin front, mid, rear fuselage, boom
-    const AT = 0.8, AB = 1.7, AL = 2.05, RB = 1.88, BT = 0.78, BB = 2.36, AF = 1.0;  // angle cuts (0 top .. PI bottom)
     // ---- the hull ----
     put("chest", [0.6, 1.4, 0], null, cabinSkin(S, 0, C1, 1, 0, PI), cabinSkin(S, 0, C1, -1, 0, PI), frames(S, 1, [0]), frames(S, -1, [0]));
     put("belly", [1.9, 0.8, 0], null, cabinSkin(S, C1, C2, 1, fa, AT), cabinSkin(S, C1, C2, -1, fa, AT), frames(S, 1, [3]), frames(S, -1, [3]),
@@ -671,56 +758,84 @@
     put("hips", [3.6, 0.8, 0], null, hullBoth(S, C2, C3, RB, PI));
     put("hl_paw", [3.6, 1.6, 0.6], null, hullBand(S, C2, C3, fa, RB, 1));
     // ---- the engine and gearbox fairing: its crest (head) and its sides (hl/hr_up) ----
-    put("head", [3.3, 2.6, 0], null, fairBand(S, F_X0, F_X1, -AF, AF));
-    put("hl_up", [3.3, 2.3, 0.45], null, fairBand(S, F_X0, F_X1, AF, PI / 2));
-    // ---- the tail boom: top (back1), bottom (back2), sides (hl/hr_lo front, back3 rear) ----
-    put("back1", [6.4, 2.0, 0], null, hullBoth(S, C3, C4, 0, BT));
-    put("back2", [6.4, 1.5, 0], null, hullBoth(S, C3, C4, BB, PI));
-    put("hl_lo", [5.5, 1.75, 0.3], null, hullBand(S, C3, CB, BT, BB, 1));
-    put("back3", [7.1, 1.75, 0], null, hullBoth(S, CB, C4, BT, BB));
-    // ---- the fin with the fan shroud: faces (flankL/R), edges (tail1) ----
-    put("flankL", [8.8, 2.0, 0.1], null, finFace(S, 1, 0, TAU));
-    put("tail1", [8.8, 2.1, 0], null, finEdge(S));
-    // ---- the ducted fan: the duct and its lips (tail3), the fan (tail4, it spins), the stators and the
-    // gearbox housing on the air's way out (tail2; the air leaves on the right, -z) ----
-    const FC = EC.fen, hd = SHROUD_HW(FC[0]);
+    put("head", [3.1, 2.6, 0], null, fairBand(S, F_X0, K.XJ, -AF, AF));
+    put("hl_up", [3.1, 2.3, 0.45], null, fairBand(S, F_X0, K.XJ, AF, PI / 2));
+    // ---- the tail boom: its top (back1), a strip along each side above and below (back3), its underside
+    // (back2), its sides (hl/hr_lo at the front, haunchL/R at the rear with the stabiliser) ----
+    // (ahead of the fairing's end the boom's bands start at the fairing's foot; the rear of the boom's top
+    // and underside go with the fin's edges, tail1 and tail2)
+    const above = (b) => (x) => Math.max(fa(x), b);
+    put("back1", [6.0, 2.0, 0], null, hullBoth(S, C3, K.XT1, fa, above(BT1)));
+    put("back3", [6.0, 1.75, 0], null, hullBoth(S, C3, C4, above(BT1), above(BT)), hullBoth(S, C3, C4, BB, BB1));
+    put("back2", [6.0, 1.5, 0], null, hullBoth(S, C3, K.XT2, BB1, PI));
+    put("hl_lo", [5.6, 1.75, 0.3], null, hullBand(S, C3, CB, above(BT), BB, 1));
+    // ---- the fin with the fan shroud: its faces (flankL/R; the ring round the duct is the duct's, the fin
+    // extension below the boom goes with the stabiliser), its edges (tail1; the fin extension's: tail2) ----
+    // (round the fan centre, counter-clockwise from the fin extension: tail2's sector, the flank's, tail1's)
+    const QB = K.PH1 + K.DB, QA = K.PH0 - K.DA;
+    put("flankL", [8.8, 2.3, 0.1], null, finFace(S, 1, QB - TAU, QA, { r0: K.AN }));
+    put("tail1", [8.2, 1.9, 0], null, finEdge(S, false), finFace(S, 1, QA, K.PH0, { r0: K.AN }), finFace(S, -1, QA, K.PH0, { r0: K.AN }),
+      hullBoth(S, K.XT1, C4, 0, BT1));
+    // ---- the ducted fan, seen through: the duct (inward facing, very sparse: dark) with its two lips and
+    // the shroud's faces round them (tail3); the fan (tail4, it spins): eight thin blades and the big hub
+    // with its cap and, behind it, the gearbox housing; on the air's way out (the right side, -z) the ten
+    // thin stators (tail2) ----
+    const FC = EC.fen, hd = SHROUD_HW(FC[0]), rl = (EC.lip - EC.duct) / 2, rm = (EC.lip + EC.duct) / 2;
     put("tail3", [FC[0], FC[1], 0], null,
-      S.cyl(EC.duct, 2 * hd, { axis: "z", at: [FC[0], FC[1], -hd], caps: false }),
-      S.torus((EC.duct + EC.lip) / 2, (EC.lip - EC.duct) / 2, { at: [FC[0], FC[1], hd - 0.01] }),
-      S.torus((EC.duct + EC.lip) / 2, (EC.lip - EC.duct) / 2, { at: [FC[0], FC[1], -hd + 0.01] }));
-    const fan = [];
+      S.param(function (u, v, q) { const a = TAU * u; q[0] = FC[0] + EC.duct * Math.cos(a); q[1] = FC[1] + EC.duct * Math.sin(a); q[2] = -hd + 2 * hd * v; },
+        { gu: 36, gv: 3, flip: true, w: K.DW, heat: -0.16 }),
+      // the lips: the quarter of each rounded edge that shows, from the fin's face into the duct (denser: a crisp ring)
+      S.torus(rm, rl, { at: [FC[0], FC[1], hd - rl], tube: [PI / 2, PI], w: K.LW, gu: 36, gv: 3 }), S.torus(rm, rl, { at: [FC[0], FC[1], -hd + rl], tube: [PI, 1.5 * PI], w: K.LW, gu: 36, gv: 3 }),
+      // and the shroud's faces round them
+      finFace(S, 1, 0, TAU, { r1: K.AN, gu: 36, gv: 2 }), finFace(S, -1, 0, TAU, { r1: K.AN, gu: 36, gv: 2 }));
+    const FZ = 0.035, fan = [];
     for (let k = 0; k < 8; k++) {
-      const a = k * TAU / 8, rm = (EC.fhub + EC.duct) / 2;
-      fan.push(S.box(EC.duct - EC.fhub - 0.012, 0.075, 0.012, { at: [FC[0] + rm * Math.cos(a), FC[1] + rm * Math.sin(a), 0.035], rot: mm3(RZ(a), RX(0.55)) }));
+      const a = k * TAU / 8, ca = Math.cos(a), sa = Math.sin(a), r0 = EC.fhub, r1 = EC.duct - 0.01, hc = 0.035, pc = Math.cos(0.5) * hc, pz = Math.sin(0.5) * hc;
+      // a thin blade from the hub to the duct: its chord (7 cm) along the turn, pitched 0.5 rad out of the fan's plane
+      const at = (r, s) => [FC[0] + r * ca - s * pc * sa, FC[1] + r * sa + s * pc * ca, FZ + s * pz];
+      fan.push(S.quad(at(r0, -1), at(r1, -1), at(r0, 1), at(r1, 1)));
     }
-    // the air goes through the duct between the fan blades and the stators (solid 0), turning with the fan
-    put("tail4", [FC[0], FC[1], 0], null, S.tag(fan, { solid: 0 }), S.cyl(EC.fhub, 0.11, { axis: "z", at: [FC[0], FC[1], -0.02], caps: false }),
-      S.ellipsoid(EC.fhub, 0.045, EC.fhub, { at: [FC[0], FC[1], 0.09], theta: [0, PI / 2], rot: RX(PI / 2) }));
+    put("tail4", [FC[0], FC[1], 0], null, S.tag(S.join(fan), { solid: 0 }),
+      S.cyl(EC.fhub, 0.1, { axis: "z", at: [FC[0], FC[1], -0.02], caps: false, gu: 16, gv: 2 }),
+      S.ellipsoid(EC.fhub, 0.1, EC.fhub, { at: [FC[0], FC[1], 0.08], theta: [0, PI / 2], rot: RX(PI / 2), gu: 16, gv: 5 }),
+      // the gearbox housing behind it, on the stators' side (round: it may turn with the fan)
+      S.cyl(EC.fhub * 0.92, 0.13, { axis: "z", at: [FC[0], FC[1], -0.15], caps: false, gu: 16, gv: 3 }), S.disc(0, EC.fhub * 0.92, { axis: "-z", at: [FC[0], FC[1], -0.15], gu: 16, gv: 3 }));
     const stat = [];
     for (let k = 0; k < 10; k++) {
-      const a = (k + 0.5) * TAU / 10, rm = (EC.fhub + EC.duct) / 2;
-      stat.push(S.box(EC.duct - EC.fhub - 0.01, 0.05, 0.01, { at: [FC[0] + rm * Math.cos(a), FC[1] + rm * Math.sin(a), -0.07], rot: RZ(a + 0.12) }));
+      const a = (k + 0.5) * TAU / 10, r0 = EC.fhub * 0.92, r1 = EC.duct - 0.01;
+      // a thin vane from the gearbox housing to the duct, its chord along the duct (4 cm), leaning with the swirl
+      const at = (r, s) => { const b = a + 0.18 * (r - r0) / (r1 - r0); return [FC[0] + r * Math.cos(b), FC[1] + r * Math.sin(b), -0.075 + s * 0.02]; };
+      stat.push(S.quad(at(r0, -1), at(r1, -1), at(r0, 1), at(r1, 1)));
     }
-    put("tail2", [FC[0], FC[1], -0.06], null, S.tag(stat, { solid: 0 }), S.cyl(EC.fhub * 0.92, 0.12, { axis: "z", at: [FC[0], FC[1], -0.12], caps: false }),
-      S.disc(0, EC.fhub * 0.92, { axis: "-z", at: [FC[0], FC[1], -0.12] }),
-      // the tail bumper under the fin extension, an antenna under the boom, the beacon on the fin's top
-      S.tag(S.join(strut(S, [8.70, 0.96, 0], [9.06, 0.67, 0], 0.022), S.sphere(0.022, { at: [9.06, 0.67, 0] }),
-        strut(S, [7.17, 1.55, 0], [7.42, 1.23, 0], 0.012)), { solid: 0 }),
-      S.ellipsoid(0.045, 0.06, 0.035, { at: [9.115, 3.39, 0], theta: [0, PI / 2], heat: 0.5 }));
-    // ---- the horizontal stabiliser (an inverted airfoil through the boom), one half each side ----
-    const stab = (z0, z1) => S.param(function (u, v, q) {
-      const z = z0 + (z1 - z0) * u, a = TAU * v, ca = Math.cos(a), sa = Math.sin(a);
-      q[0] = 7.43 + 0.24 * ca; q[1] = 1.735 + 0.03 * sa - 0.012 * (1 - ca * ca); q[2] = z;
-    }, { gu: 30, gv: 16, flip: true });
-    // (thin plates seen almost edge-on: the air passes through them, as through the blades)
-    put("haunchL", [7.43, 1.73, 0.75], null, S.tag(stab(0.2, 1.272), { solid: 0 }));
-    // ---- the end plates at the stabiliser's tips and the engine exhaust (jaw) ----
-    const plate = S.rounded([[7.2, 1.585], [7.62, 1.585], [7.68, 1.955], [7.37, 1.955]], 0.04, 3);
-    const XP = [[4.48, 2.5, -0.21], [4.58, 2.517, -0.25], [4.68, 2.525, -0.3]], xp = path(XP, [0, 1, 0]);
-    put("jaw", [4.7, 2.3, 0], null,
-      S.tag(S.extrude(plate, 0.028, { at: [0, 0, 1.286] }), { glow: 0, solid: 0 }), S.tag(S.extrude(plate, 0.028, { at: [0, 0, -1.286] }), { glow: 0, solid: 0 }),
-      tube(S, xp, 0.085, 0.085, { gu: 14 }), S.torus(0.075, 0.012, { at: xp.C[xp.M], rot: { z: xp.T[xp.M] }, heat: 0.35 }),
-      S.disc(0, 0.07, { at: xp.C[xp.M - 3], rot: { z: xp.T[xp.M] }, heat: 0.55 }));
+    put("tail2", [FC[0], FC[1], -0.06], null, S.tag(S.join(stat), { solid: 0 }), finEdge(S, true),
+      finFace(S, 1, K.PH1, QB, { r0: K.AN }), finFace(S, -1, K.PH1, QB, { r0: K.AN }), hullBoth(S, K.XT2, C4, BB1, PI),
+      // the tail bumper under the fin extension, an antenna under the boom, the beacon on the fin's top, the light at its tip
+      strut(S, [8.70, 0.96, 0], [9.06, 0.67, 0], 0.022, { gu: 8, gv: 4 }), S.sphere(0.024, { at: [9.06, 0.67, 0], gu: 8, gv: 5 }),
+      strut(S, [7.17, 1.55, 0], [7.42, 1.23, 0], 0.012, { gu: 6, gv: 3 }),
+      S.ellipsoid(0.045, 0.06, 0.035, { at: [9.115, 3.39, 0], theta: [0, PI / 2], heat: 0.5, gu: 10, gv: 4 }),
+      S.sphere(0.035, { at: [9.62, 3.34, 0], heat: 0.3, gu: 10, gv: 5 }));
+    // ---- the horizontal stabiliser: a thin plate with a little (inverted) camber through the boom, one
+    // half each side; seen almost edge on, so it is sparse; with the boom's rear sides and the fin
+    // extension's faces (haunchL/R) ----
+    const [sx0, sx1, sy, sz0, sz1] = EC.stab;
+    const stab = S.param(function (u, v, q) {
+      const s = v; q[0] = sx0 + (sx1 - sx0) * s; q[1] = sy - 0.03 * 4 * s * (1 - s) + 0.012 * (1 - s); q[2] = sz0 + (sz1 - sz0) * u;
+    }, { gu: 20, gv: 6, w: K.SW });
+    put("haunchL", [7.6, 1.6, 0.3], null, stab, hullBand(S, CB, C4, BT, BB, 1), finFace(S, 1, K.PH0, K.PH1, { r0: K.AN }));
+    // ---- the fairing's rear end and the engine exhaust on the left (the near side): a short pipe from the
+    // fairing's rear flank, turning aft, up and out, flaring to its outlet; and the stabiliser's tip lights
+    // (jaw) ----
+    const XP = [[4.47, 2.25, 0.33], [4.6, 2.29, 0.44], [4.74, 2.33, 0.5], [4.86, 2.36, 0.53]], xp = path(XP, [0, 1, 0]);
+    const flare = (v) => 0.1 + 0.055 * v * v, xe = xp.M * 3, XO = [xp.C[xe], xp.C[xe + 1], xp.C[xe + 2]], XT = [xp.T[xe], xp.T[xe + 1], xp.T[xe + 2]];
+    put("jaw", [4.7, 2.3, 0.4], null,
+      // the fairing's rear end and its rounded rear lip, overhanging the exhaust
+      S.tag(S.join(fairBand(S, K.XJ, F_X1, -PI / 2, PI / 2), S.capsule(0.07, 0.6, { axis: "z", rz: 0.085, at: [4.61, 2.515, -0.3], gu: 16, gv: 12 })), { glow: 0 }),
+      tube(S, xp, flare, flare, { gu: 16, heat: -0.2, glow: 0.4 }),
+      // the inside of the bell, seen from behind (warm), and its lip
+      S.cyl(0.148, 0.12, { r1: 0.09, at: XO, rot: { y: [-XT[0], -XT[1], -XT[2]] }, caps: false, heat: 0.35, gu: 20, gv: 3 }),
+      S.torus(0.155, 0.012, { at: XO, rot: { z: XT }, heat: 0.2, gu: 24, gv: 4 }),
+      S.tag(S.join(S.ellipsoid(0.07, 0.026, 0.035, { at: [sx0 + 0.11, sy + 0.005, sz1 + 0.025], gu: 10, gv: 6 }), S.ellipsoid(0.07, 0.026, 0.035, { at: [sx0 + 0.11, sy + 0.005, -sz1 - 0.025], gu: 10, gv: 6 })),
+        { glow: 0, heat: 0.25 }));
     // ---- skid gear: the skid turning up at the front into the front cross tube (fl_lo), the faired
     // rear cross tube leg and the step bar (scap) ----
     const legZ = (y, z0, y0) => z0 + (0.9925 - z0) * Math.sin(Math.acos(Math.min(1, Math.max(0, (y - 0.0425) / (y0 - 0.0425)))));
@@ -728,42 +843,47 @@
       .map((p) => [p[0], p[1], legZ(p[1], 0.5, 0.629)]);
     const sk = path(SK, [0, 1, 0]);
     put("fl_lo", [2.6, 0.05, 0.99], null, tube(S, sk, 0.0425), tubeEnd(S, sk, 0, 0.0425),
-      tube(S, path([[1.104, 0.629, 0.5], [1.104, 0.629, 0.25], [1.104, 0.629, 0]], [0, 1, 0]), 0.0425));
+      tube(S, path([[1.104, 0.629, 0.5], [1.104, 0.629, 0.25], [1.104, 0.629, 0]], [0, 1, 0]), 0.0425, null, { w: K.GC }));
     // the faired rear leg arcs from the skid up and inboard to the hull's underside (where the hull is at |z| = 0.42)
-    const XL = 3.765, ZL = 0.42, q = [0, 0, 0];
+    const XL = 3.765, ZL = 0.42, q6 = [0, 0, 0, 0, 0, 0];
     let lo = PI / 2, hi = PI;
-    for (let k = 0; k < 40; k++) { const mid = (lo + hi) / 2; if (hullPt(XL, mid, q)[2] > ZL) lo = mid; else hi = mid; }
-    const YL = hullPt(XL, lo, q)[1] + 0.02, LEG = [];
+    for (let k = 0; k < 40; k++) { const mid = (lo + hi) / 2; if (hullPt(XL, mid, q6)[2] > ZL) lo = mid; else hi = mid; }
+    const YL = hullPt(XL, lo, q6)[1] + 0.02, LEG = [];
     for (let k = 0; k <= 8; k++) { const al = k / 8 * PI / 2; LEG.push([XL, 0.0425 + (YL - 0.0425) * Math.cos(al), ZL + (0.9925 - ZL) * Math.sin(al)]); }
     put("scapL", [3.76, 0.35, 0.85], null, tube(S, path(LEG, [1, 0, 0]), 0.155, 0.04, { gu: 16 }),
-      tube(S, path([[1.39, 0.49, 0.86], [2.5, 0.49, 0.86], [3.61, 0.49, 0.86]], [0, 1, 0]), 0.03));
-    // ---- the main rotor: mast, swashplate, pitch links, hub and its domed cap (neck; it turns); each
-    // blade in two halves (mane L: root with its sleeve, R: outer half) and a very faint ring at the tip
-    // path (the blades and the ring let the air through: solid 0) ----
+      tube(S, path([[1.39, 0.49, 0.86], [2.5, 0.49, 0.86], [3.61, 0.49, 0.86]], [0, 1, 0]), 0.03, null, { w: K.GS }));
+    // ---- the main rotor: mast, swashplate, pitch links, hub and its domed cap (neck; it turns) ----
     const HB = [EC.hubX, EC.hubY, 0];
     const head = [
-      S.cyl(0.0485, EC.hubY - 0.03 - EC.mastY, { at: [HB[0], EC.mastY, 0], caps: false }),
-      S.cyl(0.15, 0.03, { at: [HB[0], 2.765, 0] }),
-      S.ellipsoid(EC.domeR, EC.domeH, EC.domeR, { at: [HB[0], EC.domeY, 0], theta: [0, PI / 2] }),
+      S.cyl(0.0485, EC.hubY - 0.03 - EC.mastY, { at: [HB[0], EC.mastY, 0], caps: false, gu: 12, gv: 4 }),
+      S.cyl(0.15, 0.03, { at: [HB[0], 2.765, 0], gu: 24, gv: 2 }),
+      S.ellipsoid(EC.domeR, EC.domeH, EC.domeR, { at: [HB[0], EC.domeY, 0], theta: [0, PI / 2], gu: 28, gv: 8 }),
     ];
     for (let k = 0; k < 3; k++) {
-      const a = PI + k * TAU / 3, c = Math.cos(a), s = -Math.sin(a), b = a + 0.5, cb = Math.cos(b), sb = -Math.sin(b);
-      head.push(S.box(0.3, 0.05, 0.13, { at: [HB[0] + 0.15 * c, EC.hubY - 0.035, 0.15 * s], rot: RY(a) }));
-      head.push(strut(S, [HB[0] + 0.15 * cb, 2.795, 0.15 * sb], [HB[0] + 0.24 * cb, 2.93, 0.24 * sb], 0.012));
+      const b = PI + k * TAU / 3 + 0.5, cb = Math.cos(b), sb = -Math.sin(b);
+      head.push(strut(S, [HB[0] + 0.15 * cb, 2.795, 0.15 * sb], [HB[0] + 0.24 * cb, 2.93, 0.24 * sb], 0.012, { gu: 6, gv: 3 }));
     }
     put("neck", HB, null, head);
-    const R0 = 0.58, RM = 2.79, ch = EC.chord / 2, th = 0.016;
+    // ---- the blades, each in two halves (mane L: the root half with its sleeve, R: the outer half), each
+    // half a thin blade and the blur it leaves behind: the rotor turns clockwise seen from above, so in a
+    // blade's own frame (along +x, coned up) it moves toward +z and the blur trails toward -z, fading over
+    // about 50 degrees (the air passes through all of it: solid 0) ----
+    const R0 = 0.58, RM = K.RM, PHI = 0.9, BLUR = [0.42, 0.34, 0.25, 0.16, 0.07];
+    const cc = Math.cos(EC.cone), sc = Math.sin(EC.cone);
+    const blade = (r0, r1) => S.param(function (u, v, q) {
+      const r = r0 + (r1 - r0) * u, ch = EC.chord * Math.min(1, 0.45 + 0.55 * (EC.R - r) / 0.25), c = (v - 0.5) * ch;
+      q[0] = r * cc; q[1] = r * sc + c * 0.08; q[2] = c;
+    }, { gu: Math.max(4, Math.round((r1 - r0) * 10)), gv: 2, w: 0.2 });
+    const blur = (r0, r1) => BLUR.map((w, j) => S.param(function (u, v, q) {
+      const r = r0 + (r1 - r0) * u, ph = PHI * (j + v) / BLUR.length, rr = r * cc;
+      q[0] = rr * Math.cos(ph); q[1] = r * sc; q[2] = -rr * Math.sin(ph);
+    }, { gu: Math.max(4, Math.round((r1 - r0) * 6)), gv: 3, w }));
     for (let k = 0; k < 3; k++) {
-      const a = PI + k * TAU / 3, Rb = mm3(RY(a), mm3(RZ(EC.cone), RX(-0.08)));
-      const inner = S.loft([[R0, 0.012, 0.07], [0.7, 0.016, 0.11], [0.85, th, ch], [RM, th, ch]], { caps: false });
-      const outer = S.loft([[RM, th, ch], [EC.R - 0.22, th, ch], [EC.R - 0.07, 0.012, 0.1], [EC.R, 0.004, 0.045]], { caps: false });
-      const sleeve = S.capsule(0.062, 0.36, { axis: "x", at: [0.2, 0, 0], r1: 0.055 });
-      const ring = S.tag(S.param(function (u, v, q) {
-        const ph = (u - 0.5) * TAU / 3, r = EC.R - 0.45 * (1 - v);
-        q[0] = r * Math.cos(ph); q[1] = r * Math.sin(EC.cone); q[2] = -r * Math.sin(ph);
-      }, { gu: 30, gv: 3 }), { w: 0.02, glow: 0, solid: 0, heat: 0 });
-      put("maneL" + (k + 1), HB, "neck", S.tag(S.place(S.join(inner, sleeve), HB, Rb), { solid: 0 }));
-      put("maneR" + (k + 1), HB, "neck", S.tag(S.place(outer, HB, Rb), { solid: 0 }), S.place(ring, HB, RY(a)));
+      const Rk = RY(PI + k * TAU / 3);
+      // the hub arm and the blade's sleeve on it
+      const sleeve = S.tag(S.join(S.box(0.3, 0.05, 0.13, { at: [0.15, -0.035, 0] }), S.capsule(0.062, 0.36, { axis: "x", at: [0.2, 0, 0], r1: 0.055, gu: 12, gv: 10 })), { w: 0.6 });
+      put("maneL" + (k + 1), HB, "neck", S.tag(S.place(S.join(blade(R0, RM), blur(R0, RM), sleeve), HB, Rk), { solid: 0 }));
+      put("maneR" + (k + 1), HB, "neck", S.tag(S.place(S.join(blade(RM, EC.R), blur(RM, EC.R)), HB, Rk), { solid: 0 }));
     }
     // ---- the right side mirrors the left ----
     for (const n of ["flankL", "scapL", "haunchL"]) P[n.slice(0, -1) + "R"] = H.mirror(P[n]);
@@ -784,6 +904,7 @@
   }
   // exhaust points in a part's own frame (its pivot as put() placed it), from metres
   const rel = (p, pivot) => [(p[0] - pivot[0]) * HK, (p[1] - pivot[1]) * HK, (p[2] - pivot[2]) * HK];
+  const XOUT = [4.9, 2.37, 0.545], XDIR = [0.85, 0.25, 0.46];
 
   PM.defineMode({
     name: "helicopter", kind: "vehicle", yaw: 0.28, dwell: HELI_D,
@@ -793,11 +914,11 @@
       // the rotor: radius makes it a rotor disc for the page's air (the wash is driven down across the
       // whole disc and the wind sweeps it back), centred on the shaft just under the blade plane
       { part: "head", at: rel([EC.hubX, EC.hubY - 0.05, 0], [3.3, 2.6, 0]), dir: [0.1, -1, 0], power: 1, radius: EC.R * HK },
-      // the ducted tail fan, seen face-on: its air comes out sideways and the wind sweeps it back, so
-      // the page streams it off the fin behind the fan, weaving with the fan's turn, lightly tinted
-      { part: "tail4", at: [0, 0, 0], dir: [0, 0, 1], power: 1, radius: EC.duct * HK, swirl: 1, speed: 1.6, heat: 0.5 },
-      // the engine exhaust on the right side, aft and a little up and out
-      { part: "jaw", at: rel([4.74, 2.53, -0.33], [4.7, 2.3, 0]), dir: [1, 0.08, -0.5], power: 0.15 },
+      // the ducted tail fan, seen face-on: its air comes out sideways (on the right, -z) and the wind sweeps
+      // it back, so the page streams it off the fin behind the fan, weaving with the fan's turn, lightly tinted
+      { part: "tail4", at: [0, 0, 0], dir: [0, 0, -1], power: 1, radius: EC.duct * HK, swirl: 1, speed: 1.6, heat: 0.5 },
+      // the engine exhaust on the left side, aft and a little up and out
+      { part: "jaw", at: rel(XOUT, [4.7, 2.3, 0.4]), dir: XDIR, power: 0.15 },
     ],
   });
 
