@@ -779,7 +779,7 @@
      Motion: the wheels roll at the floor's speed, the rain light blinks,
      the engine hums through the chassis
      ------------------------------------------------------------------ */
-  const F1_D = 4.0;
+  const F1_D = 2.0;
   // the rolling road moves with the wind: half the screen's longer side a second, 3.65 machine units a
   // second on a 1440 x 900 screen, 4.1 at 1920 x 1080, 4.2 on a phone (intro.js layout, flow.js inflow)
   const FLOOR_V = 3.9;

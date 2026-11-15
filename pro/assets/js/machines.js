@@ -24,7 +24,7 @@
    ProMachines.CYCLE   [{name, dwell}]  the defined modes, always in the order
                        above (kept up to date in place as modes are defined)
    ProMachines.NAMES   the CYCLE names
-   ProMachines.DURATION { dwell: 4.5, transform: 2.2 }  fallbacks
+   ProMachines.DURATION { dwell: 2.0, transform: 1.2 }  fallbacks
    ProMachines.transformTime(a, b)  seconds for the transformation a -> b
    ProMachines.make(name, N, seed)  -> machine (cached; deterministic)
    ProMachines.blend(a, b, u, t, out, outHeat, aim)
@@ -284,8 +284,8 @@
   const GROUND = -1.3;
   // the owner's line-up, in this order
   const ORDER = ["coupe", "f1", "helicopter", "jet", "starship"];
-  const DWELL = { coupe: 4.5, f1: 4.0, tank: 5.0, helicopter: 5.0, jet: 4.5, starship: 5.0 };
-  const DURATION = { dwell: 4.5, transform: 2.2 };
+  const DWELL = { coupe: 2.0, f1: 2.0, tank: 2.0, helicopter: 2.0, jet: 2.0, starship: 2.0 };
+  const DURATION = { dwell: 2.0, transform: 1.2 };
   const JITTER = 0.003;
   const EMPTY = Object.freeze([]);
   const REST_MARGIN = 0.35;

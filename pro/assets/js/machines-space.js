@@ -462,7 +462,7 @@
      glow and flicker); the four flaps trim a little, slowly, and are back
      at rest before the dwell ends.
      ------------------------------------------------------------------ */
-  const S_DWELL = 5.0;
+  const S_DWELL = 2.0;
   // the forward flaps' hinge: the chord of their root, from the leading edge's root to the trailing edge's
   const FAX = (function () {
     const out = {};
@@ -474,7 +474,7 @@
     return out;
   })();
   function shipAnimate(A, t, age, aim, H) {
-    const k = H.smooth(0.3, 1.2, age) * (1 - H.smooth(S_DWELL - 1.3, S_DWELL - 0.45, age));
+    const k = H.smooth(0.15, 0.6, age) * (1 - H.smooth(S_DWELL - 1.0, S_DWELL - 0.4, age));
     if (k > 0) {
       // the aft flaps work together (pitch) with a little difference (roll); the forward ones answer
       const p = Math.sin(t * 0.83 + 0.4), r = Math.sin(t * 0.57 + 2.1);

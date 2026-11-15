@@ -96,7 +96,7 @@
      ================================================================== */
   const JK = 3.75 / 15.667, JXC = 15.667 / 2, JYR = 1.28;   // scale; the flat frame's origin: mid-length, wing plane
   const JT = { BANK: 0.52, PITCH: 0.04, YC: -0.2 };
-  const J_DWELL = 4.5;
+  const J_DWELL = 2.0;
   // metres (outline frame) -> the flat machine frame (before the bank)
   const jm = (x, y, z) => [(x - JXC) * JK, (y - JYR) * JK, (z || 0) * JK];
   const J_OFF = [-JXC * JK, -JYR * JK, 0];
@@ -583,7 +583,7 @@
     const g = 0.8 + 0.12 * Math.sin(t * 9.1) * Math.sin(t * 5.3);
     A.glow("tail3", g).glow("tail4", g);
     // the control surfaces work a little (all at rest at both ends of the dwell)
-    const a = age > 0 ? age : 0, k = smooth(0.2, 0.9, a) * (1 - smooth(J_DWELL - 1.3, J_DWELL - 0.45, a));
+    const a = age > 0 ? age : 0, k = smooth(0.15, 0.6, a) * (1 - smooth(J_DWELL - 1.0, J_DWELL - 0.4, a));
     if (k <= 0) return;
     const w1 = Math.sin(TAU * a / 2.3), w2 = Math.sin(TAU * a / 1.6 + 0.9), w3 = Math.sin(TAU * a / 2.9 + 2.1);
     const roll = 0.09 * w1 * k, pitch = 0.05 * w2 * k, yaw = 0.07 * w3 * k, lef = 0.05 * k;

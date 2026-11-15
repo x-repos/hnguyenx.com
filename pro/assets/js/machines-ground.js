@@ -130,7 +130,7 @@
   const GUN_ROT = [0, 0, PI - GUN_EPS];          // local +x along the barrel to the muzzle, local +y down
   const GUN_LEN = [0.30, 0.25, 0.48, 0.36], GUN_X0 = -0.47;
   const TANK_SHOTS = [];          // no weapons on the site: the gun never fires (the owner asked)
-  const TANK_D = 5.0;
+  const TANK_D = 2.0;
 
   function tankParts(S, H) {
     const P = {};
@@ -290,8 +290,8 @@
     A.scroll("fl_paw", s).scroll("hl_paw", s).scroll("fr_paw", s).scroll("hr_paw", s);
     A.move("belly", 0, 0.0035 * Math.sin(t * 27) + 0.004 * Math.sin(t * 2.1), 0);
     // the turret slews to the target, the gun lays, fires twice, and all is centred again by the end
-    const end = 1 - H.smooth(TANK_D - 1.1, TANK_D - 0.42, age);
-    const r = H.smooth(0.3, 1.15, age) * end;
+    const end = 1 - H.smooth(TANK_D - 0.95, TANK_D - 0.4, age);
+    const r = H.smooth(0.2, 0.8, age) * end;
     let az = 0;
     if (r > 0) {
       const a = H.clampAim(aim, -2.3, 2.3, -0.1, 0.42, TANK_AIM);
@@ -350,7 +350,7 @@
      screen the whole machine, the rotor's forward tip to the fin, spans
      11.55 m: x -1.85 .. 1.85 at this scale.
      ================================================================== */
-  const HELI_D = 5.0;
+  const HELI_D = 2.0;
   const HK = 0.32, HXC = 3.825, HYC = 1.405, HYM = -0.3;
   const HOFF = [-HXC * HK, HYM - HYC * HK, 0];
   const toM = (p) => [(p[0] - HXC) * HK, (p[1] - HYC) * HK + HYM, (p[2] || 0) * HK];

@@ -20,8 +20,8 @@
   if (!section || !canvas) return;
   const readout = section.querySelector(".flow-readout");
   // No machine is drawn (Reduce Motion, no WebGL, the libraries did not load): the readout goes
-  // too, so it never names a machine that is not there, and so does the soft picture of the tunnel
-  // that stands in for it while the page loads (home.css, .home-intro::before).
+  // too, so it never names a machine that is not there, and the black loading screen with the π
+  // lifts (home.css, .is-off).
   const off = () => { if (readout) readout.style.display = "none"; section.classList.add("is-off"); };
   if (!window.THREE) { off(); return; }
   // The machine is drawn but the air cannot run on this device: only its name stays.
@@ -250,14 +250,15 @@
     for (let k = 0; k < N; k++) sweep[k] = (posA[k * 3] - span.x0) * ix;
     sweepAttr.needsUpdate = true;
   }
-  const MORPH_TIME = 2.6;     // seconds from one machine to the next
+  const MORPH_TIME = 1.2;     // seconds from one machine to the next (each stays 2 s: a machine every 3.2 s)
+  const FIRST_EXTRA = 1.5;    // the first machine stays this much longer, while the page settles
   const FULL_BAND = [0.02, 0.98];   // the wind fills the whole tunnel (the owner asked for wind everywhere)
   const GROUND = -1.3;              // the machines' ground line, in their own frame (the cars stand on it)
   const GROUNDED = { coupe: 1, f1: 1, tank: 1 };   // the machines that stand on the floor
   // the machines that take off when they follow a car (the owner asked for the helicopter to come from
   // the ground): they form standing on the floor, wait a moment, then climb to their flying height in
   // this many seconds while the floor sinks away below the screen
-  const LIFTOFF = { helicopter: 2.8 };
+  const LIFTOFF = { helicopter: 1.3 };
   let morphing = false, yawA = 0.35, yawB = 0.35;
   let yOffA = 0, yOffB = 0;     // machine A and B lowered by this much (their own units): on the floor
   function writeParticles() {
@@ -329,7 +330,7 @@
     let climbDrop = 0, floorFrom = 0;
     if (liftHold >= 0 && LIFTOFF[names[cur]]) climbDrop = GROUND - lowOf(cur);
     // cur: the machine standing in the tunnel; to: the one it is turning into (-1 while it stands)
-    let to = -1, since = null, kick = false, lastAge = 0;
+    let to = -1, since = null, kick = false, lastAge = 0, extra = FIRST_EXTRA;
     const nextBuilt = () => {
       for (let j = 1; j < names.length; j++) { const k = (cur + j) % names.length; if (built[names[k]]) return k; }
       return -1;
@@ -338,10 +339,10 @@
     return {
       frame(t) {
         if (since === null) since = t;
-        if (to < 0 && (kick || hold >= 0 || (!stay && t - since >= cycle[cur].dwell))) {
+        if (to < 0 && (kick || hold >= 0 || (!stay && t - since >= cycle[cur].dwell + extra))) {
           const k = nextBuilt();
           if (k >= 0) {
-            kick = false; to = k; since = t;
+            kick = false; to = k; since = t; extra = 0;
             floorFrom = tunnel.floorK;
             // a machine that takes off forms standing on the floor where the car stood
             yOffB = GROUNDED[names[cur]] && LIFTOFF[names[to]] ? GROUND - lowOf(to) : 0;
@@ -398,7 +399,7 @@
           // while the floor sinks away below the screen (the elevation the owner asked for)
           if (climbDrop !== 0) {
             const L = LIFTOFF[names[cur]] || 2.5;
-            const x = liftHold >= 0 ? liftHold : Math.min(1, Math.max(0, (t - since - 0.6) / L)), e = x * x * (3 - 2 * x);
+            const x = liftHold >= 0 ? liftHold : Math.min(1, Math.max(0, (t - since - 0.25) / L)), e = x * x * (3 - 2 * x);
             yOffA = climbDrop * (1 - e);
             tunnel.floorK = 1 - e;
             if (x >= 1 && liftHold < 0) { climbDrop = 0; yOffA = 0; }

@@ -749,7 +749,7 @@
      settles before it changes; the headlights glow white a little, the
      light bar red.
      ------------------------------------------------------------------ */
-  const DWELL = 4.5;
+  const DWELL = 2.0;
   const FLOOR_V = 3.65, SPINF = FLOOR_V / (TRF * K), SPINR = FLOOR_V / (TRR * K);
   // the spoiler's raised position (estimate: no figure is published): its trailing edge ~8 cm up and 3 cm
   // back, its leading edge ~4.5 cm up; the stowed one lies on the deck
@@ -762,8 +762,8 @@
     const wf = SPINF * t, wr = SPINR * t;
     A.rz("fl_paw", wf).rz("fr_paw", wf).rz("hl_paw", wr).rz("hr_paw", wr);
     A.rz("fl_lo", wf).rz("fr_lo", wf).rz("hl_lo", wr).rz("hr_lo", wr);
-    // the spoiler: stowed when the car forms, up between 0.5 and 1.3 s
-    const d = 1 - H.smooth(0.5, 1.3, age);
+    // the spoiler: stowed when the car forms, up between 0.3 and 0.9 s
+    const d = 1 - H.smooth(0.3, 0.9, age);
     if (d > 0) { A.rz("tail3", -SP_TILT * d); A.move("tail3", -SP_BACK * d, -SP_UP * d, 0); }
     // the body on its springs: a slow heave and a little pitch, faded in and out within the stay
     const e = H.env(age, 0.2, 0.9, DWELL - 1.0, DWELL - 0.4);
